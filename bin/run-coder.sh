@@ -13,8 +13,10 @@ FIT=${FIT:-"on"};
 FLASH_ATTN=${FLASH_ATTN:-"on"};
 MIN_P=${MIN_P:-"0.01"};
 N_GPU_LAYERS=${N_GPU_LAYERS:-"-1"};
-TEMP=${TEMP:-"0.7"};
-TOP_P=${TOP_P:-"0.95"};
+REPEAT_PENALTY=${REPEAT_PENALTY:-"1.0"}
+TEMP=${TEMP:-"0.55"};
+TOP_K=${TOP_K:-"30"};
+TOP_P=${TOP_P:-"0.9"};
 
 llama-server \
   -hf ${MODEL} \
@@ -29,5 +31,7 @@ llama-server \
   --flash-attn ${FLASH_ATTN} \
   --min-p ${MIN_P} \
   --n-gpu-layers ${N_GPU_LAYERS} \
+  --repeat-penalty ${REPEAT_PENALTY} \
   --temp ${TEMP} \
+  --top-k ${TOP_K} \
   --top-p ${TOP_P};
