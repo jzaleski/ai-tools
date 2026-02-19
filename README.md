@@ -18,9 +18,10 @@ The system has been migrated from Ollama Modelfiles to llama-server binaries for
 ## Components
 
 ### run-coder.sh
-Runs a model for coding assistance. Supports two modes:
-- **Fast mode** (default): Uses GLM-4.7-Flash for rapid responses
-- **Experimental mode**: Uses Qwen3.5-397B-A17B for higher quality
+Runs a model for coding assistance using GLM-4.7-Flash for rapid responses.
+
+### run-coder-experimental.sh
+Runs a model for coding assistance using Qwen3.5-397B-A17B for higher quality responses.
 
 **Default Configuration:**
 - Model: `unsloth/GLM-4.7-Flash-GGUF:Q5_K_M` (fast mode)
@@ -61,6 +62,9 @@ Starts Open WebUI interface connected to the advisor model.
 # Run coding model
 ./bin/run-coder.sh
 
+# Run coding model in experimental mode
+./bin/run-coder-experimental.sh
+
 # Run advisor model
 ./bin/run-advisor.sh
 ```
@@ -74,7 +78,6 @@ You can override default settings via environment variables:
 MODEL_VERSION="4.7-Flash" \
 QUANT="5" \
 TEMP="0.5" \
-FAST="true" \
 ./bin/run-coder.sh
 ```
 
@@ -169,8 +172,8 @@ Both the coder and advisor have been tuned with specific parameters:
 - Use quantization level 4-5 for balance between speed and quality
 - Adjust context size based on your use case
 - Enable flash attention for better performance on supported hardware
-- For coding tasks, use fast mode with GLM-4.7-Flash for rapid responses
-- For complex reasoning, use experimental mode with Qwen3.5-397B-A17B
+- For coding tasks, use run-coder.sh for rapid responses with GLM-4.7-Flash
+- For complex reasoning, use run-coder-experimental.sh with Qwen3.5-397B-A17B
 - Adjust threads based on CPU cores for optimal performance
 - Set `MIN_P` to 0.01 in fast mode for better response quality
 
@@ -180,7 +183,7 @@ Both the coder and advisor have been tuned with specific parameters:
 - Ensure you have enough RAM
 - Check GPU availability if using GPU layers
 - Verify model name and version
-- Check that FAST mode is set correctly based on available models
+- Check that you're using the correct script (run-coder.sh or run-coder-experimental.sh)
 
 **Slow inference:**
 - Enable GPU acceleration
@@ -196,7 +199,8 @@ Both the coder and advisor have been tuned with specific parameters:
 - Verify OPENAI_API_BASE_URL is correctly set in docker-compose-files/open-webui.yml
 
 **Quality issues:**
-- For coding tasks, use fast mode with GLM-4.7-Flash
+- For coding tasks, use run-coder.sh with GLM-4.7-Flash
+- For more complex reasoning, use run-coder-experimental.sh with Qwen3.5-397B-A17B
 - Adjust MIN_P and TOP_K values based on desired response style
 - For more creative responses, increase TEMP and TOP_P on advisor model
 
