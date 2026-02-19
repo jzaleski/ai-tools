@@ -20,10 +20,11 @@ The system has been migrated from Ollama Modelfiles to llama-server binaries for
 ### run-coder.sh
 Runs a model for coding assistance. Supports two modes:
 - **Fast mode** (default): Uses GLM-4.7-Flash for rapid responses
-- **Standard mode**: Uses Qwen3.5-397B-A17B for higher quality
+- **Experimental mode**: Uses Qwen3.5-397B-A17B for higher quality
 
 **Default Configuration:**
 - Model: `unsloth/GLM-4.7-Flash-GGUF:Q5_K_M` (fast mode)
+- Alias: `jzaleski/coder`
 - Port: 8081
 - Context size: 32768 tokens
 - Temperature: 0.7
@@ -36,7 +37,8 @@ Runs a model for coding assistance. Supports two modes:
 Runs a GPT-OSS model for general advising.
 
 **Default Configuration:**
-- Model: `unsloth/gpt-oss-120B-GGUF:Q5_K_M`
+- Model: `unsloth/gpt-oss-120b-GGUF:Q5_K_M`
+- Alias: `jzaleski/advisor`
 - Port: 8082
 - Context size: 16384 tokens
 - Temperature: 1.0
@@ -70,26 +72,27 @@ You can override default settings via environment variables:
 ```bash
 # Run coding model with custom settings
 MODEL_VERSION="4.7-Flash" \
-QUANT="4" \
+QUANT="5" \
 TEMP="0.5" \
 FAST="true" \
 ./bin/run-coder.sh
 ```
 
 **Common Variables:**
-- `MODEL_VERSION`: Model version to use
-- `QUANT`: Quantization level (4-8)
-- `TEMP`: Temperature setting
-- `PORT`: Server port
-- `CTX_SIZE`: Context window size
+- `MODEL_VERSION`: Model version suffix (e.g., "4.7-Flash", "120b", "Qwen3.5-397B-A17B")
+- `QUANT`: Quantization level (4-8, default: 5)
+- `TEMP`: Temperature setting (default: 0.7 for coder, 1.0 for advisor)
+- `PORT`: Server port (default: 8081 for coder, 8082 for advisor)
+- `CTX_SIZE`: Context window size (default: 32768 for coder, 16384 for advisor)
 - `N_GPU_LAYERS`: GPU layers (-1 for all)
 - `THREADS`: Number of CPU threads (default: 32)
-- `FAST`: Enable fast mode (true/false) - affects model selection and parameters
-- `MODEL_FAMILY`: Model family for adaptive configuration
 - `MIN_P`: Minimum p value for nucleus sampling
 - `TOP_K`: Top-k sampling value
 - `REPEAT_PENALTY`: Repetition penalty
 - `FLASH_ATTN`: Enable flash attention (default: on)
+- `ALIAS`: Model alias for llama-server
+- `HOST`: Host address (default: 0.0.0.0)
+- `PARAMETERS`: Quantization parameters suffix (default: M)
 
 ### Running Open WebUI
 
@@ -144,8 +147,8 @@ Both the coder and advisor have been tuned with specific parameters:
 │  │  Client   │  │
 │  └─────┬─────┘  │
 └────────┼────────┘
-          │
-          ▼
+         │
+         ▼
 ┌─────────────────┐
 │  Advisor Model  │ (Port 8082)
 │  GPT-OSS 120B   │
@@ -166,8 +169,8 @@ Both the coder and advisor have been tuned with specific parameters:
 - Use quantization level 4-5 for balance between speed and quality
 - Adjust context size based on your use case
 - Enable flash attention for better performance on supported hardware
-- For coding tasks, use fast mode (`FAST=true`) with GLM-4.7-Flash for rapid responses
-- For complex reasoning, use standard mode (`FAST=false`) with Qwen3.5-397B-A17B
+- For coding tasks, use fast mode with GLM-4.7-Flash for rapid responses
+- For complex reasoning, use experimental mode with Qwen3.5-397B-A17B
 - Adjust threads based on CPU cores for optimal performance
 - Set `MIN_P` to 0.01 in fast mode for better response quality
 
@@ -193,7 +196,7 @@ Both the coder and advisor have been tuned with specific parameters:
 - Verify OPENAI_API_BASE_URL is correctly set in docker-compose-files/open-webui.yml
 
 **Quality issues:**
-- For coding tasks, ensure FAST=true for GLM-4.7-Flash
+- For coding tasks, use fast mode with GLM-4.7-Flash
 - Adjust MIN_P and TOP_K values based on desired response style
 - For more creative responses, increase TEMP and TOP_P on advisor model
 
