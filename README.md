@@ -21,7 +21,7 @@ The system has been migrated from Ollama Modelfiles to llama-server binaries for
 Runs a model for coding assistance using GLM-4.7-Flash for rapid responses.
 
 ### run-coder-experimental.sh
-Runs a model for coding assistance using Qwen3.5-397B-A17B for higher quality responses.
+Runs a model for coding assistance using Qwen-Coder-Next for higher quality responses.
 
 **Default Configuration:**
 - Model: `unsloth/GLM-4.7-Flash-GGUF:Q5_K_M` (fast mode)
@@ -82,11 +82,11 @@ TEMP="0.5" \
 ```
 
 **Common Variables:**
-- `MODEL_VERSION`: Model version suffix (e.g., "4.7-Flash", "120b", "Qwen3.5-397B-A17B")
+- `MODEL_VERSION`: Model version suffix (e.g., "4.7-Flash", "120b", "Qwen-Coder-Next")
 - `QUANT`: Quantization level (4-8, default: 5)
-- `TEMP`: Temperature setting (default: 0.7 for coder, 1.0 for advisor)
+- `TEMP`: Temperature setting (default: 0.7 for coder, 1.0 for coder-experimental and 1.0 for advisor)
 - `PORT`: Server port (default: 8081 for coder, 8082 for advisor)
-- `CTX_SIZE`: Context window size (default: 32768 for coder, 16384 for advisor)
+- `CTX_SIZE`: Context window size (default: 32768 for coder, 65536 for coder-experimental and 16384 for advisor)
 - `N_GPU_LAYERS`: GPU layers (-1 for all)
 - `THREADS`: Number of CPU threads (default: 32)
 - `MIN_P`: Minimum p value for nucleus sampling
@@ -173,7 +173,7 @@ Both the coder and advisor have been tuned with specific parameters:
 - Adjust context size based on your use case
 - Enable flash attention for better performance on supported hardware
 - For coding tasks, use run-coder.sh for rapid responses with GLM-4.7-Flash
-- For complex reasoning, use run-coder-experimental.sh with Qwen3.5-397B-A17B
+- For complex reasoning, use run-coder-experimental.sh with Qwen-Coder-Next
 - Adjust threads based on CPU cores for optimal performance
 - Set `MIN_P` to 0.01 in fast mode for better response quality
 
@@ -200,7 +200,7 @@ Both the coder and advisor have been tuned with specific parameters:
 
 **Quality issues:**
 - For coding tasks, use run-coder.sh with GLM-4.7-Flash
-- For more complex reasoning, use run-coder-experimental.sh with Qwen3.5-397B-A17B
+- For more complex reasoning, use run-coder-experimental.sh with Qwen-Coder-Next
 - Adjust MIN_P and TOP_K values based on desired response style
 - For more creative responses, increase TEMP and TOP_P on advisor model
 
