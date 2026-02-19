@@ -2,32 +2,19 @@
 
 set -e;
 
-MODEL=${MODEL:-"unsloth/gpt-oss-${MODEL_VERSION:-"20b"}-GGUF:Q${QUANT:-5}_K_${PARAMETERS:-"M"}"};
-ALIAS=${ALIAS:-"jzaleski/advisor"};
-
-HOST=${HOST:-"0.0.0.0"};
-PORT=${PORT:-"8082"};
-
-CTX_SIZE=${CTX_SIZE:-"16384"};
-FIT=${FIT:-"on"};
-FLASH_ATTN=${FLASH_ATTN:-"on"};
-N_GPU_LAYERS=${N_GPU_LAYERS:-"-1"};
-TEMP=${TEMP:-"1.0"};
-TOP_K=${TOP_K:-"0"};
-TOP_P=${TOP_P:-"1.0"};
-
 llama-server \
-  -hf ${MODEL} \
-  --alias ${ALIAS} \
-  --host ${HOST} \
-  --port ${PORT} \
+  -hf "unsloth/gpt-oss-${MODEL_VERSION:-"120b"}-GGUF:Q${QUANT:-5}_K_${PARAMETERS:-"M"}" \
+  --alias ${ALIAS:-"jzaleski/advisor"} \
+  --host ${HOST:-"0.0.0.0"} \
+  --port ${PORT:-"8082"} \
+  --ctx-size ${CTX_SIZE:-"16384"} \
+  --fit ${FIT:-"on"} \
+  --flash-attn ${FLASH_ATTN:-"on"} \
   --jinja \
   --kv-unified \
+  --min-p ${MIN_P:-"0.0"} \
   --mlock \
-  --ctx-size ${CTX_SIZE} \
-  --fit ${FIT} \
-  --flash-attn ${FLASH_ATTN} \
-  --n-gpu-layers ${N_GPU_LAYERS} \
-  --temp ${TEMP} \
-  --top-k ${TOP_K} \
-  --top-p ${TOP_P};
+  --n-gpu-layers ${N_GPU_LAYERS:-"-1"} \
+  --temp ${TEMP:-"1.0"} \
+  --top-k ${TOP_K:-"0.0"} \
+  --top-p ${TOP_P:-"1.0"};
