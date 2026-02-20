@@ -13,8 +13,7 @@ llama-server \
   --jinja \
   --kv-unified \
   --min-p ${MIN_P:-"0.01"} \
-  --mlock \
-  --n-gpu-layers ${N_GPU_LAYERS:-"-1"} \
+  --n-gpu-layers ${N_GPU_LAYERS:-"99"} \
   --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \
   --temp ${TEMP:-"0.7"} \
   --threads ${THREADS:-"32"} \
