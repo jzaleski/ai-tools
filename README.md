@@ -27,7 +27,7 @@ Runs a model for coding assistance using Qwen3-Coder-Next for higher quality res
 - Model: `Qwen/Qwen3-Coder-Next-GGUF:Q5_K_M`
 - Alias: `jzaleski/coder-experimental`
 - Port: 8081
-- Context size: 131072 tokens
+- Context size: 262144 tokens
 - Temperature: 1.0
 - Top P: 0.95
 - Top K: 40

@@ -7,7 +7,7 @@ llama-server \
   --alias ${ALIAS:-"jzaleski/coder-experimental"} \
   --host ${HOST:-"0.0.0.0"} \
   --port ${PORT:-"8081"} \
-  --ctx-size ${CTX_SIZE:-"131072"} \
+  --ctx-size ${CTX_SIZE:-"262144"} \
   --fit ${FIT:-"on"} \
   --flash-attn ${FLASH_ATTN:-"on"} \
   --jinja \
