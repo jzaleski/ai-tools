@@ -105,7 +105,6 @@ TEMP="0.5" \
 - `MODEL_PROVIDER`: Provider/organization name for the model (default: unsloth)
 - `MODEL_NAME`: Name of the model to load (default: GLM-4.7-Flash, Qwen3-Coder-Next, or gpt-oss-120b)
 - `MODEL_QUANTIZATION`: Full quantization specification (default: Q5_K_M or Q8_0)
-- `QUANT`: Determines the compression level of the model (higher values reduce file size and memory usage)
 - `TEMP`: Controls randomness and creativity in model responses (lower values produce more deterministic outputs)
 - `PORT`: Network port for the server to listen on for incoming connections
 - `CTX_SIZE`: Maximum number of tokens the model can process in a single context window
