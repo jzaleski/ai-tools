@@ -15,7 +15,9 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 ├── bin/                       # Main execution scripts
 │   ├── bootstrap.sh           # System setup and configuration bootstrap
 │   ├── run-coder.sh           # Coder model server (GLM-4.7-Flash/Qwen3-Coder-Next)
+│   ├── run-coder-experimental.sh  # Experimental coder (MiniMax-M2.5, server-only)
 │   ├── run-advisor.sh         # Advisor model server (gpt-oss-20b/gpt-oss-120b)
+│   ├── run-advisor-experimental.sh # Experimental advisor (stub, not implemented)
 │   └── run-open-webui.sh      # Open WebUI Docker wrapper
 ├── scripts/                   # Bootstrap scripts (executed by bin/bootstrap.sh)
 ├── home/                      # Dotfiles and config files to symlink
@@ -126,6 +128,23 @@ Runs the default model for coding assistance. Supports both local and server mod
 - Top K: 40
 - Top P: 0.95
 
+### run-coder-experimental.sh
+Runs the experimental model for coding assistance. Supports only server mode via `--server` flag.
+
+**Server Mode Defaults:**
+- Model: `unsloth/MiniMax-M2.5-GGUF:Q8_0`
+- Alias: `jzaleski/coder-experimental`
+- Host: 0.0.0.0
+- Port: 9081
+- Flash attention: enabled
+- GPU layers: -1 (All)
+- Context size: 196608 tokens
+- Min P: 0.01
+- Repeat penalty: 1.0
+- Temperature: 1.0
+- Top K: 40
+- Top P: 0.95
+
 ### run-advisor.sh
 Runs the default model for general advising. Supports both local and server modes via `--server` flag.
 
@@ -157,6 +176,9 @@ Runs the default model for general advising. Supports both local and server mode
 - Top K: 0.0
 - Top P: 1.0
 
+### run-advisor-experimental.sh
+Runs the experimental model for general advising. Currently a stub - both local and server modes are not implemented. 
+
 ### run-open-webui.sh
 Starts Open WebUI interface using Docker. Supports both local and server modes via `--server` flag.
 
@@ -186,11 +208,23 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 # Run coding model (server mode)
 ./bin/run-coder.sh --server
 
+# Run experimental coding model (local mode -- not implemented)
+./bin/run-coder-experimental.sh
+
+# Run experimental coding model (server mode)
+./bin/run-coder-experimental.sh --server
+
 # Run advisor model (local mode)
 ./bin/run-advisor.sh
 
 # Run advisor model (server mode)
 ./bin/run-advisor.sh --server
+
+# Run experimental advisor model (local mode - not implemented)
+./bin/run-advisor-experimental.sh
+
+# Run experimental advisor model (server mode - not implemented)
+./bin/run-advisor-experimental.sh --server
 
 # Start Open WebUI (local mode, auth disabled)
 ./bin/run-open-webui.sh
@@ -237,6 +271,14 @@ docker compose -f docker-compose-files/open-webui.yml down
 │  GLM-4.7-Flash   │
 │ Qwen3-Coder-Next │
 └──────────────────┘
+```
+
+```
+┌──────────────────────────────┐
+│  Coder Model (Experimental)  │ (Port 9081)
+│         MiniMax-M2.5         │
+│        (server-only)         │
+└──────────────────────────────┘
 ```
 
 ## Performance Tips

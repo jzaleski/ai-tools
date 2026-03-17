@@ -20,6 +20,8 @@ Scripts in `bin/` support **local** and **server** modes:
 ./bin/run-coder.sh --server  # Server mode
 ./bin/run-advisor.sh         # Local (default)
 ./bin/run-advisor.sh --server  # Server mode
+./bin/run-open-webui.sh      # Local (default)
+./bin/run-open-webui.sh --server  # Server mode
 ```
 
 Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
@@ -31,11 +33,10 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 ### Bash Scripts
 
 - **Shebang**: `#!/usr/bin/env bash`
-- **Error Handling**: `set -e;`
-- **Variable Quoting**: `"${VAR:-default}"`
 - **Functions**: Use `run_local()` and `run_server()`
 - **Mode Detection**: `if [[ "${1:-}" == "--server" ]]; then run_server; else run_local; fi`
-- **Environment Variables**: Always provide defaults via parameter expansion
+- **Variable Quoting**: Always quote expansions `"${VAR:-default}"`
+- **Path Resolution**: Use `$(dirname $0)/..` for relative paths
 
 ### Configuration Files
 
@@ -54,12 +55,6 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 - Modes: `local` / `server`
 - Ports: 8080 (WebUI), 8081 (coder), 8082 (advisor)
 - Aliases: `jzaleski/{component}`
-
-### Error Handling
-
-1. Use `set -e`
-2. Quote all variable expansions
-3. Use `if [[ condition ]]; then` for conditionals
 
 ---
 
@@ -90,28 +85,36 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 ## Architecture
 
 ```
-┌─────────────────┐
-│   Open WebUI    │ (Port 8080)
-│                 │
-│  ┌───────────┐  │
-│  │  Client   │  │
-│  └─────┬─────┘  │
-└────────┼────────┘
+┌──────────────────┐
+│    Open WebUI    │ (Port 8080)
+│                  │
+│   ┌──────────┐   │
+│   │  Client  │   │
+│   └─────┬────┘   │
+└─────────┼────────┘
           │
           ▼
-┌─────────────────┐
-│  Advisor Model  │ (Port 8082)
-│  gpt-oss-20b /  │
-│  gpt-oss-120b   │
-└─────────────────┘
+┌──────────────────┐
+│   Advisor Model  │ (Port 8082)
+│   gpt-oss-20b /  │
+│   gpt-oss-120b   │
+└──────────────────┘
 ```
 
 ```
-┌─────────────────┐
-│   Coder Model   │ (Port 8081)
-│  GLM-4.7-Flash  │
-│  Qwen3-Coder-Next│
-└─────────────────┘
+┌──────────────────┐
+│   Coder Model    │ (Port 8081)
+│  GLM-4.7-Flash   │
+│ Qwen3-Coder-Next │
+└──────────────────┘
+```
+
+```
+┌──────────────────────────────┐
+│  Coder Model (Experimental)  │ (Port 9081)
+│         MiniMax-M2.5         │
+│        (server-only)         │
+└──────────────────────────────┘
 ```
 
 ---
@@ -136,3 +139,10 @@ docker compose -f docker-compose-files/open-webui.yml down
 **Connection failures**: Verify llama-server running, check `ADVISOR_MODEL_PORT`, ensure Docker host access.
 
 **Performance issues**: Enable flash attention, reduce context size, adjust quantization.
+
+## What to Avoid
+
+- Do not modify model defaults without clear reason — quantization levels and context sizes are tuned for specific hardware profiles
+- Do not change port allocations without updating all dependent configurations
+- Do not enable authentication in local mode unless explicitly required
+- Do not skip `set -e` error handling in shell scripts
