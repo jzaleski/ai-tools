@@ -29,8 +29,8 @@
         "baseURL": "http://localhost:9081/v1"
       },
       "models": {
-        "jzaleski/coder": {
-          "name": "coder",
+        "jzaleski/coder-experimental": {
+          "name": "coder-experimental",
           "limit": {
             "context": 65536,
             "input": 57344,
