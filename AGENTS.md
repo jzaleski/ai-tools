@@ -69,7 +69,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 |----------|-------------|-----------------|------------------|
 | `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
 | `MODEL_NAME` | Model name (no -GGUF) | `GLM-4.7-Flash` (coder), `gpt-oss-20b` (advisor) | `Qwen3-Coder-Next` (coder), `gpt-oss-120b` (advisor) |
-| `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` (coder), `Q4_K_M` (advisor) | `BP16` (coder), `F16` (advisor) |
+| `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` (coder), `Q4_K_M` (advisor) | `BF16` (coder), `F16` (advisor) |
 | `TEMP` | Sampling temperature | `1.0` | `1.0` |
 | `PORT` | Network port | `8081` (coder), `8082` (advisor) | `8081` (coder), `8082` (advisor) |
 | `CTX_SIZE` | Context window | `65536` (coder), `65536` (advisor) | `262144` (coder), `65536` (advisor) |

@@ -113,7 +113,7 @@ Runs the default model for coding assistance. Supports both local and server mod
 - Top P: 0.95
 
 **Server Mode Defaults:**
-- Model: `unsloth/Qwen3-Coder-Next-GGUF:BP16`
+- Model: `unsloth/Qwen3-Coder-Next-GGUF:BF16`
 - Alias: `jzaleski/coder`
 - Host: 0.0.0.0
 - Port: 8081
