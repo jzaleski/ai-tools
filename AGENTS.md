@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts and Docker configurations for running local LLMs using `llama-server`.
-Supports coding assistance (GLM-4.7-Flash/Qwen3-Coder-Next) and general advising (gpt-oss-20b/Qwen3.5-122B-A10B).
+Supports coding assistance (GLM-4.7-Flash/Qwen3-Coder-Next) and general advising (gpt-oss-20b/gpt-oss-120b).
 
 **No code repositories** - utilities/config only.
 
@@ -18,9 +18,11 @@ Scripts in `bin/` support **local** and **server** modes:
 ```bash
 ./bin/run-coder.sh           # Local (default)
 ./bin/run-coder.sh --server  # Server mode
+./bin/run-advisor.sh         # Local (default)
+./bin/run-advisor.sh --server  # Server mode
 ```
 
-Test with: `bash -x ./bin/run-coder.sh`
+Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 
 ---
 
@@ -65,22 +67,23 @@ Test with: `bash -x ./bin/run-coder.sh`
 
 | Variable | Description | Default (Local) | Default (Server) |
 |----------|-------------|-----------------|------------------|
-| `MODEL_PROVIDER` | HuggingFace org | unsloth | unsloth |
-| `MODEL_NAME` | Model name (no -GGUF) | GLM-4.7-Flash / gpt-oss-20b | Qwen3-Coder-Next / Qwen3.5-122B-A10B |
-| `MODEL_QUANTIZATION` | Quantization level | Q4_K_M | Q5_K_M |
-| `TEMP` | Sampling temperature | 1.0 | 1.0 |
-| `PORT` | Network port | 8081/8082 | 8081/8082 |
-| `CTX_SIZE` | Context window | 65536 | 65536 |
-
-| `MIN_P` | Nucleus min | 0.01/0.0 | 0.01/0.0 |
-| `TOP_K` | Top-K limit | 40/0.0 | 40/20 |
-
-| `REPEAT_PENALTY` | Repeat penalty | 1.0 | 1.0 |
-| `TOP_P` | Nucleus top-p | 0.95/1.0 | 0.95/0.95 |
-| `ALIAS` | Model alias | jzaleski/{coder,advisor} | jzaleski/{coder,advisor} |
-| `HOST` | Host address | 127.0.0.1 | 0.0.0.0 |
-
-| `FLASH_ATTN` | Flash attention | on | on |
+| `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
+| `MODEL_NAME` | Model name (no -GGUF) | `GLM-4.7-Flash` (coder), `gpt-oss-20b` (advisor) | `Qwen3-Coder-Next` (coder), `gpt-oss-120b` (advisor) |
+| `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` (coder), `Q4_K_M` (advisor) | `BP16` (coder), `F16` (advisor) |
+| `TEMP` | Sampling temperature | `1.0` | `1.0` |
+| `PORT` | Network port | `8081` (coder), `8082` (advisor) | `8081` (coder), `8082` (advisor) |
+| `CTX_SIZE` | Context window | `65536` (coder), `65536` (advisor) | `262144` (coder), `65536` (advisor) |
+| `MIN_P` | Nucleus min | `0.01` (coder), `0.0` (advisor) | `0.01` (coder), `0.0` (advisor) |
+| `TOP_K` | Top-K limit | `40` (coder), `0` (advisor) | `40` (coder), `0` (advisor) |
+| `REPEAT_PENALTY` | Repeat penalty | `1.0` | `1.0` |
+| `TOP_P` | Nucleus top-p | `0.95` (coder), `1.0` (advisor) | `0.95` (coder), `1.0` (advisor) |
+| `ALIAS` | Model alias | `jzaleski/coder`, `jzaleski/advisor` | `jzaleski/coder`, `jzaleski/advisor` |
+| `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
+| `FLASH_ATTN` | Flash attention | `on` | `on` |
+| `N_GPU_LAYERS` | GPU layers to offload | `-1` (all) | `-1` (all) |
+| `WEBUI_AUTH` | WebUI authentication | `False` | `True` |
+| `ADVISOR_MODEL_PORT` | Advisor model port for WebUI | `8082` | `8082` |
+| `IMAGE` | Docker image for WebUI | `ghcr.io/open-webui/open-webui:main` | `ghcr.io/open-webui/open-webui:main` |
 
 ---
 
@@ -99,7 +102,7 @@ Test with: `bash -x ./bin/run-coder.sh`
 ┌─────────────────┐
 │  Advisor Model  │ (Port 8082)
 │  gpt-oss-20b /  │
-│  Qwen3.5-122B   │
+│  gpt-oss-120b   │
 └─────────────────┘
 ```
 
@@ -117,7 +120,7 @@ Test with: `bash -x ./bin/run-coder.sh`
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- Context size standardized to 65536 tokens
+- Context size: 65536 (local), 262144 (server coder)
 
 ## Docker Compose
 

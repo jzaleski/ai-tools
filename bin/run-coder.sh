@@ -21,14 +21,14 @@ run_local() {
 
 run_server() {
   llama-server \
-    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3-Coder-Next"}-GGUF:${MODEL_QUANTIZATION:-"Q5_K_M"}" \
+    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3-Coder-Next"}-GGUF:${MODEL_QUANTIZATION:-"BP16"}" \
     --alias ${ALIAS:-"jzaleski/coder"} \
     --host ${HOST:-"0.0.0.0"} \
     --port ${PORT:-"8081"} \
     --flash-attn ${FLASH_ATTN:-"on"} \
     --jinja \
     --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
-    --ctx-size ${CTX_SIZE:-"65536"} \
+    --ctx-size ${CTX_SIZE:-"262144"} \
     --min-p ${MIN_P:-"0.01"} \
     --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \
     --temp ${TEMP:-"1.0"} \
