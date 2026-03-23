@@ -115,7 +115,7 @@ Runs the default model for coding assistance. Supports both local and server mod
 - Top P: 0.95
 
 **Server Mode Defaults:**
-- Model: `unsloth/Qwen3-Coder-Next-GGUF:BF16`
+- Model: `unsloth/Qwen3-Coder-Next-GGUF:Q8_0`
 - Alias: `jzaleski/coder`
 - Host: 0.0.0.0
 - Port: 8081
@@ -163,7 +163,7 @@ Runs the default model for general advising. Supports both local and server mode
 - Top P: 1.0
 
 **Server Mode Defaults:**
-- Model: `unsloth/gpt-oss-120b-GGUF:F16`
+- Model: `unsloth/gpt-oss-120b-GGUF:Q8_0`
 - Alias: `jzaleski/advisor`
 - Host: 0.0.0.0
 - Port: 8082

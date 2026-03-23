@@ -21,7 +21,7 @@ run_local() {
 
 run_server() {
   llama-server \
-    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3-Coder-Next"}-GGUF:${MODEL_QUANTIZATION:-"BF16"}" \
+    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3-Coder-Next"}-GGUF:${MODEL_QUANTIZATION:-"Q8_0"}" \
     --alias ${ALIAS:-"jzaleski/coder"} \
     --host ${HOST:-"0.0.0.0"} \
     --port ${PORT:-"8081"} \
