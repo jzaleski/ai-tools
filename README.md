@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It includes support for multiple models with different use cases - coding assistance and general advising.
+This repository provides scripts and configurations for running local AI models using llama-server. It includes support for multiple models with different use cases - coding assistance (server-only), general advising, and observing.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -12,22 +12,24 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 
 ```
 .
-├── bin/                       # Main execution scripts
-│   ├── bootstrap.sh           # System setup and configuration bootstrap
-│   ├── run-coder.sh           # Coder model server (GLM-4.7-Flash/Qwen3-Coder-Next)
-│   ├── run-coder-experimental.sh  # Experimental coder (MiniMax-M2.5, server-only)
-│   ├── run-advisor.sh         # Advisor model server (gpt-oss-20b/gpt-oss-120b)
-│   ├── run-advisor-experimental.sh # Experimental advisor (stub, not implemented)
-│   └── run-open-webui.sh      # Open WebUI Docker wrapper
-├── scripts/                   # Bootstrap scripts (executed by bin/bootstrap.sh)
-├── home/                      # Dotfiles and config files to symlink
-├── overrides/                 # Override files for home directory
+├── bin/                              # Main execution scripts
+│   ├── bootstrap.sh                  # System setup and configuration bootstrap
+│   ├── run-coder.sh                  # Coder model (Qwen3-Coder-Next, server-only)
+│   ├── run-coder-experimental.sh     # Experimental coder model (MiniMax-M2.5, server-only)
+│   ├── run-advisor.sh                # Advisor model (gpt-oss-20b/gpt-oss-120b)
+│   ├── run-advisor-experimental.sh   # Experimental advisor model (stub, not implemented)
+│   ├── run-observer.sh               # Observer model (Qwen3.5-9B/Qwen3.5-35B-A3B)
+│   ├── run-observer-experimental.sh  # Experimental observer model (stub, not implemented)
+│   └── run-open-webui.sh             # Open WebUI Docker wrapper
+├── scripts/                          # Bootstrap scripts (executed by bin/bootstrap.sh)
+├── home/                             # Dotfiles and config files to symlink
+├── overrides/                        # Override files for home directory
 ├── docker-compose-files/
-│   └── open-webui.yml         # Docker Compose configuration for Open WebUI
-├── .default-node-version      # Default node version
-├── .default-npm-version       # Default npm version
-├── .default-opencode-version  # Default opencode-ai version
-└── .bootstrapignore           # Files to skip during bootstrap (git-ignored)
+│   └── open-webui.yml                # Docker Compose configuration for Open WebUI
+├── .default-node-version             # Default node version
+├── .default-npm-version              # Default npm version
+├── .default-opencode-version         # Default opencode-ai version
+└── .bootstrapignore                  # Files to skip during bootstrap (git-ignored)
 ```
 
 ## Bootstrap System
@@ -62,7 +64,7 @@ The project tracks specific versions of key development tools in version files:
 |------|-------------|---------|
 | `.default-node-version` | Node.js version for nodenv | 24.14.0 |
 | `.default-npm-version` | npm version | 11.9.0 |
-| `.default-opencode-version` | opencode-ai version | 1.2.27 |
+| `.default-opencode-version` | opencode-ai version | 1.3.0 |
 
 These versions are managed and installed via the bootstrap system
 
@@ -98,21 +100,7 @@ You can override default settings via environment variables. The same variables 
 ## Components
 
 ### run-coder.sh
-Runs the default model for coding assistance. Supports both local and server modes via `--server` flag.
-
-**Local Mode Defaults:**
-- Model: `unsloth/GLM-4.7-Flash-GGUF:Q4_K_M`
-- Alias: `jzaleski/coder`
-- Host: 127.0.0.1
-- Port: 8081
-- Flash attention: enabled
-- GPU layers: -1 (All)
-- Context size: 65536 tokens
-- Min P: 0.01
-- Repeat penalty: 1.0
-- Temperature: 1.0
-- Top K: 40
-- Top P: 0.95
+Runs the default model for coding assistance. Supports only server mode via `--server` flag.
 
 **Server Mode Defaults:**
 - Model: `unsloth/Qwen3-Coder-Next-GGUF:Q8_0`
@@ -179,6 +167,42 @@ Runs the default model for general advising. Supports both local and server mode
 ### run-advisor-experimental.sh
 Runs the experimental model for general advising. Currently a stub - both local and server modes are not implemented. 
 
+### run-observer.sh
+Runs the default model for observing. Supports both local and server modes via `--server` flag.
+
+**Local Mode Defaults:**
+- Model: `unsloth/Qwen3.5-9B-GGUF:Q4_K_M`
+- Alias: `jzaleski/observer`
+- Host: 127.0.0.1
+- Port: 8083
+- Flash attention: enabled
+- GPU layers: -1 (All)
+- Context size: 81920 tokens
+- Min P: 0.01
+- Presence penalty: 1.5
+- Repeat penalty: 1.0
+- Temperature: 1.0
+- Top K: 20
+- Top P: 0.95
+
+**Server Mode Defaults:**
+- Model: `unsloth/Qwen3.5-35B-A3B-GGUF:Q8_0`
+- Alias: `jzaleski/observer`
+- Host: 0.0.0.0
+- Port: 8083
+- Flash attention: enabled
+- GPU layers: -1 (All)
+- Context size: 81920 tokens
+- Min P: 0.01
+- Presence penalty: 1.5
+- Repeat penalty: 1.0
+- Temperature: 1.0
+- Top K: 20
+- Top P: 0.95
+
+### run-observer-experimental.sh
+Runs the experimental model for observing. Currently a stub - both local and server modes are not implemented. 
+
 ### run-open-webui.sh
 Starts Open WebUI interface using Docker. Supports both local and server modes via `--server` flag.
 
@@ -202,13 +226,13 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 ### Running Individual Models
 
 ```bash
-# Run coding model (local mode)
+# Run coding model (local mode - not implemented)
 ./bin/run-coder.sh
 
 # Run coding model (server mode)
 ./bin/run-coder.sh --server
 
-# Run experimental coding model (local mode -- not implemented)
+# Run experimental coding model (local mode - not implemented)
 ./bin/run-coder-experimental.sh
 
 # Run experimental coding model (server mode)
@@ -225,6 +249,18 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 
 # Run experimental advisor model (server mode - not implemented)
 ./bin/run-advisor-experimental.sh --server
+
+# Run observer model (local mode)
+./bin/run-observer.sh
+
+# Run observer model (server mode)
+./bin/run-observer.sh --server
+
+# Run experimental observer model (local mode - not implemented)
+./bin/run-observer-experimental.sh
+
+# Run experimental observer model (server mode - not implemented)
+./bin/run-observer-experimental.sh --server
 
 # Start Open WebUI (local mode, auth disabled)
 ./bin/run-open-webui.sh
@@ -250,6 +286,22 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 ```
 ┌──────────────────┐
+│   Coder Model    │ (Port 8081)
+│  Qwen3-Coder-Next│
+│   (server-only)  │
+└──────────────────┘
+```
+
+```
+┌──────────────────────────────┐
+│  Coder Model (Experimental)  │ (Port 9081)
+│         MiniMax-M2.5         │
+│        (server-only)         │
+└──────────────────────────────┘
+```
+
+```
+┌──────────────────┐
 │    Open WebUI    │ (Port 8080)
 │                  │
 │   ┌──────────┐   │
@@ -267,18 +319,10 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 ```
 ┌──────────────────┐
-│   Coder Model    │ (Port 8081)
-│  GLM-4.7-Flash   │
-│ Qwen3-Coder-Next │
+│  Observer Model  │ (Port 8083)
+│    Qwen3.5-9B /  │
+│  Qwen3.5-35B-A3B │
 └──────────────────┘
-```
-
-```
-┌──────────────────────────────┐
-│  Coder Model (Experimental)  │ (Port 9081)
-│         MiniMax-M2.5         │
-│        (server-only)         │
-└──────────────────────────────┘
 ```
 
 ## Performance Tips
@@ -286,7 +330,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
 - Context size standardized to 65536+ tokens
-- For coding tasks, use run-coder.sh with GLM-4.7-Flash (local) or Qwen3-Coder-Next (server)
+- For coding tasks, use run-coder.sh with Qwen3-Coder-Next (server-only)
 - For complex reasoning, use run-advisor.sh with gpt-oss-20b (local) or gpt-oss-120b (server)
 
 ## Troubleshooting

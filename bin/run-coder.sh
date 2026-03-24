@@ -3,20 +3,8 @@
 set -e;
 
 run_local() {
-  llama-server \
-    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"GLM-4.7-Flash"}-GGUF:${MODEL_QUANTIZATION:-"Q4_K_M"}" \
-    --alias "${ALIAS:-"jzaleski/coder"}" \
-    --host "${HOST:-"127.0.0.1"}" \
-    --port "${PORT:-"8081"}" \
-    --flash-attn "${FLASH_ATTN:-"on"}" \
-    --jinja \
-    --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
-    --ctx-size "${CTX_SIZE:-"65536"}" \
-    --min-p ${MIN_P:-"0.01"} \
-    --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \
-    --temp ${TEMP:-"1.0"} \
-    --top-k ${TOP_K:-"40"} \
-    --top-p ${TOP_P:-"0.95"};
+  echo "Error: Not Implemented!" >&2;
+  exit 1;
 }
 
 run_server() {
