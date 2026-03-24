@@ -92,6 +92,7 @@ You can override default settings via environment variables. The same variables 
 - `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1)
 - `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 65536 for local, 65536+ for server)
 - `MIN_P`: Threshold for nucleus sampling to exclude low-probability tokens (0.0-1.0)
+- `REASONING_BUDGET`: Maximum tokens allocated for reasoning/thinking in thinking models like Qwen3.5 (0 disables thinking, default: 0)
 - `REPEAT_PENALTY`: Factor applied to penalize repeated tokens (1.0 is no penalty)
 - `TEMP`: Controls randomness and creativity in model responses
 - `TOP_K`: Limit on the number of most likely tokens to consider during generation (0 or 0.0 disables top-k sampling)
@@ -180,6 +181,7 @@ Runs the default model for observing. Supports both local and server modes via `
 - Context size: 81920 tokens
 - Min P: 0.01
 - Presence penalty: 1.5
+- Reasoning budget: 0
 - Repeat penalty: 1.0
 - Temperature: 1.0
 - Top K: 20
@@ -195,6 +197,7 @@ Runs the default model for observing. Supports both local and server modes via `
 - Context size: 81920 tokens
 - Min P: 0.01
 - Presence penalty: 1.5
+- Reasoning budget: 0
 - Repeat penalty: 1.0
 - Temperature: 1.0
 - Top K: 20
@@ -332,6 +335,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 - Context size standardized to 65536+ tokens
 - For coding tasks, use run-coder.sh with Qwen3-Coder-Next (server-only)
 - For complex reasoning, use run-advisor.sh with gpt-oss-20b (local) or gpt-oss-120b (server)
+- For thinking models like Qwen3.5, adjust `REASONING_BUDGET` to control reasoning depth (higher values allow more thinking tokens)
 
 ## Troubleshooting
 

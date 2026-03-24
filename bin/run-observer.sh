@@ -14,6 +14,7 @@ run_local() {
     --ctx-size "${CTX_SIZE:-"81920"}" \
     --min-p ${MIN_P:-"0.01"} \
     --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
+    --reasoning-budget "${REASONING_BUDGET:-"0"}" \
     --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \
     --temp ${TEMP:-"1.0"} \
     --top-k ${TOP_K:-"20"} \
@@ -32,6 +33,7 @@ run_server() {
     --ctx-size "${CTX_SIZE:-"81920"}" \
     --min-p ${MIN_P:-"0.01"} \
     --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
+    --reasoning-budget "${REASONING_BUDGET:-"0"}" \
     --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \
     --temp ${TEMP:-"1.0"} \
     --top-k ${TOP_K:-"20"} \

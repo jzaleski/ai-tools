@@ -92,6 +92,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 | `PORT` | Network port | `8081` (coder), `8082` (advisor), `8083` (observer), `9081` (coder-exp) | `8081` (coder), `8082` (advisor), `8083` (observer), `9081` (coder-exp) |
 | `CTX_SIZE` | Context window | `65536` (coder/advisor), `81920` (observer) | `262144` (coder), `196608` (coder-exp), `65536` (advisor), `81920` (observer) |
 | `MIN_P` | Nucleus min | `0.01` (coder/observer), `0.0` (advisor) | `0.01` (coder/coder-exp/observer), `0.0` (advisor) |
+| `REASONING_BUDGET` | Reasoning budget for thinking models (e.g., Qwen3.5) | `0` (observer) | `0` (observer) |
 | `TOP_K` | Top-K limit | `40` (coder), `0` (advisor), `20` (observer) | `40` (coder/coder-exp), `0` (advisor), `20` (observer) |
 | `REPEAT_PENALTY` | Repeat penalty | `1.0` | `1.0` |
 | `PRESENCE_PENALTY` | Presence penalty | N/A (coder/advisor), `1.5` (observer) | N/A (coder/advisor), `1.5` (observer) |
