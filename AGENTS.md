@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts and Docker configurations for running local LLMs using `llama-server`.
-Supports coding assistance (Qwen3-Coder-Next/MiniMax-M2.5, server-only), general advising (gpt-oss-20b/gpt-oss-120b), and observing (Qwen3.5-9B/Qwen3.5-35B-A3B).
+Supports coding assistance (Qwen3-Coder-Next local, MiniMax-M2.5 server) and general advising (Qwen3.5-35B-A3B/Qwen3.5-122B-A10B).
 
 **No code repositories** - utilities/config only.
 
@@ -24,19 +24,17 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ```
 .
-├── bin/                              # Main execution scripts
-│   ├── bootstrap.sh                  # System setup and configuration bootstrap
-│   ├── run-coder.sh                  # Coder model (Qwen3-Coder-Next, server-only)
-│   ├── run-coder-experimental.sh     # Experimental coder model (MiniMax-M2.5, server-only)
-│   ├── run-advisor.sh                # Advisor model (gpt-oss-20b/gpt-oss-120b)
-│   ├── run-advisor-experimental.sh   # Experimental advisor model (stub)
-│   ├── run-observer.sh               # Observer model (Qwen3.5-9B/Qwen3.5-35B-A3B)
-│   ├── run-observer-experimental.sh  # Experimental observer model (stub)
-│   └── run-open-webui.sh             # Open WebUI Docker wrapper
-├── scripts/                          # Bootstrap scripts (executed by bin/bootstrap.sh)
-├── home/                             # Dotfiles and config files to symlink
+├── bin/                                    # Main execution scripts
+│   ├── bootstrap.sh                        # System setup and configuration bootstrap
+│   ├── run-coder.sh                        # Coder model (Qwen3-Coder-Next local, MiniMax-M2.5 server)
+│   ├── run-coder-experimental.sh           # Expirmental coder model (stub)
+│   ├── run-advisor.sh                      # Advisor model (Qwen3.5-9B/Qwen3.5-122B-A10B)
+│   ├── run-advisor-experimental.sh         # Experimental advisor model (stub)
+│   └── run-open-webui.sh                   # Open WebUI Docker wrapper
+├── scripts/                                # Bootstrap scripts (executed by bin/bootstrap.sh)
+├── home/                                   # Dotfiles and config files to symlink
 ├── docker-compose-files/
-│   └── open-webui.yml                # Docker Compose configuration for Open WebUI
+│   └── open-webui.yml                      # Docker Compose configuration for Open WebUI
 ```
 
 ---
@@ -46,16 +44,16 @@ Agent configurations are managed via the bootstrap system and integrate with the
 Scripts in `bin/` support **local** and **server** modes:
 
 ```bash
-./bin/run-coder.sh                    # Local (not implemented)
-./bin/run-coder.sh --server           # Server mode
-./bin/run-coder-experimental.sh       # Local (not implemented)
-./bin/run-coder-experimental.sh --server  # Server mode
-./bin/run-advisor.sh                  # Local (default)
-./bin/run-advisor.sh --server         # Server mode
-./bin/run-observer.sh                 # Local (default)
-./bin/run-observer.sh --server        # Server mode
-./bin/run-open-webui.sh               # Local (default)
-./bin/run-open-webui.sh --server      # Server mode
+./bin/run-coder.sh                          # Local mode
+./bin/run-coder.sh --server                 # Server mode
+./bin/run-coder-experimental.sh             # Local mode - Not implemented
+./bin/run-coder-experimental.sh --server    # Server mode - Not implemented
+./bin/run-advisor.sh                        # Local mode
+./bin/run-advisor.sh --server               # Server mode
+./bin/run-advisor-experimental.sh           # Local mode - Not implemented
+./bin/run-advisor-experimental.sh --server  # Server mode - Not implemented
+./bin/run-open-webui.sh                     # Local mode
+./bin/run-open-webui.sh --server            # Server mode
 ```
 
 Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
@@ -87,7 +85,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 
 - Scripts: `run-{component}.sh`
 - Modes: `local` / `server`
-- Ports: 8080 (WebUI), 8081 (coder), 8082 (advisor), 8083 (observer), 9081 (coder-exp)
+- Ports: 8080 (WebUI), 8081 (coder), 8082 (advisor)
 - Aliases: `jzaleski/{component}`
 
 ---
@@ -97,21 +95,20 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 | Variable | Description | Default (Local) | Default (Server) |
 |----------|-------------|-----------------|------------------|
 | `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
-| `MODEL_NAME` | Model name (no -GGUF) | `gpt-oss-20b` (advisor), `Qwen3.5-9B` (observer) | `Qwen3-Coder-Next` (coder), `MiniMax-M2.5` (coder-exp), `gpt-oss-120b` (advisor), `Qwen3.5-35B-A3B` (observer) |
-| `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` (coder/advisor/observer) | `Q8_0` (coder/coder-exp/advisor/observer) |
+| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3-Coder-Next` (coder), `Qwen3.5-35B-A3B` (advisor) | `MiniMax-M2.5` (coder), `Qwen3.5-122B-A10B` (advisor) |
+| `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` | `Q8_0` |
 | `TEMP` | Sampling temperature | `1.0` | `1.0` |
-| `PORT` | Network port | `8081` (coder), `8082` (advisor), `8083` (observer), `9081` (coder-exp) | `8081` (coder), `8082` (advisor), `8083` (observer), `9081` (coder-exp) |
-| `CTX_SIZE` | Context window | `65536` (coder/advisor), `81920` (observer) | `262144` (coder), `196608` (coder-exp), `65536` (advisor), `81920` (observer) |
-| `MIN_P` | Nucleus min | `0.01` (coder/observer), `0.0` (advisor) | `0.01` (coder/coder-exp/observer), `0.0` (advisor) |
-| `REASONING_BUDGET` | Reasoning budget for thinking models (e.g., Qwen3.5) | `0` (observer) | `0` (observer) |
-| `TOP_K` | Top-K limit | `40` (coder), `0` (advisor), `20` (observer) | `40` (coder/coder-exp), `0` (advisor), `20` (observer) |
+| `PORT` | Network port | `8081` (coder), `8082` (advisor) | `8081` (coder), `8082` (advisor) |
+| `CTX_SIZE` | Context window | `65536` (coder), `262144` (advisor) | `196608` (coder), `262144` (advisor) |
+| `MIN_P` | Nucleus min | `0.01` | `0.01` |
+| `TOP_K` | Top-K limit | `40` (coder), `20` (advisor) | `40` (coder), `20` (advisor) |
 | `REPEAT_PENALTY` | Repeat penalty | `1.0` | `1.0` |
-| `PRESENCE_PENALTY` | Presence penalty | N/A (coder/advisor), `1.5` (observer) | N/A (coder/advisor), `1.5` (observer) |
-| `TOP_P` | Nucleus top-p | `0.95` (coder/observer), `1.0` (advisor) | `0.95` (coder/coder-exp/observer), `1.0` (advisor) |
-| `ALIAS` | Model alias | `jzaleski/coder`, `jzaleski/advisor`, `jzaleski/observer`, `jzaleski/coder-experimental` | `jzaleski/coder`, `jzaleski/advisor`, `jzaleski/observer`, `jzaleski/coder-experimental` |
+| `PRESENCE_PENALTY` | Presence penalty | `1.5` | `1.5` |
+| `TOP_P` | Nucleus top-p | `0.95` | `0.95` |
+| `ALIAS` | Model alias | `jzaleski/coder`, `jzaleski/advisor` | `jzaleski/coder`, `jzaleski/advisor` |
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
 | `FLASH_ATTN` | Flash attention | `on` | `on` |
-| `N_GPU_LAYERS` | GPU layers to offload | `-1` (all) | `-1` (all) |
+| `N_GPU_LAYERS` | GPU layers to offload | `-1` | `99` |
 | `WEBUI_AUTH` | WebUI authentication | `False` | `True` |
 | `ADVISOR_MODEL_PORT` | Advisor model port for WebUI | `8082` | `8082` |
 | `IMAGE` | Docker image for WebUI | `ghcr.io/open-webui/open-webui:main` | `ghcr.io/open-webui/open-webui:main` |
@@ -119,6 +116,22 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 ---
 
 ## Architecture
+
+```
+┌──────────────────┐
+│   Coder Model    │ (Port 8081)
+│  Qwen3-Coder-Next│
+│    (local)       │
+└──────────────────┘
+```
+
+```
+┌──────────────────┐
+│   Advisor Model  │ (Port 8082)
+│ Qwen3.5-35B-A3B  │
+│ Qwen3.5-122B-A10B│
+└──────────────────┘
+```
 
 ```
 ┌──────────────────┐
@@ -132,32 +145,8 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
           ▼
 ┌──────────────────┐
 │   Advisor Model  │ (Port 8082)
-│   gpt-oss-20b /  │
-│   gpt-oss-120b   │
-└──────────────────┘
-```
-
-```
-┌──────────────────┐
-│   Coder Model    │ (Port 8081)
-│  Qwen3-Coder-Next│
-│   (server-only)  │
-└──────────────────┘
-```
-
-```
-┌──────────────────────────────┐
-│  Coder Model (Experimental)  │ (Port 9081)
-│         MiniMax-M2.5         │
-│        (server-only)         │
-└──────────────────────────────┘
-```
-
-```
-┌──────────────────┐
-│  Observer Model  │ (Port 8083)
-│    Qwen3.5-9B /  │
-│  Qwen3.5-35B-A3B │
+│   Qwen3.5-9B /   │
+│ Qwen3.5-122B-A10B│
 └──────────────────┘
 ```
 
@@ -167,7 +156,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- Context size: 65536 (local), 262144 (server coder)
+- Context size: 65536 (coder local), 196608 (coder server), 262144 (advisor)
 
 ## Docker Compose
 
