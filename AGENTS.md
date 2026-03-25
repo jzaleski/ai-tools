@@ -9,6 +9,17 @@ Supports coding assistance (Qwen3-Coder-Next/MiniMax-M2.5, server-only), general
 
 **No code repositories** - utilities/config only.
 
+## Opencode Agent Configuration(s)
+
+The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
+
+- **build.md**: Build agent with full tool access for implementing changes
+- **plan.md**: Planning agent for analysis and implementation planning (no file modifications)
+
+Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance.
+
+---
+
 ## Project Structure
 
 ```
@@ -35,7 +46,7 @@ Supports coding assistance (Qwen3-Coder-Next/MiniMax-M2.5, server-only), general
 Scripts in `bin/` support **local** and **server** modes:
 
 ```bash
-./bin/run-coder.sh                    # Local (default)
+./bin/run-coder.sh                    # Local (not implemented)
 ./bin/run-coder.sh --server           # Server mode
 ./bin/run-coder-experimental.sh       # Local (not implemented)
 ./bin/run-coder-experimental.sh --server  # Server mode

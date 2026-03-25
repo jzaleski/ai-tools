@@ -23,13 +23,12 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   └── run-open-webui.sh             # Open WebUI Docker wrapper
 ├── scripts/                          # Bootstrap scripts (executed by bin/bootstrap.sh)
 ├── home/                             # Dotfiles and config files to symlink
-├── overrides/                        # Override files for home directory
 ├── docker-compose-files/
 │   └── open-webui.yml                # Docker Compose configuration for Open WebUI
 ├── .default-node-version             # Default node version
 ├── .default-npm-version              # Default npm version
-├── .default-opencode-version         # Default opencode-ai version
-└── .bootstrapignore                  # Files to skip during bootstrap (git-ignored)
+├── .default-openclaw-version         # Default openclaw version
+└── .default-opencode-version         # Default opencode-ai version
 ```
 
 ## Bootstrap System
@@ -63,7 +62,8 @@ The project tracks specific versions of key development tools in version files:
 | File | Description | Default |
 |------|-------------|---------|
 | `.default-node-version` | Node.js version for nodenv | 24.14.0 |
-| `.default-npm-version` | npm version | 11.9.0 |
+| `.default-npm-version` | npm version | 11.12.0 |
+| `.default-openclaw-version` | openclaw version | 2026.3.23-2 |
 | `.default-opencode-version` | opencode-ai version | 1.3.0 |
 
 These versions are managed and installed via the bootstrap system
@@ -340,7 +340,6 @@ docker compose -f docker-compose-files/open-webui.yml down
 ## Troubleshooting
 
 **Bootstrap issues:**
-- Check `.bootstrapignore` for files causing conflicts
 - Run with `ASSUME_YES=true` for non-interactive mode
 
 **Model not loading:**
