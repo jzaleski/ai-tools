@@ -87,7 +87,7 @@ You can override default settings via environment variables. The same variables 
 - `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for coder, 8082 for advisor, 8080 for WebUI)
 - `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/coder or jzaleski/advisor)
 - `FLASH_ATTN`: Boolean flag to enable flash attention mechanism for faster processing on supported hardware (default: on)
-- `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1 for local, 99 for server)
+- `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1 for local, -1 for server)
 - `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 65536 for coder local, 196608 for coder server, 262144 for advisor)
 - `MIN_P`: Threshold for nucleus sampling to exclude low-probability tokens (0.0-1.0)
 - `PRESENCE_PENALTY`: Factor applied to penalize repeated tokens (default: 1.5)
@@ -122,7 +122,7 @@ Runs the coder model for coding assistance. Supports both local and server modes
 - Host: 0.0.0.0
 - Port: 8081
 - Flash attention: enabled
-- GPU layers: 99
+- GPU layers: -1
 - Context size: 196608 tokens
 - Min P: 0.01
 - Presence penalty: 1.5
@@ -158,7 +158,7 @@ Runs the advisor model for general advising. Supports both local and server mode
 - Host: 0.0.0.0
 - Port: 8082
 - Flash attention: enabled
-- GPU layers: 99
+- GPU layers: -1
 - Context size: 262144 tokens
 - Min P: 0.01
 - Presence penalty: 1.5

@@ -108,7 +108,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 | `ALIAS` | Model alias | `jzaleski/coder`, `jzaleski/advisor` | `jzaleski/coder`, `jzaleski/advisor` |
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
 | `FLASH_ATTN` | Flash attention | `on` | `on` |
-| `N_GPU_LAYERS` | GPU layers to offload | `-1` | `99` |
+| `N_GPU_LAYERS` | GPU layers to offload | `-1` | `-1` |
 | `WEBUI_AUTH` | WebUI authentication | `False` | `True` |
 | `ADVISOR_MODEL_PORT` | Advisor model port for WebUI | `8082` | `8082` |
 | `IMAGE` | Docker image for WebUI | `ghcr.io/open-webui/open-webui:main` | `ghcr.io/open-webui/open-webui:main` |

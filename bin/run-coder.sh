@@ -28,7 +28,7 @@ run_server() {
     --port ${PORT:-"8081"} \
     --flash-attn ${FLASH_ATTN:-"on"} \
     --jinja \
-    --n-gpu-layers "${N_GPU_LAYERS:-"99"}" \
+    --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
     --ctx-size ${CTX_SIZE:-"196608"} \
     --min-p ${MIN_P:-"0.01"} \
     --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
