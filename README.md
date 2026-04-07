@@ -64,7 +64,7 @@ The project tracks specific versions of key development tools in version files:
 | `.default-node-version` | Node.js version for nodenv | 24.14.0 |
 | `.default-npm-version` | npm version | 11.12.0 |
 | `.default-openclaw-version` | openclaw version | 2026.4.2 |
-| `.default-opencode-version` | opencode-ai version | 1.3.13 |
+| `.default-opencode-version` | opencode-ai version | 1.3.17 |
 
 These versions are managed and installed via the bootstrap system
 
