@@ -1,7 +1,15 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
-  "default_agent": "plan",
+  "default_agent": "architect",
+  "agent": {
+    "build": {
+      "disable": true
+    },
+    "plan": {
+      "disable": true
+    }
+  },
   "provider": {
     "llama.cpp (local - advisor - stable)": {
       "npm": "@ai-sdk/openai-compatible",

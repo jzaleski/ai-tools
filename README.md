@@ -72,10 +72,11 @@ These versions are managed and installed via the bootstrap system
 
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
-- **build.md**: Build agent with full tool access for implementing changes
-- **plan.md**: Planning agent for analysis and implementation planning (no file modifications)
+- **architect.md**: Planning and analysis agent — no file modifications, terse bullet-point output
+- **implement.md**: Default build agent with full tool access for implementing changes
+- **scribe.md**: Content and prose agent — documentation, READMEs, changelogs, specs, and copy
 
-Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance.
+Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `architect`.
 
 ## Environment Variables
 
@@ -321,6 +322,90 @@ docker compose -f docker-compose-files/open-webui.yml down
 │  Qwen3.5-122B-A10B │
 └────────────────────┘
 ```
+
+## Opencode Agent Architecture
+
+The opencode system provides a multi-agent workflow with role-specific capabilities:
+
+```
+┌──────────────────────┐
+│    Opencode CLI      │
+│                      │
+│  ┌────────────────┐  │
+│  │ Architect      │◄─┼── default agent
+│  │ [plan only]    │  │
+│  └────────────────┘  │
+│                      │
+│  ┌────────────────┐  │
+│  │ Implement      │  │
+│  │ [full tools]   │  │
+│  └────────────────┘  │
+│                      │
+│  ┌────────────────┐  │
+│  │ Scribe         │  │
+│  │ [docs only]    │  │
+│  └────────────────┘  │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│    LLM Providers     │
+│                      │
+│  ┌────────────────┐  │ ┌────────────────┐
+│  │ Local Coder    │  │ │ Local Advisor  │
+│  │ localhost:8081 │  │ │ localhost:8082 │
+│  │ 65K context    │  │ │ 65K context    │
+│  └────────────────┘  │ └────────────────┘
+│                      │
+│  ┌────────────────┐  │ ┌────────────────┐
+│  │ Server Coder   │  │ │ Server Advisor │
+│  │ remote:8081    │  │ │ remote:8082    │
+│  │ 196K context   │  │ │ 262K context   │
+│  └────────────────┘  │ └────────────────┘
+└──────────────────────┘
+```
+
+### Provider Configuration
+
+The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provider endpoints:
+
+| Provider | Endpoint | Model | Context | Input | Output |
+|----------|----------|-------|---------|-------|--------|
+| local - coder - stable | `localhost:8081` | jzaleski/coder | 65,536 | 57,344 | 8,192 |
+| local - advisor - stable | `localhost:8082` | jzaleski/advisor | 65,536 | 57,344 | 8,192 |
+| server - coder - stable | `server-hostname-or-ip:8081` | jzaleski/coder | 196,608 | 163,840 | 32,768 |
+| server - advisor - stable | `server-hostname-or-ip:8082` | jzaleski/advisor | 262,144 | 229,376 | 32,768 |
+
+**Modalities supported:**
+- Coder: text in/out only
+- Advisor: text and image in, text out
+
+### Agent Roles
+
+| Agent | Mode | Capabilities | Output Style |
+|-------|------|--------------|--------------|
+| architect | primary | Analysis, planning, no modifications | Terse bullets |
+| implement | primary | Full tool access, code changes | Implementation-ready |
+| scribe | primary | Documentation, prose artifacts | Clean Markdown |
+
+### Usage
+
+```bash
+# Run opencode with default agent (architect)
+opencode "your question or task"
+
+# Specify a different agent
+opencode --agent implement "implement this feature"
+opencode --agent scribe "write documentation for this"
+opencode --agent architect "plan out the changes needed"
+```
+
+### Configuration Notes
+
+- `autoupdate`: disabled (manual updates only)
+- `default_agent`: `architect` (optimal for coding workflow)
+- Server providers use `server-hostname-or-ip` placeholder - replace with actual hostname/IP
+- Input/output token limits set to optimize for local inference constraints
 
 ## Performance Tips
 

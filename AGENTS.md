@@ -13,10 +13,11 @@ Supports coding assistance (Qwen3-Coder-Next local, MiniMax-M2.5 server) and gen
 
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
-- **build.md**: Build agent with full tool access for implementing changes
-- **plan.md**: Planning agent for analysis and implementation planning (no file modifications)
+- **architect.md**: Planning and analysis agent — no file modifications, terse bullet-point output
+- **implement.md**: Default build agent with full tool access for implementing changes
+- **scribe.md**: Content and prose agent — documentation, READMEs, changelogs, specs, and copy
 
-Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance.
+Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `architect`.
 
 ---
 
@@ -163,6 +164,54 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 │ Qwen3.5-122B-A10B│
 └──────────────────┘
 ```
+
+---
+
+## Opencode Agent Architecture
+
+```
+┌────────────────────┐
+│   Opencode CLI     │
+│                    │
+│ ┌──────────────┐   │
+│ │ Architect    │   │ (default)
+│ │ [plan only]  │   │
+│ └──────────────┘   │
+│                    │
+│ ┌──────────────┐   │
+│ │ Implement    │   │
+│ │ [full tools] │   │
+│ └──────────────┘   │
+│                    │
+│ ┌──────────────┐   │
+│ │ Scribe       │   │
+│ │ [docs only]  │   │
+│ └──────────────┘   │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│    LLM Provider    │
+│                    │
+│ ┌──────────────┐   │ ┌───────────────┐
+│ │ Local Coder  │   │ │ Local Advisor │
+│ │ Port 8081    │   │ │ Port 8082     │
+│ └──────────────┘   │ └───────────────┘
+│                    │
+│ ┌──────────────┐   │ ┌───────────────┐
+│ │ Server Coder │   │ │ Server Advisor│
+│ │ (remote)     │   │ │ (remote)      │
+│ └──────────────┘   │ └───────────────┘
+└────────────────────┘
+```
+
+The opencode configuration defines 4 provider endpoints:
+- **llama.cpp (local - coder - stable)**: `localhost:8081` — Qwen3-Coder-Next, 65K context
+- **llama.cpp (local - advisor - stable)**: `localhost:8082` — Qwen3.5-35B-A3B, 65K context
+- **llama.cpp (server - coder - stable)**: `server-hostname-or-ip:8081`, 196K context
+- **llama.cpp (server - advisor - stable)**: `server-hostname-or-ip:8082`, 262K context
+
+Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
 ---
 
