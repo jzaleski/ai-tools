@@ -105,7 +105,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 | `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` | `Q8_0` |
 | `TEMP` | Sampling temperature | `1.0` | `1.0` |
 | `PORT` | Network port | `8081` (coder), `8082` (advisor), `8083` (openclaw) | `8081` (coder), `8082` (advisor), `8083` (openclaw) |
-| `CTX_SIZE` | Context window | `65536` (coder), `262144` (advisor) | `196608` (coder), `262144` (advisor) |
+| `CTX_SIZE` | Context window | `65536` (coder), `65536` (advisor) | `196608` (coder), `262144` (advisor) |
 | `MIN_P` | Nucleus min | `0.01` | `0.01` |
 | `TOP_K` | Top-K limit | `40` (coder), `20` (advisor), `20` (openclaw) | `40` (coder), `20` (advisor), `20` (openclaw) |
 | `REPEAT_PENALTY` | Repeat penalty | `1.0` | `1.0` |
@@ -170,7 +170,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- Context size: 65536 (coder local), 196608 (coder server), 262144 (advisor)
+- Context size: 65536 (coder local), 196608 (coder server), 65536 (advisor local), 262144 (advisor server)
 
 ## Docker Compose
 

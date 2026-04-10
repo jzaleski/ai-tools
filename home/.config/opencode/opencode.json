@@ -1,10 +1,32 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
   "default_agent": "plan",
   "provider": {
-    "llama.cpp (local - stable)": {
+    "llama.cpp (local - advisor - stable)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (local - stable)",
+      "name": "llama.cpp (local - advisor - stable)",
+      "options": {
+        "baseURL": "http://localhost:8082/v1"
+      },
+      "models": {
+        "jzaleski/advisor": {
+          "name": "advisor",
+          "limit": {
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        }
+      }
+    },
+    "llama.cpp (local - coder - stable)": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama.cpp (local - coder - stable)",
       "options": {
         "baseURL": "http://localhost:8081/v1"
       },
@@ -23,11 +45,32 @@
         }
       }
     },
-    "llama.cpp (server - stable)": {
+    "llama.cpp (server - advisor - stable)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (server - stable)",
+      "name": "llama.cpp (server - advisor - stable)",
       "options": {
-        "baseURL": "http://server-hostname:8081/v1"
+        "baseURL": "http://server-hostname-or-ip:8082/v1"
+      },
+      "models": {
+        "jzaleski/advisor": {
+          "name": "advisor",
+          "limit": {
+            "context": 262144,
+            "input": 229376,
+            "output": 32768
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        }
+      }
+    },
+    "llama.cpp (server - coder - stable)": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama.cpp (server - coder - stable)",
+      "options": {
+        "baseURL": "http://server-hostname-or-ip:8081/v1"
       },
       "models": {
         "jzaleski/coder": {

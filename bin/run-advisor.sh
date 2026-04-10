@@ -11,7 +11,7 @@ run_local() {
     --flash-attn "${FLASH_ATTN:-"on"}" \
     --jinja \
     --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
-    --ctx-size "${CTX_SIZE:-"262144"}" \
+    --ctx-size "${CTX_SIZE:-"65536"}" \
     --min-p ${MIN_P:-"0.01"} \
     --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
     --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \

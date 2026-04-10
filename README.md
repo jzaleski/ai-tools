@@ -64,7 +64,7 @@ The project tracks specific versions of key development tools in version files:
 | `.default-node-version` | Node.js version for nodenv | 24.14.0 |
 | `.default-npm-version` | npm version | 11.12.0 |
 | `.default-openclaw-version` | openclaw version | 2026.4.2 |
-| `.default-opencode-version` | opencode-ai version | 1.3.17 |
+| `.default-opencode-version` | opencode-ai version | 1.4.3 |
 
 These versions are managed and installed via the bootstrap system
 
@@ -90,7 +90,7 @@ You can override default settings via environment variables. The same variables 
 - `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/coder or jzaleski/advisor)
 - `FLASH_ATTN`: Boolean flag to enable flash attention mechanism for faster processing on supported hardware (default: on)
 - `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1 for local, -1 for server)
-- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 65536 for coder local, 196608 for coder server, 262144 for advisor)
+- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 65536 for coder local, 196608 for coder server, 65536 for advisor local, 262144 for advisor server)
 - `MIN_P`: Threshold for nucleus sampling to exclude low-probability tokens (0.0-1.0)
 - `PRESENCE_PENALTY`: Factor applied to penalize repeated tokens (default: 1.5)
 - `REPEAT_PENALTY`: Factor applied to penalize repeated tokens (1.0 is no penalty)
@@ -146,7 +146,7 @@ Runs the advisor model for general advising. Supports both local and server mode
 - Port: 8082
 - Flash attention: enabled
 - GPU layers: -1 (All)
-- Context size: 262144 tokens
+- Context size: 65536 tokens
 - Min P: 0.01
 - Presence penalty: 1.5
 - Repeat penalty: 1.0
@@ -326,7 +326,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
-- Context size standardized to 262144 tokens for advisor, 196608 for coder server
+- Context size standardized to 65536 tokens for advisor, local 262144 tokens for advisor server, 65536 for coder local, 196608 for coder server
 - For coding tasks, use run-coder.sh:
   - Local: Qwen3-Coder-Next (efficient local coding)
   - Server: MiniMax-M2.5 (powerful server-side coding)
