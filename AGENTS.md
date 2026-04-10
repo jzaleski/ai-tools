@@ -31,9 +31,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── run-coder-experimental.sh           # Expirmental coder model (stub)
 │   ├── run-advisor.sh                      # Advisor model (Qwen3.5-9B/Qwen3.5-122B-A10B)
 │   ├── run-advisor-experimental.sh         # Experimental advisor model (stub)
-│   ├── run-open-webui.sh                   # Open WebUI Docker wrapper
-│   ├── run-openclaw.sh                     # OpenClaw model (GLM-4.7-Flash)
-│   └── run-openclaw-experimental.sh        # Experimental openclaw model (stub)
+│   └── run-open-webui.sh                   # Open WebUI Docker wrapper
 ├── scripts/                                # Bootstrap scripts (executed by bin/bootstrap.sh)
 ├── home/                                   # Dotfiles and config files to symlink
 ├── docker-compose-files/
@@ -57,10 +55,6 @@ Scripts in `bin/` support **local** and **server** modes:
 ./bin/run-advisor-experimental.sh --server  # Server mode - Not implemented
 ./bin/run-open-webui.sh                     # Local mode
 ./bin/run-open-webui.sh --server            # Server mode
-./bin/run-openclaw.sh                       # Local mode
-./bin/run-openclaw.sh --server              # Server mode
-./bin/run-openclaw-experimental.sh          # Local mode - Not implemented
-./bin/run-openclaw-experimental.sh --server # Server mode - Not implemented
 ```
 
 Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
@@ -92,7 +86,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 
 - Scripts: `run-{component}.sh`
 - Modes: `local` / `server`
-- Ports: 8080 (WebUI), 8081 (coder), 8082 (advisor), 8083 (openclaw)
+- Ports: 8080 (WebUI), 8081 (coder), 8082 (advisor)
 - Aliases: `jzaleski/{component}`
 
 ---
@@ -102,17 +96,17 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 | Variable | Description | Default (Local) | Default (Server) |
 |----------|-------------|-----------------|------------------|
 | `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
-| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3-Coder-Next` (coder), `Qwen3.5-35B-A3B` (advisor), `GLM-4.7-Flash` (openclaw) | `MiniMax-M2.5` (coder), `Qwen3.5-122B-A10B` (advisor), `GLM-4.7-Flash` (openclaw) |
+| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3-Coder-Next` (coder), `Qwen3.5-35B-A3B` (advisor) | `MiniMax-M2.5` (coder), `Qwen3.5-122B-A10B` (advisor) |
 | `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` | `Q8_0` |
 | `TEMP` | Sampling temperature | `1.0` | `1.0` |
-| `PORT` | Network port | `8081` (coder), `8082` (advisor), `8083` (openclaw) | `8081` (coder), `8082` (advisor), `8083` (openclaw) |
+| `PORT` | Network port | `8081` (coder), `8082` (advisor) | `8081` (coder), `8082` (advisor) |
 | `CTX_SIZE` | Context window | `65536` (coder), `65536` (advisor) | `196608` (coder), `262144` (advisor) |
 | `MIN_P` | Nucleus min | `0.01` | `0.01` |
-| `TOP_K` | Top-K limit | `40` (coder), `20` (advisor), `20` (openclaw) | `40` (coder), `20` (advisor), `20` (openclaw) |
+| `TOP_K` | Top-K limit | `40` (coder), `20` (advisor) | `40` (coder), `20` (advisor) |
 | `REPEAT_PENALTY` | Repeat penalty | `1.0` | `1.0` |
 | `PRESENCE_PENALTY` | Presence penalty | `1.5` | `1.5` |
 | `TOP_P` | Nucleus top-p | `0.95` | `0.95` |
-| `ALIAS` | Model alias | `jzaleski/coder`, `jzaleski/advisor`, `jzaleski/openclaw` | `jzaleski/coder`, `jzaleski/advisor`, `jzaleski/openclaw` |
+| `ALIAS` | Model alias | `jzaleski/coder`, `jzaleski/advisor` | `jzaleski/coder`, `jzaleski/advisor` |
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
 | `FLASH_ATTN` | Flash attention | `on` | `on` |
 | `N_GPU_LAYERS` | GPU layers to offload | `-1` | `-1` |
@@ -137,14 +131,6 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 │   Advisor Model  │ (Port 8082)
 │ Qwen3.5-35B-A3B  │
 │ Qwen3.5-122B-A10B│
-└──────────────────┘
-```
-
-```
-┌──────────────────┐
-│  OpenClaw Model  │ (Port 8083)
-│   GLM-4.7-Flash  │
-│   GLM-4.7-Flash  │
 └──────────────────┘
 ```
 

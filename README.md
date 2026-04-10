@@ -18,16 +18,13 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── run-coder-experimental.sh     # Experimental coder model (stub, not implemented)
 │   ├── run-advisor.sh                # Advisor model (Qwen3.5-35B-A3B/Qwen3.5-122B-A10B)
 │   ├── run-advisor-experimental.sh   # Experimental advisor model (stub, not implemented)
-│   ├── run-open-webui.sh             # Open WebUI Docker wrapper
-│   ├── run-openclaw.sh               # OpenCLAW model (GLM-4.7-Flash)
-│   └── run-openclaw-experimental.sh  # Experimental openclaw model (stub)
+│   └── run-open-webui.sh             # Open WebUI Docker wrapper
 ├── scripts/                          # Bootstrap scripts (executed by bin/bootstrap.sh)
 ├── home/                             # Dotfiles and config files to symlink
 ├── docker-compose-files/
 │   └── open-webui.yml                # Docker Compose configuration for Open WebUI
 ├── .default-node-version             # Default node version
 ├── .default-npm-version              # Default npm version
-├── .default-openclaw-version         # Default openclaw version
 └── .default-opencode-version         # Default opencode-ai version
 ```
 
@@ -63,7 +60,6 @@ The project tracks specific versions of key development tools in version files:
 |------|-------------|---------|
 | `.default-node-version` | Node.js version for nodenv | 24.14.0 |
 | `.default-npm-version` | npm version | 11.12.0 |
-| `.default-openclaw-version` | openclaw version | 2026.4.2 |
 | `.default-opencode-version` | opencode-ai version | 1.4.3 |
 
 These versions are managed and installed via the bootstrap system
@@ -173,42 +169,6 @@ Runs the advisor model for general advising. Supports both local and server mode
 ### run-advisor-experimental.sh
 Stub - not implemented. Both local and server modes return an error.
 
-### run-openclaw.sh
-Runs the OpenCLAW model for general-purpose tasks. Supports both local and server modes via `--server` flag.
-
-**Local Mode Defaults:**
-- Model: `unsloth/GLM-4.7-Flash-GGUF:Q4_K_M`
-- Alias: `jzaleski/openclaw`
-- Host: 127.0.0.1
-- Port: 8083
-- Flash attention: enabled
-- GPU layers: -1 (All)
-- Context size: 65536 tokens
-- Min P: 0.01
-- Presence penalty: 1.5
-- Repeat penalty: 1.0
-- Temperature: 1.0
-- Top K: 20
-- Top P: 0.95
-
-**Server Mode Defaults:**
-- Model: `unsloth/GLM-4.7-Flash-GGUF:Q8_0`
-- Alias: `jzaleski/openclaw`
-- Host: 0.0.0.0
-- Port: 8083
-- Flash attention: enabled
-- GPU layers: -1
-- Context size: 65536 tokens
-- Min P: 0.01
-- Presence penalty: 1.5
-- Repeat penalty: 1.0
-- Temperature: 1.0
-- Top K: 20
-- Top P: 0.95
-
-### run-openclaw-experimental.sh
-Stub - not implemented. Both local and server modes return an error.
-
 ### run-open-webui.sh
 Starts Open WebUI interface using Docker. Supports both local and server modes via `--server` flag.
 
@@ -255,18 +215,6 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 
 # Run experimental advisor model (server mode - not implemented)
 ./bin/run-advisor-experimental.sh --server
-
-# Run openclaw model (local mode)
-./bin/run-openclaw.sh
-
-# Run openclaw model (server mode)
-./bin/run-openclaw.sh --server
-
-# Run experimental openclaw model (local mode - not implemented)
-./bin/run-openclaw-experimental.sh
-
-# Run experimental openclaw model (server mode - not implemented)
-./bin/run-openclaw-experimental.sh --server
 
 # Start Open WebUI (local mode, auth disabled)
 ./bin/run-open-webui.sh
@@ -418,9 +366,6 @@ opencode --agent architect "plan out the changes needed"
 - For general advising, use run-advisor.sh:
   - Local: Qwen3.5-35B-A3B (efficient local reasoning)
   - Server: Qwen3.5-122B-A10B (powerful server-side reasoning)
-- For general-purpose tasks, use run-openclaw.sh:
-  - Local: GLM-4.7-Flash (fast local inference)
-  - Server: GLM-4.7-Flash (fast server-side inference)
 
 ## Troubleshooting
 
