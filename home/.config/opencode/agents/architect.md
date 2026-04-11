@@ -1,7 +1,7 @@
 ---
 description: Planning and analysis agent — no file modifications except plan output, terse bullet-point output
 mode: primary
-# preferred model: jzaleski/wright
+# preferred model: jzaleski/cipher
 ---
 
 # Architect Agent

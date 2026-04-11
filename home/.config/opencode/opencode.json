@@ -11,6 +11,27 @@
     }
   },
   "provider": {
+    "llama.cpp (local - cipher - stable)": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama.cpp (local - cipher - stable)",
+      "options": {
+        "baseURL": "http://localhost:8081/v1"
+      },
+      "models": {
+        "jzaleski/cipher": {
+          "name": "cipher",
+          "limit": {
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        }
+      }
+    },
     "llama.cpp (local - sage - stable)": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "llama.cpp (local - sage - stable)",
@@ -32,19 +53,19 @@
         }
       }
     },
-    "llama.cpp (local - wright - stable)": {
+    "llama.cpp (server - cipher - stable)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (local - wright - stable)",
+      "name": "llama.cpp (server - cipher - stable)",
       "options": {
-        "baseURL": "http://localhost:8081/v1"
+        "baseURL": "http://server-hostname-or-ip:8081/v1"
       },
       "models": {
-        "jzaleski/wright": {
-          "name": "wright",
+        "jzaleski/cipher": {
+          "name": "cipher",
           "limit": {
-            "context": 65536,
-            "input": 57344,
-            "output": 8192
+            "context": 196608,
+            "input": 163840,
+            "output": 32768
           },
           "modalities": {
             "input": ["text"],
@@ -69,27 +90,6 @@
           },
           "modalities": {
             "input": ["text", "image"],
-            "output": ["text"]
-          }
-        }
-      }
-    },
-    "llama.cpp (server - wright - stable)": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (server - wright - stable)",
-      "options": {
-        "baseURL": "http://server-hostname-or-ip:8081/v1"
-      },
-      "models": {
-        "jzaleski/wright": {
-          "name": "wright",
-          "limit": {
-            "context": 196608,
-            "input": 163840,
-            "output": 32768
-          },
-          "modalities": {
-            "input": ["text"],
             "output": ["text"]
           }
         }

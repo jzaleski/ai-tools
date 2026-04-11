@@ -27,8 +27,8 @@ Agent configurations are managed via the bootstrap system and integrate with the
 .
 ├── bin/                                   # Main execution scripts
 │   ├── bootstrap.sh                       # System setup and configuration bootstrap
-│   ├── run-wright.sh                      # Wright model (Qwen3-Coder-Next local, MiniMax-M2.5 server)
-│   ├── run-wright-experimental.sh         # Experimental wright model (stub)
+│   ├── run-cipher.sh                      # Cipher model (Qwen3-Coder-Next local, MiniMax-M2.5 server)
+│   ├── run-cipher-experimental.sh         # Experimental cipher model (stub)
 │   ├── run-sage.sh                        # Sage model (Qwen3.5-9B/Qwen3.5-122B-A10B)
 │   ├── run-sage-experimental.sh           # Experimental sage model (stub)
 │   └── run-open-webui.sh                  # Open WebUI Docker wrapper
@@ -45,10 +45,10 @@ Agent configurations are managed via the bootstrap system and integrate with the
 Scripts in `bin/` support **local** and **server** modes:
 
 ```bash
-./bin/run-wright.sh                        # Local mode
-./bin/run-wright.sh --server               # Server mode
-./bin/run-wright-experimental.sh           # Local mode - Not implemented
-./bin/run-wright-experimental.sh --server  # Server mode - Not implemented
+./bin/run-cipher.sh                        # Local mode
+./bin/run-cipher.sh --server               # Server mode
+./bin/run-cipher-experimental.sh           # Local mode - Not implemented
+./bin/run-cipher-experimental.sh --server  # Server mode - Not implemented
 ./bin/run-sage.sh                          # Local mode
 ./bin/run-sage.sh --server                 # Server mode
 ./bin/run-sage-experimental.sh             # Local mode - Not implemented
@@ -57,7 +57,7 @@ Scripts in `bin/` support **local** and **server** modes:
 ./bin/run-open-webui.sh --server           # Server mode
 ```
 
-Test with: `bash -x ./bin/run-wright.sh` or `bash -x ./bin/run-sage.sh`
+Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 
 ---
 
@@ -86,7 +86,7 @@ Test with: `bash -x ./bin/run-wright.sh` or `bash -x ./bin/run-sage.sh`
 
 - Scripts: `run-{component}.sh`
 - Modes: `local` / `server`
-- Ports: 8080 (WebUI), 8081 (wright), 8082 (sage)
+- Ports: 8080 (WebUI), 8081 (cipher), 8082 (sage)
 - Aliases: `jzaleski/{component}`
 
 ---
@@ -96,17 +96,17 @@ Test with: `bash -x ./bin/run-wright.sh` or `bash -x ./bin/run-sage.sh`
 | Variable | Description | Default (Local) | Default (Server) |
 |----------|-------------|-----------------|------------------|
 | `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
-| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3-Coder-Next` (wright), `Qwen3.5-35B-A3B` (sage) | `MiniMax-M2.5` (wright), `Qwen3.5-122B-A10B` (sage) |
+| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3-Coder-Next` (cipher), `Qwen3.5-35B-A3B` (sage) | `MiniMax-M2.5` (cipher), `Qwen3.5-122B-A10B` (sage) |
 | `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` | `Q8_0` |
 | `TEMP` | Sampling temperature | `1.0` | `1.0` |
-| `PORT` | Network port | `8081` (wright), `8082` (sage) | `8081` (wright), `8082` (sage) |
-| `CTX_SIZE` | Context window | `65536` (wright), `65536` (sage) | `196608` (wright), `262144` (sage) |
+| `PORT` | Network port | `8081` (cipher), `8082` (sage) | `8081` (cipher), `8082` (sage) |
+| `CTX_SIZE` | Context window | `65536` (cipher), `65536` (sage) | `196608` (cipher), `262144` (sage) |
 | `MIN_P` | Nucleus min | `0.01` | `0.01` |
-| `TOP_K` | Top-K limit | `40` (wright), `20` (sage) | `40` (wright), `20` (sage) |
+| `TOP_K` | Top-K limit | `40` (cipher), `20` (sage) | `40` (cipher), `20` (sage) |
 | `REPEAT_PENALTY` | Repeat penalty | `1.0` | `1.0` |
 | `PRESENCE_PENALTY` | Presence penalty | `1.5` | `1.5` |
 | `TOP_P` | Nucleus top-p | `0.95` | `0.95` |
-| `ALIAS` | Model alias | `jzaleski/wright`, `jzaleski/sage` | `jzaleski/wright`, `jzaleski/sage` |
+| `ALIAS` | Model alias | `jzaleski/cipher`, `jzaleski/sage` | `jzaleski/cipher`, `jzaleski/sage` |
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
 | `FLASH_ATTN` | Flash attention | `on` | `on` |
 | `N_GPU_LAYERS` | GPU layers to offload | `-1` | `-1` |
@@ -120,7 +120,7 @@ Test with: `bash -x ./bin/run-wright.sh` or `bash -x ./bin/run-sage.sh`
 
 ```
 ┌──────────────────┐
-│   Wright Model   │ (Port 8081)
+│   Cipher Model   │ (Port 8081)
 │ Qwen3-Coder-Next │
 │      (local)     │
 └──────────────────┘
@@ -180,21 +180,21 @@ Test with: `bash -x ./bin/run-wright.sh` or `bash -x ./bin/run-sage.sh`
 │    LLM Provider  │
 │                  │
 │ ┌──────────────┐ │ ┌───────────────┐
-│ │ Local Wright │ │ │ Local Sage    │
+│ │ Local Cipher │ │ │ Local Sage    │
 │ │ Port 8081    │ │ │ Port 8082     │
 │ └──────────────┘ │ └───────────────┘
 │                  │
 │ ┌──────────────┐ │ ┌───────────────┐
-│ │ Server Wright│ │ │ Server Sage   │
+│ │ Server Cipher│ │ │ Server Sage   │
 │ │ (remote)     │ │ │ (remote)      │
 │ └──────────────┘ │ └───────────────┘
 └──────────────────┘
 ```
 
 The opencode configuration defines 4 provider endpoints:
-- **llama.cpp (local - wright - stable)**: `localhost:8081` — Qwen3-Coder-Next, 65K context
+- **llama.cpp (local - cipher - stable)**: `localhost:8081` — Qwen3-Coder-Next, 65K context
 - **llama.cpp (local - sage - stable)**: `localhost:8082` — Qwen3.5-35B-A3B, 65K context
-- **llama.cpp (server - wright - stable)**: `server-hostname-or-ip:8081`, 196K context
+- **llama.cpp (server - cipher - stable)**: `server-hostname-or-ip:8081`, 196K context
 - **llama.cpp (server - sage - stable)**: `server-hostname-or-ip:8082`, 262K context
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
@@ -205,7 +205,7 @@ Each provider specifies model limits for context window, input tokens, and outpu
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- Context size: 65536 (wright local), 196608 (wright server), 65536 (sage local), 262144 (sage server)
+- Context size: 65536 (cipher local), 196608 (cipher server), 65536 (sage local), 262144 (sage server)
 
 ## Docker Compose
 

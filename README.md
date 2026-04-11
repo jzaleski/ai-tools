@@ -14,8 +14,8 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 .
 ├── bin/                            # Main execution scripts
 │   ├── bootstrap.sh                # System setup and configuration bootstrap
-│   ├── run-wright.sh               # Wright model (MiniMax-M2.5 server, Qwen3-Coder-Next local)
-│   ├── run-wright-experimental.sh  # Experimental wright model (stub, not implemented)
+│   ├── run-cipher.sh               # Cipher model (MiniMax-M2.5 server, Qwen3-Coder-Next local)
+│   ├── run-cipher-experimental.sh  # Experimental cipher model (stub, not implemented)
 │   ├── run-sage.sh                 # Sage model (Qwen3.5-35B-A3B/Qwen3.5-122B-A10B)
 │   ├── run-sage-experimental.sh    # Experimental sage model (stub, not implemented)
 │   └── run-open-webui.sh           # Open WebUI Docker wrapper
@@ -83,11 +83,11 @@ You can override default settings via environment variables. The same variables 
 - `MODEL_NAME`: Name of the model to load (no -GGUF suffix, defaults to local/server mode below)
 - `MODEL_QUANTIZATION`: Full quantization specification (default: Q4_K_M for local, Q8_0 for server)
 - `HOST`: Network interface address to bind the server to (default: 127.0.0.1 for local, 0.0.0.0 for server)
-- `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for wright, 8082 for sage, 8080 for WebUI)
-- `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/wright or jzaleski/sage)
+- `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for cipher, 8082 for sage, 8080 for WebUI)
+- `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/cipher or jzaleski/sage)
 - `FLASH_ATTN`: Boolean flag to enable flash attention mechanism for faster processing on supported hardware (default: on)
 - `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1 for local, -1 for server)
-- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 65536 for wright local, 196608 for wright server, 65536 for sage local, 262144 for sage server)
+- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 65536 for cipher local, 196608 for cipher server, 65536 for sage local, 262144 for sage server)
 - `MIN_P`: Threshold for nucleus sampling to exclude low-probability tokens (0.0-1.0)
 - `PRESENCE_PENALTY`: Factor applied to penalize repeated tokens (default: 1.5)
 - `REPEAT_PENALTY`: Factor applied to penalize repeated tokens (1.0 is no penalty)
@@ -97,12 +97,12 @@ You can override default settings via environment variables. The same variables 
 
 ## Components
 
-### run-wright.sh
-Runs the wright model for coding assistance. Supports both local and server modes via `--server` flag.
+### run-cipher.sh
+Runs the cipher model for coding assistance. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
 - Model: `unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M`
-- Alias: `jzaleski/wright`
+- Alias: `jzaleski/cipher`
 - Host: 127.0.0.1
 - Port: 8081
 - Flash attention: enabled
@@ -117,7 +117,7 @@ Runs the wright model for coding assistance. Supports both local and server mode
 
 **Server Mode Defaults:**
 - Model: `unsloth/MiniMax-M2.5-GGUF:Q8_0`
-- Alias: `jzaleski/wright`
+- Alias: `jzaleski/cipher`
 - Host: 0.0.0.0
 - Port: 8081
 - Flash attention: enabled
@@ -130,7 +130,7 @@ Runs the wright model for coding assistance. Supports both local and server mode
 - Top K: 40
 - Top P: 0.95
 
-### run-wright-experimental.sh
+### run-cipher-experimental.sh
 Stub - not implemented. Both local and server modes return an error.
 
 ### run-sage.sh
@@ -192,17 +192,17 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 ### Running Individual Models
 
 ```bash
-# Run wright model (local mode)
-./bin/run-wright.sh
+# Run cipher model (local mode)
+./bin/run-cipher.sh
 
-# Run wright model (server mode)
-./bin/run-wright.sh --server
+# Run cipher model (server mode)
+./bin/run-cipher.sh --server
 
-# Run experimental wright model (local mode - not implemented)
-./bin/run-wright-experimental.sh
+# Run experimental cipher model (local mode - not implemented)
+./bin/run-cipher-experimental.sh
 
-# Run experimental wright model (server mode - not implemented)
-./bin/run-wright-experimental.sh --server
+# Run experimental cipher model (server mode - not implemented)
+./bin/run-cipher-experimental.sh --server
 
 # Run sage model (local mode)
 ./bin/run-sage.sh
@@ -240,7 +240,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 ```
 ┌────────────────────┐
-│    Wright Model    │ (Port 8081)
+│    Cipher Model    │ (Port 8081)
 │  Qwen3-Coder-Next  │
 │      (local)       │
 └────────────────────┘
@@ -248,7 +248,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 ```
 ┌────────────────────┐
-│    Wright Model    │ (Port 8081)
+│    Cipher Model    │ (Port 8081)
 │    MiniMax-M2.5    │
 │      (server)      │
 └────────────────────┘
@@ -300,13 +300,13 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │    LLM Providers     │
 │                      │
 │  ┌────────────────┐  │ ┌────────────────┐
-│  │ Local Wright   │  │ │ Local Sage     │
+│  │ Local Cipher   │  │ │ Local Sage     │
 │  │ localhost:8081 │  │ │ localhost:8082 │
 │  │ 65K context    │  │ │ 65K context    │
 │  └────────────────┘  │ └────────────────┘
 │                      │
 │  ┌────────────────┐  │ ┌────────────────┐
-│  │ Server Wright  │  │ │ Server Sage    │
+│  │ Server Cipher  │  │ │ Server Sage    │
 │  │ remote:8081    │  │ │ remote:8082    │
 │  │ 196K context   │  │ │ 262K context   │
 │  └────────────────┘  │ └────────────────┘
@@ -319,13 +319,13 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 
 | Provider | Endpoint | Model | Context | Input | Output |
 |----------|----------|-------|---------|-------|--------|
-| local - wright - stable | `localhost:8081` | jzaleski/wright | 65,536 | 57,344 | 8,192 |
+| local - cipher - stable | `localhost:8081` | jzaleski/cipher | 65,536 | 57,344 | 8,192 |
 | local - sage - stable | `localhost:8082` | jzaleski/sage | 65,536 | 57,344 | 8,192 |
-| server - wright - stable | `server-hostname-or-ip:8081` | jzaleski/wright | 196,608 | 163,840 | 32,768 |
+| server - cipher - stable | `server-hostname-or-ip:8081` | jzaleski/cipher | 196,608 | 163,840 | 32,768 |
 | server - sage - stable | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 |
 
 **Modalities supported:**
-- Wright: text in/out only
+- Cipher: text in/out only
 - Sage: text and image in, text out
 
 ### Agent Roles
@@ -359,8 +359,8 @@ opencode --agent architect "plan out the changes needed"
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
-- Context size standardized to 65536 tokens for sage, local 262144 tokens for sage server, 65536 for wright local, 196608 for wright server
-- For coding tasks, use run-wright.sh:
+- Context size standardized to 65536 tokens for sage, local 262144 tokens for sage server, 65536 for cipher local, 196608 for cipher server
+- For coding tasks, use run-cipher.sh:
   - Local: Qwen3-Coder-Next (efficient local coding)
   - Server: MiniMax-M2.5 (powerful server-side coding)
 - For general advising, use run-sage.sh:
