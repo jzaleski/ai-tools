@@ -12,20 +12,20 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 
 ```
 .
-├── bin/                              # Main execution scripts
-│   ├── bootstrap.sh                  # System setup and configuration bootstrap
-│   ├── run-coder.sh                  # Coder model (MiniMax-M2.5 server, Qwen3-Coder-Next local)
-│   ├── run-coder-experimental.sh     # Experimental coder model (stub, not implemented)
-│   ├── run-advisor.sh                # Advisor model (Qwen3.5-35B-A3B/Qwen3.5-122B-A10B)
-│   ├── run-advisor-experimental.sh   # Experimental advisor model (stub, not implemented)
-│   └── run-open-webui.sh             # Open WebUI Docker wrapper
-├── scripts/                          # Bootstrap scripts (executed by bin/bootstrap.sh)
-├── home/                             # Dotfiles and config files to symlink
+├── bin/                            # Main execution scripts
+│   ├── bootstrap.sh                # System setup and configuration bootstrap
+│   ├── run-wright.sh               # Wright model (MiniMax-M2.5 server, Qwen3-Coder-Next local)
+│   ├── run-wright-experimental.sh  # Experimental wright model (stub, not implemented)
+│   ├── run-sage.sh                 # Sage model (Qwen3.5-35B-A3B/Qwen3.5-122B-A10B)
+│   ├── run-sage-experimental.sh    # Experimental sage model (stub, not implemented)
+│   └── run-open-webui.sh           # Open WebUI Docker wrapper
+├── scripts/                        # Bootstrap scripts (executed by bin/bootstrap.sh)
+├── home/                           # Dotfiles and config files to symlink
 ├── docker-compose-files/
-│   └── open-webui.yml                # Docker Compose configuration for Open WebUI
-├── .default-node-version             # Default node version
-├── .default-npm-version              # Default npm version
-└── .default-opencode-version         # Default opencode-ai version
+│   └── open-webui.yml              # Docker Compose configuration for Open WebUI
+├── .default-node-version           # Default node version
+├── .default-npm-version            # Default npm version
+└── .default-opencode-version       # Default opencode-ai version
 ```
 
 ## Bootstrap System
@@ -83,11 +83,11 @@ You can override default settings via environment variables. The same variables 
 - `MODEL_NAME`: Name of the model to load (no -GGUF suffix, defaults to local/server mode below)
 - `MODEL_QUANTIZATION`: Full quantization specification (default: Q4_K_M for local, Q8_0 for server)
 - `HOST`: Network interface address to bind the server to (default: 127.0.0.1 for local, 0.0.0.0 for server)
-- `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for coder, 8082 for advisor, 8080 for WebUI)
-- `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/coder or jzaleski/advisor)
+- `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for wright, 8082 for sage, 8080 for WebUI)
+- `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/wright or jzaleski/sage)
 - `FLASH_ATTN`: Boolean flag to enable flash attention mechanism for faster processing on supported hardware (default: on)
 - `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1 for local, -1 for server)
-- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 65536 for coder local, 196608 for coder server, 65536 for advisor local, 262144 for advisor server)
+- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 65536 for wright local, 196608 for wright server, 65536 for sage local, 262144 for sage server)
 - `MIN_P`: Threshold for nucleus sampling to exclude low-probability tokens (0.0-1.0)
 - `PRESENCE_PENALTY`: Factor applied to penalize repeated tokens (default: 1.5)
 - `REPEAT_PENALTY`: Factor applied to penalize repeated tokens (1.0 is no penalty)
@@ -97,12 +97,12 @@ You can override default settings via environment variables. The same variables 
 
 ## Components
 
-### run-coder.sh
-Runs the coder model for coding assistance. Supports both local and server modes via `--server` flag.
+### run-wright.sh
+Runs the wright model for coding assistance. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
 - Model: `unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M`
-- Alias: `jzaleski/coder`
+- Alias: `jzaleski/wright`
 - Host: 127.0.0.1
 - Port: 8081
 - Flash attention: enabled
@@ -117,7 +117,7 @@ Runs the coder model for coding assistance. Supports both local and server modes
 
 **Server Mode Defaults:**
 - Model: `unsloth/MiniMax-M2.5-GGUF:Q8_0`
-- Alias: `jzaleski/coder`
+- Alias: `jzaleski/wright`
 - Host: 0.0.0.0
 - Port: 8081
 - Flash attention: enabled
@@ -130,15 +130,15 @@ Runs the coder model for coding assistance. Supports both local and server modes
 - Top K: 40
 - Top P: 0.95
 
-### run-coder-experimental.sh
+### run-wright-experimental.sh
 Stub - not implemented. Both local and server modes return an error.
 
-### run-advisor.sh
-Runs the advisor model for general advising. Supports both local and server modes via `--server` flag.
+### run-sage.sh
+Runs the sage model for general advising. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
 - Model: `unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M`
-- Alias: `jzaleski/advisor`
+- Alias: `jzaleski/sage`
 - Host: 127.0.0.1
 - Port: 8082
 - Flash attention: enabled
@@ -153,7 +153,7 @@ Runs the advisor model for general advising. Supports both local and server mode
 
 **Server Mode Defaults:**
 - Model: `unsloth/Qwen3.5-122B-A10B-GGUF:Q8_0`
-- Alias: `jzaleski/advisor`
+- Alias: `jzaleski/sage`
 - Host: 0.0.0.0
 - Port: 8082
 - Flash attention: enabled
@@ -166,7 +166,7 @@ Runs the advisor model for general advising. Supports both local and server mode
 - Top K: 20
 - Top P: 0.95
 
-### run-advisor-experimental.sh
+### run-sage-experimental.sh
 Stub - not implemented. Both local and server modes return an error.
 
 ### run-open-webui.sh
@@ -175,16 +175,16 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 **Local Mode Defaults:**
 - Port: 8080
 - Auth: disabled
-- Uses advisor model on port 8082
+- Uses sage model on port 8082
 
 **Server Mode Defaults:**
 - Port: 8080
 - Auth: enabled
-- Uses advisor model on port 8082
+- Uses sage model on port 8082
 
 **Environment Variables:**
 - `WEBUI_AUTH`: Enable authentication in WebUI (default: False for local, True for server)
-- `ADVISOR_MODEL_PORT`: Custom advisor model port (default: 8082)
+- `SAGE_MODEL_PORT`: Custom sage model port (default: 8082)
 - `IMAGE`: Docker image to use (default: ghcr.io/open-webui/open-webui:main)
 
 ## Usage
@@ -192,29 +192,29 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 ### Running Individual Models
 
 ```bash
-# Run coder model (local mode)
-./bin/run-coder.sh
+# Run wright model (local mode)
+./bin/run-wright.sh
 
-# Run coder model (server mode)
-./bin/run-coder.sh --server
+# Run wright model (server mode)
+./bin/run-wright.sh --server
 
-# Run experimental coder model (local mode - not implemented)
-./bin/run-coder-experimental.sh
+# Run experimental wright model (local mode - not implemented)
+./bin/run-wright-experimental.sh
 
-# Run experimental coder model (server mode - not implemented)
-./bin/run-coder-experimental.sh --server
+# Run experimental wright model (server mode - not implemented)
+./bin/run-wright-experimental.sh --server
 
-# Run advisor model (local mode)
-./bin/run-advisor.sh
+# Run sage model (local mode)
+./bin/run-sage.sh
 
-# Run advisor model (server mode)
-./bin/run-advisor.sh --server
+# Run sage model (server mode)
+./bin/run-sage.sh --server
 
-# Run experimental advisor model (local mode - not implemented)
-./bin/run-advisor-experimental.sh
+# Run experimental sage model (local mode - not implemented)
+./bin/run-sage-experimental.sh
 
-# Run experimental advisor model (server mode - not implemented)
-./bin/run-advisor-experimental.sh --server
+# Run experimental sage model (server mode - not implemented)
+./bin/run-sage-experimental.sh --server
 
 # Start Open WebUI (local mode, auth disabled)
 ./bin/run-open-webui.sh
@@ -240,7 +240,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 ```
 ┌────────────────────┐
-│     Coder Model    │ (Port 8081)
+│    Wright Model    │ (Port 8081)
 │  Qwen3-Coder-Next  │
 │      (local)       │
 └────────────────────┘
@@ -248,7 +248,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 ```
 ┌────────────────────┐
-│     Coder Model    │ (Port 8081)
+│    Wright Model    │ (Port 8081)
 │    MiniMax-M2.5    │
 │      (server)      │
 └────────────────────┘
@@ -256,7 +256,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 ```
 ┌────────────────────┐
-│    Open WebUI      │ (Port 8080)
+│     Open WebUI     │ (Port 8080)
 │                    │
 │    ┌──────────┐    │
 │    │  Client  │    │
@@ -265,7 +265,7 @@ docker compose -f docker-compose-files/open-webui.yml down
            │
            ▼
 ┌────────────────────┐
-│   Advisor Model    │ (Port 8082)
+│     Sage Model     │ (Port 8082)
 │  Qwen3.5-35B-A3B / │
 │  Qwen3.5-122B-A10B │
 └────────────────────┘
@@ -300,13 +300,13 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │    LLM Providers     │
 │                      │
 │  ┌────────────────┐  │ ┌────────────────┐
-│  │ Local Coder    │  │ │ Local Advisor  │
+│  │ Local Wright   │  │ │ Local Sage     │
 │  │ localhost:8081 │  │ │ localhost:8082 │
 │  │ 65K context    │  │ │ 65K context    │
 │  └────────────────┘  │ └────────────────┘
 │                      │
 │  ┌────────────────┐  │ ┌────────────────┐
-│  │ Server Coder   │  │ │ Server Advisor │
+│  │ Server Wright  │  │ │ Server Sage    │
 │  │ remote:8081    │  │ │ remote:8082    │
 │  │ 196K context   │  │ │ 262K context   │
 │  └────────────────┘  │ └────────────────┘
@@ -319,14 +319,14 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 
 | Provider | Endpoint | Model | Context | Input | Output |
 |----------|----------|-------|---------|-------|--------|
-| local - coder - stable | `localhost:8081` | jzaleski/coder | 65,536 | 57,344 | 8,192 |
-| local - advisor - stable | `localhost:8082` | jzaleski/advisor | 65,536 | 57,344 | 8,192 |
-| server - coder - stable | `server-hostname-or-ip:8081` | jzaleski/coder | 196,608 | 163,840 | 32,768 |
-| server - advisor - stable | `server-hostname-or-ip:8082` | jzaleski/advisor | 262,144 | 229,376 | 32,768 |
+| local - wright - stable | `localhost:8081` | jzaleski/wright | 65,536 | 57,344 | 8,192 |
+| local - sage - stable | `localhost:8082` | jzaleski/sage | 65,536 | 57,344 | 8,192 |
+| server - wright - stable | `server-hostname-or-ip:8081` | jzaleski/wright | 196,608 | 163,840 | 32,768 |
+| server - sage - stable | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 |
 
 **Modalities supported:**
-- Coder: text in/out only
-- Advisor: text and image in, text out
+- Wright: text in/out only
+- Sage: text and image in, text out
 
 ### Agent Roles
 
@@ -359,11 +359,11 @@ opencode --agent architect "plan out the changes needed"
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
-- Context size standardized to 65536 tokens for advisor, local 262144 tokens for advisor server, 65536 for coder local, 196608 for coder server
-- For coding tasks, use run-coder.sh:
+- Context size standardized to 65536 tokens for sage, local 262144 tokens for sage server, 65536 for wright local, 196608 for wright server
+- For coding tasks, use run-wright.sh:
   - Local: Qwen3-Coder-Next (efficient local coding)
   - Server: MiniMax-M2.5 (powerful server-side coding)
-- For general advising, use run-advisor.sh:
+- For general advising, use run-sage.sh:
   - Local: Qwen3.5-35B-A3B (efficient local reasoning)
   - Server: Qwen3.5-122B-A10B (powerful server-side reasoning)
 
@@ -382,7 +382,7 @@ opencode --agent architect "plan out the changes needed"
 - Adjust quantization level
 
 **WebUI connection issues:**
-- Verify advisor model is running on configured port
+- Verify sage model is running on configured port
 - Check firewall settings
 - Ensure Docker can reach host.docker.internal
 

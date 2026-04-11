@@ -5,7 +5,7 @@ set -e;
 run_local() {
   llama-server \
     -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3.5-35B-A3B"}-GGUF:${MODEL_QUANTIZATION:-"Q4_K_M"}" \
-    --alias "${ALIAS:-"jzaleski/advisor"}" \
+    --alias "${ALIAS:-"jzaleski/sage"}" \
     --host "${HOST:-"127.0.0.1"}" \
     --port "${PORT:-"8082"}" \
     --flash-attn "${FLASH_ATTN:-"on"}" \
@@ -23,7 +23,7 @@ run_local() {
 run_server() {
   llama-server \
     -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3.5-122B-A10B"}-GGUF:${MODEL_QUANTIZATION:-"Q8_0"}" \
-    --alias ${ALIAS:-"jzaleski/advisor"} \
+    --alias ${ALIAS:-"jzaleski/sage"} \
     --host ${HOST:-"0.0.0.0"} \
     --port ${PORT:-"8082"} \
     --flash-attn ${FLASH_ATTN:-"on"} \

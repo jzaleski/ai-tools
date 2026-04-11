@@ -25,17 +25,17 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ```
 .
-├── bin/                                    # Main execution scripts
-│   ├── bootstrap.sh                        # System setup and configuration bootstrap
-│   ├── run-coder.sh                        # Coder model (Qwen3-Coder-Next local, MiniMax-M2.5 server)
-│   ├── run-coder-experimental.sh           # Expirmental coder model (stub)
-│   ├── run-advisor.sh                      # Advisor model (Qwen3.5-9B/Qwen3.5-122B-A10B)
-│   ├── run-advisor-experimental.sh         # Experimental advisor model (stub)
-│   └── run-open-webui.sh                   # Open WebUI Docker wrapper
-├── scripts/                                # Bootstrap scripts (executed by bin/bootstrap.sh)
-├── home/                                   # Dotfiles and config files to symlink
+├── bin/                                   # Main execution scripts
+│   ├── bootstrap.sh                       # System setup and configuration bootstrap
+│   ├── run-wright.sh                      # Coder model (Qwen3-Coder-Next local, MiniMax-M2.5 server)
+│   ├── run-wright-experimental.sh         # Experimental wright model (stub)
+│   ├── run-sage.sh                        # Sage model (Qwen3.5-9B/Qwen3.5-122B-A10B)
+│   ├── run-sage-experimental.sh           # Experimental sage model (stub)
+│   └── run-open-webui.sh                  # Open WebUI Docker wrapper
+├── scripts/                               # Bootstrap scripts (executed by bin/bootstrap.sh)
+├── home/                                  # Dotfiles and config files to symlink
 ├── docker-compose-files/
-│   └── open-webui.yml                      # Docker Compose configuration for Open WebUI
+│   └── open-webui.yml                     # Docker Compose configuration for Open WebUI
 ```
 
 ---
@@ -45,19 +45,19 @@ Agent configurations are managed via the bootstrap system and integrate with the
 Scripts in `bin/` support **local** and **server** modes:
 
 ```bash
-./bin/run-coder.sh                          # Local mode
-./bin/run-coder.sh --server                 # Server mode
-./bin/run-coder-experimental.sh             # Local mode - Not implemented
-./bin/run-coder-experimental.sh --server    # Server mode - Not implemented
-./bin/run-advisor.sh                        # Local mode
-./bin/run-advisor.sh --server               # Server mode
-./bin/run-advisor-experimental.sh           # Local mode - Not implemented
-./bin/run-advisor-experimental.sh --server  # Server mode - Not implemented
-./bin/run-open-webui.sh                     # Local mode
-./bin/run-open-webui.sh --server            # Server mode
+./bin/run-wright.sh                        # Local mode
+./bin/run-wright.sh --server               # Server mode
+./bin/run-wright-experimental.sh           # Local mode - Not implemented
+./bin/run-wright-experimental.sh --server  # Server mode - Not implemented
+./bin/run-sage.sh                          # Local mode
+./bin/run-sage.sh --server                 # Server mode
+./bin/run-sage-experimental.sh             # Local mode - Not implemented
+./bin/run-sage-experimental.sh --server    # Server mode - Not implemented
+./bin/run-open-webui.sh                    # Local mode
+./bin/run-open-webui.sh --server           # Server mode
 ```
 
-Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
+Test with: `bash -x ./bin/run-wright.sh` or `bash -x ./bin/run-sage.sh`
 
 ---
 
@@ -86,7 +86,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 
 - Scripts: `run-{component}.sh`
 - Modes: `local` / `server`
-- Ports: 8080 (WebUI), 8081 (coder), 8082 (advisor)
+- Ports: 8080 (WebUI), 8081 (wright), 8082 (sage)
 - Aliases: `jzaleski/{component}`
 
 ---
@@ -96,22 +96,22 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 | Variable | Description | Default (Local) | Default (Server) |
 |----------|-------------|-----------------|------------------|
 | `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
-| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3-Coder-Next` (coder), `Qwen3.5-35B-A3B` (advisor) | `MiniMax-M2.5` (coder), `Qwen3.5-122B-A10B` (advisor) |
+| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3-Coder-Next` (wright), `Qwen3.5-35B-A3B` (sage) | `MiniMax-M2.5` (wright), `Qwen3.5-122B-A10B` (sage) |
 | `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` | `Q8_0` |
 | `TEMP` | Sampling temperature | `1.0` | `1.0` |
-| `PORT` | Network port | `8081` (coder), `8082` (advisor) | `8081` (coder), `8082` (advisor) |
-| `CTX_SIZE` | Context window | `65536` (coder), `65536` (advisor) | `196608` (coder), `262144` (advisor) |
+| `PORT` | Network port | `8081` (wright), `8082` (sage) | `8081` (wright), `8082` (sage) |
+| `CTX_SIZE` | Context window | `65536` (wright), `65536` (sage) | `196608` (wright), `262144` (sage) |
 | `MIN_P` | Nucleus min | `0.01` | `0.01` |
-| `TOP_K` | Top-K limit | `40` (coder), `20` (advisor) | `40` (coder), `20` (advisor) |
+| `TOP_K` | Top-K limit | `40` (wright), `20` (sage) | `40` (wright), `20` (sage) |
 | `REPEAT_PENALTY` | Repeat penalty | `1.0` | `1.0` |
 | `PRESENCE_PENALTY` | Presence penalty | `1.5` | `1.5` |
 | `TOP_P` | Nucleus top-p | `0.95` | `0.95` |
-| `ALIAS` | Model alias | `jzaleski/coder`, `jzaleski/advisor` | `jzaleski/coder`, `jzaleski/advisor` |
+| `ALIAS` | Model alias | `jzaleski/wright`, `jzaleski/sage` | `jzaleski/wright`, `jzaleski/sage` |
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
 | `FLASH_ATTN` | Flash attention | `on` | `on` |
 | `N_GPU_LAYERS` | GPU layers to offload | `-1` | `-1` |
 | `WEBUI_AUTH` | WebUI authentication | `False` | `True` |
-| `ADVISOR_MODEL_PORT` | Advisor model port for WebUI | `8082` | `8082` |
+| `SAGE_MODEL_PORT` | Sage model port for WebUI | `8082` | `8082` |
 | `IMAGE` | Docker image for WebUI | `ghcr.io/open-webui/open-webui:main` | `ghcr.io/open-webui/open-webui:main` |
 
 ---
@@ -120,7 +120,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 
 ```
 ┌──────────────────┐
-│    Coder Model   │ (Port 8081)
+│   Wright Model   │ (Port 8081)
 │ Qwen3-Coder-Next │
 │      (local)     │
 └──────────────────┘
@@ -128,7 +128,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 
 ```
 ┌──────────────────┐
-│   Advisor Model  │ (Port 8082)
+│    Sage Model    │ (Port 8082)
 │ Qwen3.5-35B-A3B  │
 │ Qwen3.5-122B-A10B│
 └──────────────────┘
@@ -145,7 +145,7 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
           │
           ▼
 ┌──────────────────┐
-│   Advisor Model  │ (Port 8082)
+│    Sage Model    │ (Port 8082)
 │    Qwen3.5-9B    │
 │ Qwen3.5-122B-A10B│
 └──────────────────┘
@@ -156,46 +156,46 @@ Test with: `bash -x ./bin/run-coder.sh` or `bash -x ./bin/run-advisor.sh`
 ## Opencode Agent Architecture
 
 ```
-┌────────────────────┐
-│   Opencode CLI     │
-│                    │
-│ ┌──────────────┐   │
-│ │ Architect    │   │ (default)
-│ │ [plan only]  │   │
-│ └──────────────┘   │
-│                    │
-│ ┌──────────────┐   │
-│ │ Implement    │   │
-│ │ [full tools] │   │
-│ └──────────────┘   │
-│                    │
-│ ┌──────────────┐   │
-│ │ Scribe       │   │
-│ │ [docs only]  │   │
-│ └──────────────┘   │
-└─────────┬──────────┘
+┌──────────────────┐
+│   Opencode CLI   │
+│                  │
+│ ┌──────────────┐ │
+│ │ Architect    │ │ (default)
+│ │ [plan only]  │ │
+│ └──────────────┘ │
+│                  │
+│ ┌──────────────┐ │
+│ │ Implement    │ │
+│ │ [full tools] │ │
+│ └──────────────┘ │
+│                  │
+│ ┌──────────────┐ │
+│ │ Scribe       │ │
+│ │ [docs only]  │ │
+│ └──────────────┘ │
+└─────────┬────────┘
           │
           ▼
-┌────────────────────┐
-│    LLM Provider    │
-│                    │
-│ ┌──────────────┐   │ ┌───────────────┐
-│ │ Local Coder  │   │ │ Local Advisor │
-│ │ Port 8081    │   │ │ Port 8082     │
-│ └──────────────┘   │ └───────────────┘
-│                    │
-│ ┌──────────────┐   │ ┌───────────────┐
-│ │ Server Coder │   │ │ Server Advisor│
-│ │ (remote)     │   │ │ (remote)      │
-│ └──────────────┘   │ └───────────────┘
-└────────────────────┘
+┌──────────────────┐
+│    LLM Provider  │
+│                  │
+│ ┌──────────────┐ │ ┌───────────────┐
+│ │ Local Wright │ │ │ Local Sage    │
+│ │ Port 8081    │ │ │ Port 8082     │
+│ └──────────────┘ │ └───────────────┘
+│                  │
+│ ┌──────────────┐ │ ┌───────────────┐
+│ │ Server Wright│ │ │ Server Sage   │
+│ │ (remote)     │ │ │ (remote)      │
+│ └──────────────┘ │ └───────────────┘
+└──────────────────┘
 ```
 
 The opencode configuration defines 4 provider endpoints:
-- **llama.cpp (local - coder - stable)**: `localhost:8081` — Qwen3-Coder-Next, 65K context
-- **llama.cpp (local - advisor - stable)**: `localhost:8082` — Qwen3.5-35B-A3B, 65K context
-- **llama.cpp (server - coder - stable)**: `server-hostname-or-ip:8081`, 196K context
-- **llama.cpp (server - advisor - stable)**: `server-hostname-or-ip:8082`, 262K context
+- **llama.cpp (local - wright - stable)**: `localhost:8081` — Qwen3-Coder-Next, 65K context
+- **llama.cpp (local - sage - stable)**: `localhost:8082` — Qwen3.5-35B-A3B, 65K context
+- **llama.cpp (server - wright - stable)**: `server-hostname-or-ip:8081`, 196K context
+- **llama.cpp (server - sage - stable)**: `server-hostname-or-ip:8082`, 262K context
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
@@ -205,7 +205,7 @@ Each provider specifies model limits for context window, input tokens, and outpu
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- Context size: 65536 (coder local), 196608 (coder server), 65536 (advisor local), 262144 (advisor server)
+- Context size: 65536 (wright local), 196608 (wright server), 65536 (sage local), 262144 (sage server)
 
 ## Docker Compose
 
@@ -218,7 +218,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 **Model not loading**: Verify RAM (16GB+), GPU/VRAM, model name and quantization.
 
-**Connection failures**: Verify llama-server running, check `ADVISOR_MODEL_PORT`, ensure Docker host access.
+**Connection failures**: Verify llama-server running, check `SAGE_MODEL_PORT`, ensure Docker host access.
 
 **Performance issues**: Enable flash attention, reduce context size, adjust quantization.
 
