@@ -27,7 +27,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 .
 ├── bin/                                   # Main execution scripts
 │   ├── bootstrap.sh                       # System setup and configuration bootstrap
-│   ├── run-wright.sh                      # Coder model (Qwen3-Coder-Next local, MiniMax-M2.5 server)
+│   ├── run-wright.sh                      # Wright model (Qwen3-Coder-Next local, MiniMax-M2.5 server)
 │   ├── run-wright-experimental.sh         # Experimental wright model (stub)
 │   ├── run-sage.sh                        # Sage model (Qwen3.5-9B/Qwen3.5-122B-A10B)
 │   ├── run-sage-experimental.sh           # Experimental sage model (stub)
