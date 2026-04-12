@@ -14,7 +14,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 .
 ├── bin/                            # Main execution scripts
 │   ├── bootstrap.sh                # System setup and configuration bootstrap
-│   ├── run-cipher.sh               # Cipher model (MiniMax-M2.5 server, Qwen3-Coder-Next local)
+│   ├── run-cipher.sh               # Cipher model (MiniMax-M2.7 server, Qwen3-Coder-Next local)
 │   ├── run-cipher-experimental.sh  # Experimental cipher model (stub, not implemented)
 │   ├── run-sage.sh                 # Sage model (Qwen3.5-35B-A3B/Qwen3.5-122B-A10B)
 │   ├── run-sage-experimental.sh    # Experimental sage model (stub, not implemented)
@@ -116,7 +116,7 @@ Runs the cipher model for coding assistance. Supports both local and server mode
 - Top P: 0.95
 
 **Server Mode Defaults:**
-- Model: `unsloth/MiniMax-M2.5-GGUF:Q8_0`
+- Model: `unsloth/MiniMax-M2.7-GGUF:Q8_0`
 - Alias: `jzaleski/cipher`
 - Host: 0.0.0.0
 - Port: 8081
@@ -249,7 +249,7 @@ docker compose -f docker-compose-files/open-webui.yml down
 ```
 ┌────────────────────┐
 │    Cipher Model    │ (Port 8081)
-│    MiniMax-M2.5    │
+│    MiniMax-M2.7    │
 │      (server)      │
 └────────────────────┘
 ```
@@ -362,7 +362,7 @@ opencode --agent architect "plan out the changes needed"
 - Context size standardized to 65536 tokens for sage, local 262144 tokens for sage server, 65536 for cipher local, 196608 for cipher server
 - For coding tasks, use run-cipher.sh:
   - Local: Qwen3-Coder-Next (efficient local coding)
-  - Server: MiniMax-M2.5 (powerful server-side coding)
+  - Server: MiniMax-M2.7 (powerful server-side coding)
 - For general advising, use run-sage.sh:
   - Local: Qwen3.5-35B-A3B (efficient local reasoning)
   - Server: Qwen3.5-122B-A10B (powerful server-side reasoning)

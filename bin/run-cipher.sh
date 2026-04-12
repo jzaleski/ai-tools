@@ -22,7 +22,7 @@ run_local() {
 
 run_server() {
   llama-server \
-    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"MiniMax-M2.5"}-GGUF:${MODEL_QUANTIZATION:-"Q8_0"}" \
+    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"MiniMax-M2.7"}-GGUF:${MODEL_QUANTIZATION:-"Q8_0"}" \
     --alias ${ALIAS:-"jzaleski/cipher"} \
     --host ${HOST:-"0.0.0.0"} \
     --port ${PORT:-"8081"} \
