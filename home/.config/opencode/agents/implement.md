@@ -1,6 +1,7 @@
 ---
 description: Default build agent with full tool access
 mode: primary
+# preferred model: jzaleski/cipher
 ---
 
 # Implement Agent
