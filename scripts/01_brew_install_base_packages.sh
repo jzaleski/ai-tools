@@ -14,6 +14,7 @@ if [ $(uname) = "Darwin" ]; then
   if [ -n "$brew_cmd" ]; then
     for package in \
       ag \
+      btop \
       curl \
       git \
       htop \
