@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts and Docker configurations for running local LLMs using `llama-server`.
-Supports coding assistance (Qwen3-Coder-Next local, MiniMax-M2.7 server) and general advising (Qwen3.5-35B-A3B/Qwen3.5-122B-A10B).
+Supports coding assistance (Qwen3-Coder-Next local, MiniMax-M2.7 server) and general advising (Qwen3.6-35B-A3B/Qwen3.5-122B-A10B).
 
 **No code repositories** - utilities/config only.
 
@@ -96,7 +96,7 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 | Variable | Description | Default (Local) | Default (Server) |
 |----------|-------------|-----------------|------------------|
 | `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
-| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3-Coder-Next` (cipher), `Qwen3.5-35B-A3B` (sage) | `MiniMax-M2.7` (cipher), `Qwen3.5-122B-A10B` (sage) |
+| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3-Coder-Next` (cipher), `Qwen3.6-35B-A3B` (sage) | `MiniMax-M2.7` (cipher), `Qwen3.5-122B-A10B` (sage) |
 | `MODEL_QUANTIZATION` | Quantization level | `Q4_K_M` | `Q8_0` |
 | `TEMP` | Sampling temperature | `1.0` | `1.0` |
 | `PORT` | Network port | `8081` (cipher), `8082` (sage) | `8081` (cipher), `8082` (sage) |
@@ -129,7 +129,7 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 ```
 ┌──────────────────┐
 │    Sage Model    │ (Port 8082)
-│ Qwen3.5-35B-A3B  │
+│ Qwen3.6-35B-A3B  │
 │ Qwen3.5-122B-A10B│
 └──────────────────┘
 ```
@@ -193,7 +193,7 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 
 The opencode configuration defines 4 provider endpoints:
 - **llama.cpp (local - cipher - stable)**: `localhost:8081` — Qwen3-Coder-Next, 65K context
-- **llama.cpp (local - sage - stable)**: `localhost:8082` — Qwen3.5-35B-A3B, 65K context
+- **llama.cpp (local - sage - stable)**: `localhost:8082` — Qwen3.6-35B-A3B, 65K context
 - **llama.cpp (server - cipher - stable)**: `server-hostname-or-ip:8081`, 196K context
 - **llama.cpp (server - sage - stable)**: `server-hostname-or-ip:8082`, 262K context
 

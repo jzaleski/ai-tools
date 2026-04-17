@@ -16,7 +16,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── bootstrap.sh                # System setup and configuration bootstrap
 │   ├── run-cipher.sh               # Cipher model (MiniMax-M2.7 server, Qwen3-Coder-Next local)
 │   ├── run-cipher-experimental.sh  # Experimental cipher model (stub, not implemented)
-│   ├── run-sage.sh                 # Sage model (Qwen3.5-35B-A3B/Qwen3.5-122B-A10B)
+│   ├── run-sage.sh                 # Sage model (Qwen3.6-35B-A3B/Qwen3.5-122B-A10B)
 │   ├── run-sage-experimental.sh    # Experimental sage model (stub, not implemented)
 │   └── run-open-webui.sh           # Open WebUI Docker wrapper
 ├── scripts/                        # Bootstrap scripts (executed by bin/bootstrap.sh)
@@ -60,7 +60,7 @@ The project tracks specific versions of key development tools in version files:
 |------|-------------|---------|
 | `.default-node-version` | Node.js version for nodenv | 24.14.0 |
 | `.default-npm-version` | npm version | 11.12.0 |
-| `.default-opencode-version` | opencode-ai version | 1.4.3 |
+| `.default-opencode-version` | opencode-ai version | 1.4.7 |
 
 These versions are managed and installed via the bootstrap system
 
@@ -137,7 +137,7 @@ Stub - not implemented. Both local and server modes return an error.
 Runs the sage model for general advising. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
-- Model: `unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M`
+- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:Q4_K_M`
 - Alias: `jzaleski/sage`
 - Host: 127.0.0.1
 - Port: 8082
@@ -266,7 +266,7 @@ docker compose -f docker-compose-files/open-webui.yml down
            ▼
 ┌────────────────────┐
 │     Sage Model     │ (Port 8082)
-│  Qwen3.5-35B-A3B / │
+│  Qwen3.6-35B-A3B / │
 │  Qwen3.5-122B-A10B │
 └────────────────────┘
 ```
@@ -364,7 +364,7 @@ opencode --agent architect "plan out the changes needed"
   - Local: Qwen3-Coder-Next (efficient local coding)
   - Server: MiniMax-M2.7 (powerful server-side coding)
 - For general advising, use run-sage.sh:
-  - Local: Qwen3.5-35B-A3B (efficient local reasoning)
+  - Local: Qwen3.6-35B-A3B (efficient local reasoning)
   - Server: Qwen3.5-122B-A10B (powerful server-side reasoning)
 
 ## Troubleshooting
