@@ -14,9 +14,9 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 .
 ├── bin/                            # Main execution scripts
 │   ├── bootstrap.sh                # System setup and configuration bootstrap
-│   ├── run-cipher.sh               # Cipher model (MiniMax-M2.7 server, Qwen3-Coder-Next local)
+│   ├── run-cipher.sh               # Cipher model (MiniMax-M2.7 server, Qwen3.6-35B-A3B local)
 │   ├── run-cipher-experimental.sh  # Experimental cipher model (stub, not implemented)
-│   ├── run-sage.sh                 # Sage model (Qwen3.6-35B-A3B/Qwen3.5-122B-A10B)
+│   ├── run-sage.sh                 # Sage model (Qwen3.6-35B-A3B local and server)
 │   ├── run-sage-experimental.sh    # Experimental sage model (stub, not implemented)
 │   └── run-open-webui.sh           # Open WebUI Docker wrapper
 ├── scripts/                        # Bootstrap scripts (executed by bin/bootstrap.sh)
@@ -101,18 +101,18 @@ You can override default settings via environment variables. The same variables 
 Runs the cipher model for coding assistance. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
-- Model: `unsloth/Qwen3-Coder-Next-GGUF:Q4_K_M`
+- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M`
 - Alias: `jzaleski/cipher`
 - Host: 127.0.0.1
 - Port: 8081
 - Flash attention: enabled
 - GPU layers: -1 (All)
-- Context size: 65536 tokens
-- Min P: 0.01
-- Presence penalty: 1.5
+- Context size: 81920 tokens
+- Min P: 0.0
+- Presence penalty: 0.0
 - Repeat penalty: 1.0
-- Temperature: 1.0
-- Top K: 40
+- Temperature: 0.6
+- Top K: 20
 - Top P: 0.95
 
 **Server Mode Defaults:**
@@ -137,14 +137,14 @@ Stub - not implemented. Both local and server modes return an error.
 Runs the sage model for general advising. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
-- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:Q4_K_M`
+- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M`
 - Alias: `jzaleski/sage`
 - Host: 127.0.0.1
 - Port: 8082
 - Flash attention: enabled
 - GPU layers: -1 (All)
-- Context size: 65536 tokens
-- Min P: 0.01
+- Context size: 81920 tokens
+- Min P: 0.0
 - Presence penalty: 1.5
 - Repeat penalty: 1.0
 - Temperature: 1.0
@@ -152,14 +152,14 @@ Runs the sage model for general advising. Supports both local and server modes v
 - Top P: 0.95
 
 **Server Mode Defaults:**
-- Model: `unsloth/Qwen3.5-122B-A10B-GGUF:Q8_0`
+- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q8_K_XL`
 - Alias: `jzaleski/sage`
 - Host: 0.0.0.0
 - Port: 8082
 - Flash attention: enabled
 - GPU layers: -1
 - Context size: 262144 tokens
-- Min P: 0.01
+- Min P: 0.0
 - Presence penalty: 1.5
 - Repeat penalty: 1.0
 - Temperature: 1.0
@@ -240,9 +240,9 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 ```
 ┌────────────────────┐
-│    Cipher Model    │ (Port 8081)
-│  Qwen3-Coder-Next  │
-│      (local)       │
+│     Sage Model     │ (Port 8082)
+│   Qwen3.6-35B-A3B  │
+│  (local & server)  │
 └────────────────────┘
 ```
 
@@ -266,8 +266,8 @@ docker compose -f docker-compose-files/open-webui.yml down
            ▼
 ┌────────────────────┐
 │     Sage Model     │ (Port 8082)
-│  Qwen3.6-35B-A3B / │
-│  Qwen3.5-122B-A10B │
+│   Qwen3.6-35B-A3B  │
+│   (local & server) │
 └────────────────────┘
 ```
 
@@ -302,7 +302,7 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │  ┌────────────────┐  │ ┌────────────────┐
 │  │ Local Cipher   │  │ │ Local Sage     │
 │  │ localhost:8081 │  │ │ localhost:8082 │
-│  │ 65K context    │  │ │ 65K context    │
+│  │ 65K context    │  │ │ 80K context    │
 │  └────────────────┘  │ └────────────────┘
 │                      │
 │  ┌────────────────┐  │ ┌────────────────┐
@@ -320,7 +320,7 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 | Provider | Endpoint | Model | Context | Input | Output |
 |----------|----------|-------|---------|-------|--------|
 | local - cipher - stable | `localhost:8081` | jzaleski/cipher | 65,536 | 57,344 | 8,192 |
-| local - sage - stable | `localhost:8082` | jzaleski/sage | 65,536 | 57,344 | 8,192 |
+| local - sage - stable | `localhost:8082` | jzaleski/sage | 81,920 | 73,728 | 8,192 |
 | server - cipher - stable | `server-hostname-or-ip:8081` | jzaleski/cipher | 196,608 | 163,840 | 32,768 |
 | server - sage - stable | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 |
 
@@ -359,13 +359,13 @@ opencode --agent architect "plan out the changes needed"
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
-- Context size standardized to 65536 tokens for sage, local 262144 tokens for sage server, 65536 for cipher local, 196608 for cipher server
+- Context size standardized to 81920 tokens for sage and cipher local, 262144 tokens for sage server, 196608 for cipher server
 - For coding tasks, use run-cipher.sh:
-  - Local: Qwen3-Coder-Next (efficient local coding)
+  - Local: Qwen3.6-35B-A3B (efficient local coding)
   - Server: MiniMax-M2.7 (powerful server-side coding)
 - For general advising, use run-sage.sh:
   - Local: Qwen3.6-35B-A3B (efficient local reasoning)
-  - Server: Qwen3.5-122B-A10B (powerful server-side reasoning)
+  - Server: Qwen3.6-35B-A3B (powerful server-side reasoning)
 
 ## Troubleshooting
 
