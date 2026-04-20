@@ -4,19 +4,19 @@ set -e;
 
 run_local() {
   llama-server \
-    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3-Coder-Next"}-GGUF:${MODEL_QUANTIZATION:-"Q4_K_M"}" \
+    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3.6-35B-A3B"}-GGUF:${MODEL_QUANTIZATION:-"UD-Q4_K_M"}" \
     --alias ${ALIAS:-"jzaleski/cipher"} \
     --host ${HOST:-"127.0.0.1"} \
     --port ${PORT:-"8081"} \
     --flash-attn ${FLASH_ATTN:-"on"} \
     --jinja \
     --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
-    --ctx-size ${CTX_SIZE:-"65536"} \
-    --min-p ${MIN_P:-"0.01"} \
-    --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
+    --ctx-size ${CTX_SIZE:-"81920"} \
+    --min-p ${MIN_P:-"0.0"} \
+    --presence-penalty "${PRESENCE_PENALTY:-"0.0"}" \
     --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \
-    --temp ${TEMP:-"1.0"} \
-    --top-k ${TOP_K:-"40"} \
+    --temp ${TEMP:-"0.6"} \
+    --top-k ${TOP_K:-"20"} \
     --top-p ${TOP_P:-"0.95"};
 }
 

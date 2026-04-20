@@ -11,8 +11,8 @@ run_local() {
     --flash-attn "${FLASH_ATTN:-"on"}" \
     --jinja \
     --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
-    --ctx-size "${CTX_SIZE:-"65536"}" \
-    --min-p ${MIN_P:-"0.01"} \
+    --ctx-size "${CTX_SIZE:-"81920"}" \
+    --min-p ${MIN_P:-"0.0"} \
     --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
     --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \
     --temp ${TEMP:-"1.0"} \
@@ -22,7 +22,7 @@ run_local() {
 
 run_server() {
   llama-server \
-    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3.5-122B-A10B"}-GGUF:${MODEL_QUANTIZATION:-"Q8_0"}" \
+    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3.6-35B-A3B"}-GGUF:${MODEL_QUANTIZATION:-"UD-Q8_K_XL"}" \
     --alias ${ALIAS:-"jzaleski/sage"} \
     --host ${HOST:-"0.0.0.0"} \
     --port ${PORT:-"8082"} \
@@ -30,7 +30,7 @@ run_server() {
     --jinja \
     --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
     --ctx-size "${CTX_SIZE:-"262144"}" \
-    --min-p ${MIN_P:-"0.01"} \
+    --min-p ${MIN_P:-"0.0"} \
     --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
     --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \
     --temp ${TEMP:-"1.0"} \

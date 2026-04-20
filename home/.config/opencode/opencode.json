@@ -21,12 +21,12 @@
         "jzaleski/cipher": {
           "name": "cipher",
           "limit": {
-            "context": 65536,
-            "input": 57344,
+            "context": 81920,
+            "input": 73728,
             "output": 8192
           },
           "modalities": {
-            "input": ["text"],
+            "input": ["text", "image"],
             "output": ["text"]
           }
         }
@@ -42,8 +42,8 @@
         "jzaleski/sage": {
           "name": "sage",
           "limit": {
-            "context": 65536,
-            "input": 57344,
+            "context": 81920,
+            "input": 73728,
             "output": 8192
           },
           "modalities": {
