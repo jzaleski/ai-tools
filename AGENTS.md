@@ -98,13 +98,13 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 | `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
 | `MODEL_NAME` | Model name (no -GGUF) | `Qwen3.6-35B-A3B` (cipher), `Qwen3.6-35B-A3B` (sage) | `MiniMax-M2.7` (cipher), `Qwen3.6-35B-A3B` (sage) |
 | `MODEL_QUANTIZATION` | Quantization level | `UD-Q4_K_M` (cipher), `UD-Q4_K_M` (sage) | `Q8_0` (cipher), `UD-Q8_K_XL` (sage) |
-| `TEMP` | Sampling temperature | `0.6` (cipher), `1.0` (sage) | `1.0` (cipher), `1.0` (sage) |
+| `TEMP` | Sampling temperature | `1.0` (cipher), `1.0` (sage) | `1.0` (cipher), `1.0` (sage) |
 | `PORT` | Network port | `8081` (cipher), `8082` (sage) | `8081` (cipher), `8082` (sage) |
 | `CTX_SIZE` | Context window (tokens) | `81920` (cipher), `81920` (sage) | `196608` (cipher), `262144` (sage) |
-| `MIN_P` | Nucleus min (0.0 disables) | `0.0` (cipher), `0.0` (sage) | `0.01` (cipher), `0.0` (sage) |
-| `TOP_K` | Top-K limit (0 or 0.0 disables) | `20` (cipher), `20` (sage) | `40` (cipher), `20` (sage) |
+| `MIN_P` | Nucleus min (0.0 disables) | `0.01` (cipher), `0.0` (sage) | `0.01` (cipher), `0.0` (sage) |
+| `TOP_K` | Top-K limit (0 or 0.0 disables) | `40` (cipher), `20` (sage) | `40` (cipher), `20` (sage) |
 | `REPEAT_PENALTY` | Repeat penalty (1.0 = no penalty) | `1.0` | `1.0` |
-| `PRESENCE_PENALTY` | Presence penalty | `0.0` (cipher), `1.5` (sage) | `1.5` (cipher), `1.5` (sage) |
+| `PRESENCE_PENALTY` | Presence penalty | `1.5` (cipher), `1.5` (sage) | `1.5` (cipher), `1.5` (sage) |
 | `TOP_P` | Nucleus top-p (cumulative prob threshold) | `0.95` | `0.95` |
 | `ALIAS` | Model alias | `jzaleski/cipher`, `jzaleski/sage` | `jzaleski/cipher`, `jzaleski/sage` |
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |

@@ -12,11 +12,11 @@ run_local() {
     --jinja \
     --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
     --ctx-size ${CTX_SIZE:-"81920"} \
-    --min-p ${MIN_P:-"0.0"} \
-    --presence-penalty "${PRESENCE_PENALTY:-"0.0"}" \
+    --min-p ${MIN_P:-"0.01"} \
+    --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
     --repeat-penalty ${REPEAT_PENALTY:-"1.0"} \
-    --temp ${TEMP:-"0.6"} \
-    --top-k ${TOP_K:-"20"} \
+    --temp ${TEMP:-"1.0"} \
+    --top-k ${TOP_K:-"40"} \
     --top-p ${TOP_P:-"0.95"};
 }
 

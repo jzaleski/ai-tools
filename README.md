@@ -108,11 +108,11 @@ Runs the cipher model for coding assistance. Supports both local and server mode
 - Flash attention: enabled
 - GPU layers: -1 (All)
 - Context size: 81920 tokens
-- Min P: 0.0
-- Presence penalty: 0.0
+- Min P: 0.01
+- Presence penalty: 1.5
 - Repeat penalty: 1.0
-- Temperature: 0.6
-- Top K: 20
+- Temperature: 1.0
+- Top K: 40
 - Top P: 0.95
 
 **Server Mode Defaults:**
