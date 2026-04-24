@@ -71,6 +71,7 @@ The project includes `opencode-ai` agent configurations in `home/.config/opencod
 - **architect.md**: Planning and analysis agent — no file modifications, terse bullet-point output
 - **implement.md**: Default build agent with full tool access for implementing changes
 - **scribe.md**: Content and prose agent — documentation, READMEs, changelogs, specs, and copy
+- **superpowers.md**: Full lifecycle agent — brainstorming → design approval → planning → subagent-driven development → code review → finish
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `architect`.
 
@@ -319,7 +320,7 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 
 | Provider | Endpoint | Model | Context | Input | Output |
 |----------|----------|-------|---------|-------|--------|
-| local - cipher - stable | `localhost:8081` | jzaleski/cipher | 65,536 | 57,344 | 8,192 |
+| local - cipher - stable | `localhost:8081` | jzaleski/cipher | 81,920 | 73,728 | 8,192 |
 | local - sage - stable | `localhost:8082` | jzaleski/sage | 81,920 | 73,728 | 8,192 |
 | server - cipher - stable | `server-hostname-or-ip:8081` | jzaleski/cipher | 196,608 | 163,840 | 32,768 |
 | server - sage - stable | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 |
