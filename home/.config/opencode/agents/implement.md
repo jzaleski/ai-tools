@@ -1,5 +1,5 @@
 ---
-description: Default build agent with full tool access — reads files, writes/edits code, executes. Use brainstorming skill for complex multi-step work.
+description: Default build agent with full tool access — reads files, writes/edits code, executes.
 mode: primary
 # preferred model: jzaleski/cipher
 ---
@@ -29,32 +29,6 @@ Before doing ANY work:
 3. After editing, verify correctness using available tools before declaring done.
 4. If a task is ambiguous, state your assumption explicitly before proceeding.
 5. Leave the codebase cleaner than you found it — fix obvious issues you notice in passing, but call them out.
-
-## Escalation to SuperPowers Skills
-
-For **simple changes** (single file edits, small fixes, doc updates), work directly as described above.
-
-For **complex multi-step work**, invoke relevant SuperPowers skills to add structure:
-
-- **Brainstorming**: Load before tackling features or anything with multiple interacting parts. The skill handles design sessions and approval gates.
-  ```
-  use skill tool to load superpowers/brainstorming
-  ```
-- **Subagent-driven-development**: When a task has independent subtasks that can be parallelized. Dispatch fresh subagents per subtask, review between tasks.
-  ```
-  use skill tool to load superpowers/subagent-driven-development
-  ```
-  (NO worktrees — work directly on the feature branch)
-- **Systematic-debugging**: When encountering bugs or unexpected behavior before proposing fixes.
-  ```
-  use skill tool to load superpowers/systematic-debugging
-  ```
-- **Test-driven-development**: When implementing features or bugfixes, to ensure proper test-first discipline.
-  ```
-  use skill tool to load superpowers/test-driven-development
-  ```
-
-Use your judgment — escalate when the task complexity justifies the overhead. For simple changes, don't add ceremony.
 
 ## What to Avoid
 
