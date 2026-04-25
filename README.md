@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It includes support for two primary use cases - coding assistance (server-only) and general advising.
+This repository provides scripts and configurations for running local AI models using llama-server. It includes support for coding assistance (Qwen3.6-35B-A3B local, MiniMax-M2.7 server) and general advising (Qwen3.6-35B-A3B local and server).
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -68,12 +68,10 @@ These versions are managed and installed via the bootstrap system
 
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
-- **architect.md**: Planning and analysis agent — no file modifications, terse bullet-point output
-- **implement.md**: Default build agent with full tool access for implementing changes
-- **scribe.md**: Content and prose agent — documentation, READMEs, changelogs, specs, and copy
-- **superpowers.md**: Full lifecycle agent — brainstorming → design approval → planning → subagent-driven development → code review → finish
+- **architect.md**: Full lifecycle engineer — reads AGENTS.md, manages branches, runs SuperPowers skills (brainstorming → planning → implementation) to deliver complete work
+- **implement.md**: Default build agent with full tool access for implementing changes — includes escalation to SuperPowers skills for complex multi-step work
 
-Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `architect`.
+Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `implement`.
 
 ## Environment Variables
 
@@ -88,7 +86,7 @@ You can override default settings via environment variables. The same variables 
 - `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/cipher or jzaleski/sage)
 - `FLASH_ATTN`: Boolean flag to enable flash attention mechanism for faster processing on supported hardware (default: on)
 - `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1 for local, -1 for server)
-- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 65536 for cipher local, 196608 for cipher server, 65536 for sage local, 262144 for sage server)
+- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 81920 for cipher local, 196608 for cipher server, 81920 for sage local, 262144 for sage server)
 - `MIN_P`: Threshold for nucleus sampling to exclude low-probability tokens (0.0-1.0)
 - `PRESENCE_PENALTY`: Factor applied to penalize repeated tokens (default: 1.5)
 - `REPEAT_PENALTY`: Factor applied to penalize repeated tokens (1.0 is no penalty)
@@ -281,18 +279,13 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │    Opencode CLI      │
 │                      │
 │  ┌────────────────┐  │
-│  │ Architect      │◄─┼── default agent
-│  │ [plan only]    │  │
-│  └────────────────┘  │
-│                      │
-│  ┌────────────────┐  │
-│  │ Implement      │  │
+│  │ Implement      │◄─┼── default agent
 │  │ [full tools]   │  │
 │  └────────────────┘  │
 │                      │
 │  ┌────────────────┐  │
-│  │ Scribe         │  │
-│  │ [docs only]    │  │
+│  │ Architect      │  │
+│  │ [lifecycle]    │  │
 │  └────────────────┘  │
 └──────────┬───────────┘
            │
@@ -303,7 +296,7 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │  ┌────────────────┐  │ ┌────────────────┐
 │  │ Local Cipher   │  │ │ Local Sage     │
 │  │ localhost:8081 │  │ │ localhost:8082 │
-│  │ 65K context    │  │ │ 80K context    │
+│  │ 81K context    │  │ │ 81K context    │
 │  └────────────────┘  │ └────────────────┘
 │                      │
 │  ┌────────────────┐  │ ┌────────────────┐
@@ -318,41 +311,37 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 
 The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provider endpoints:
 
-| Provider | Endpoint | Model | Context | Input | Output |
-|----------|----------|-------|---------|-------|--------|
-| local - cipher - stable | `localhost:8081` | jzaleski/cipher | 81,920 | 73,728 | 8,192 |
-| local - sage - stable | `localhost:8082` | jzaleski/sage | 81,920 | 73,728 | 8,192 |
-| server - cipher - stable | `server-hostname-or-ip:8081` | jzaleski/cipher | 196,608 | 163,840 | 32,768 |
-| server - sage - stable | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 |
+| Provider | Endpoint | Model | Context | Input | Output | Modalities |
+|----------|----------|-------|---------|-------|--------|------------|
+| local - cipher - stable | `localhost:8081` | jzaleski/cipher | 81,920 | 73,728 | 8,192 | text+image in, text out |
+| local - sage - stable | `localhost:8082` | jzaleski/sage | 81,920 | 73,728 | 8,192 | text+image in, text out |
+| server - cipher - stable | `server-hostname-or-ip:8081` | jzaleski/cipher | 196,608 | 163,840 | 32,768 | text in/out only |
+| server - sage - stable | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text+image in, text out |
 
-**Modalities supported:**
-- Cipher: text in/out only
-- Sage: text and image in, text out
+**Note:** Local cipher supports image input via the opencode provider configuration. Server cipher does not support image input.
 
 ### Agent Roles
 
 | Agent | Mode | Capabilities | Output Style |
 |-------|------|--------------|--------------|
-| architect | primary | Analysis, planning, no modifications | Terse bullets |
-| implement | primary | Full tool access, code changes | Implementation-ready |
-| scribe | primary | Documentation, prose artifacts | Clean Markdown |
+| implement | primary | Full tool access, code changes, SuperPowers skill escalation for complex work | Implementation-ready |
+| architect | secondary | Full lifecycle engineering — brainstorming → planning → implementation using SuperPowers skills | Complete, tested changes |
 
 ### Usage
 
 ```bash
-# Run opencode with default agent (architect)
+# Run opencode with default agent (implement)
 opencode "your question or task"
 
 # Specify a different agent
 opencode --agent implement "implement this feature"
-opencode --agent scribe "write documentation for this"
-opencode --agent architect "plan out the changes needed"
+opencode --agent architect "plan and build out the changes needed"
 ```
 
 ### Configuration Notes
 
 - `autoupdate`: disabled (manual updates only)
-- `default_agent`: `architect` (optimal for coding workflow)
+- `default_agent`: `implement` (full tool access for general work)
 - Server providers use `server-hostname-or-ip` placeholder - replace with actual hostname/IP
 - Input/output token limits set to optimize for local inference constraints
 
