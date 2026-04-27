@@ -11,9 +11,9 @@
     }
   },
   "provider": {
-    "llama.cpp (local - cipher - stable)": {
+    "llama.cpp (local - cipher)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (local - cipher - stable)",
+      "name": "llama.cpp (local - cipher)",
       "options": {
         "baseURL": "http://localhost:8081/v1"
       },
@@ -32,9 +32,9 @@
         }
       }
     },
-    "llama.cpp (local - sage - stable)": {
+    "llama.cpp (local - sage)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (local - sage - stable)",
+      "name": "llama.cpp (local - sage)",
       "options": {
         "baseURL": "http://localhost:8082/v1"
       },
@@ -53,9 +53,9 @@
         }
       }
     },
-    "llama.cpp (server - cipher - stable)": {
+    "llama.cpp (server - cipher)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (server - cipher - stable)",
+      "name": "llama.cpp (server - cipher)",
       "options": {
         "baseURL": "http://server-hostname-or-ip:8081/v1"
       },
@@ -74,9 +74,9 @@
         }
       }
     },
-    "llama.cpp (server - sage - stable)": {
+    "llama.cpp (server - sage)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (server - sage - stable)",
+      "name": "llama.cpp (server - sage)",
       "options": {
         "baseURL": "http://server-hostname-or-ip:8082/v1"
       },

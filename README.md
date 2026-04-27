@@ -15,9 +15,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 ├── bin/                            # Main execution scripts
 │   ├── bootstrap.sh                # System setup and configuration bootstrap
 │   ├── run-cipher.sh               # Cipher model (MiniMax-M2.7 server, Qwen3.6-35B-A3B local)
-│   ├── run-cipher-experimental.sh  # Experimental cipher model (stub, not implemented)
 │   ├── run-sage.sh                 # Sage model (Qwen3.6-35B-A3B local and server)
-│   ├── run-sage-experimental.sh    # Experimental sage model (stub, not implemented)
 │   └── run-open-webui.sh           # Open WebUI Docker wrapper
 ├── scripts/                        # Bootstrap scripts (executed by bin/bootstrap.sh)
 ├── home/                           # Dotfiles and config files to symlink
@@ -60,7 +58,7 @@ The project tracks specific versions of key development tools in version files:
 |------|-------------|---------|
 | `.default-node-version` | Node.js version for nodenv | 24.15.0 |
 | `.default-npm-version` | npm version | 11.12.1 |
-| `.default-opencode-version` | opencode-ai version | 1.14.22 |
+| `.default-opencode-version` | opencode-ai version | 1.14.28 |
 
 These versions are managed and installed via the bootstrap system
 
@@ -129,9 +127,6 @@ Runs the cipher model for coding assistance. Supports both local and server mode
 - Top K: 40
 - Top P: 0.95
 
-### run-cipher-experimental.sh
-Stub - not implemented. Both local and server modes return an error.
-
 ### run-sage.sh
 Runs the sage model for general advising. Supports both local and server modes via `--server` flag.
 
@@ -165,9 +160,6 @@ Runs the sage model for general advising. Supports both local and server modes v
 - Top K: 20
 - Top P: 0.95
 
-### run-sage-experimental.sh
-Stub - not implemented. Both local and server modes return an error.
-
 ### run-open-webui.sh
 Starts Open WebUI interface using Docker. Supports both local and server modes via `--server` flag.
 
@@ -197,23 +189,11 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 # Run cipher model (server mode)
 ./bin/run-cipher.sh --server
 
-# Run experimental cipher model (local mode - not implemented)
-./bin/run-cipher-experimental.sh
-
-# Run experimental cipher model (server mode - not implemented)
-./bin/run-cipher-experimental.sh --server
-
 # Run sage model (local mode)
 ./bin/run-sage.sh
 
 # Run sage model (server mode)
 ./bin/run-sage.sh --server
-
-# Run experimental sage model (local mode - not implemented)
-./bin/run-sage-experimental.sh
-
-# Run experimental sage model (server mode - not implemented)
-./bin/run-sage-experimental.sh --server
 
 # Start Open WebUI (local mode, auth disabled)
 ./bin/run-open-webui.sh

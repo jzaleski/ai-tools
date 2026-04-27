@@ -27,9 +27,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 ├── bin/                                   # Main execution scripts
 │   ├── bootstrap.sh                       # System setup and configuration bootstrap
 │   ├── run-cipher.sh                      # Cipher model (Qwen3.6-35B-A3B local, MiniMax-M2.7 server)
-│   ├── run-cipher-experimental.sh         # Experimental cipher model (stub)
 │   ├── run-sage.sh                        # Sage model (Qwen3.6-35B-A3B local and server)
-│   ├── run-sage-experimental.sh           # Experimental sage model (stub)
 │   └── run-open-webui.sh                  # Open WebUI Docker wrapper
 ├── scripts/                               # Bootstrap scripts (executed by bin/bootstrap.sh)
 ├── home/                                  # Dotfiles and config files to symlink
@@ -46,12 +44,8 @@ Scripts in `bin/` support **local** and **server** modes:
 ```bash
 ./bin/run-cipher.sh                        # Local mode
 ./bin/run-cipher.sh --server               # Server mode
-./bin/run-cipher-experimental.sh           # Local mode - Not implemented
-./bin/run-cipher-experimental.sh --server  # Server mode - Not implemented
 ./bin/run-sage.sh                          # Local mode
 ./bin/run-sage.sh --server                 # Server mode
-./bin/run-sage-experimental.sh             # Local mode - Not implemented
-./bin/run-sage-experimental.sh --server    # Server mode - Not implemented
 ./bin/run-open-webui.sh                    # Local mode
 ./bin/run-open-webui.sh --server           # Server mode
 ```
