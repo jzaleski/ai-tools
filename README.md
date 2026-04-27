@@ -98,7 +98,7 @@ You can override default settings via environment variables. The same variables 
 Runs the cipher model for coding assistance. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
-- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M`
+- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL`
 - Alias: `jzaleski/cipher`
 - Host: 127.0.0.1
 - Port: 8081
@@ -131,7 +131,7 @@ Runs the cipher model for coding assistance. Supports both local and server mode
 Runs the sage model for general advising. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
-- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_M`
+- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL`
 - Alias: `jzaleski/sage`
 - Host: 127.0.0.1
 - Port: 8082

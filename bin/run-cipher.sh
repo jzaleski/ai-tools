@@ -4,7 +4,7 @@ set -e;
 
 run_local() {
   llama-server \
-    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3.6-35B-A3B"}-GGUF:${MODEL_QUANTIZATION:-"UD-Q4_K_M"}" \
+    -hf "${MODEL_PROVIDER:-"unsloth"}/${MODEL_NAME:-"Qwen3.6-35B-A3B"}-GGUF:${MODEL_QUANTIZATION:-"UD-Q4_K_XL"}" \
     --alias ${ALIAS:-"jzaleski/cipher"} \
     --host ${HOST:-"127.0.0.1"} \
     --port ${PORT:-"8081"} \

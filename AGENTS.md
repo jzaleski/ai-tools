@@ -90,7 +90,7 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 |----------|-------------|-----------------|------------------|
 | `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
 | `MODEL_NAME` | Model name (no -GGUF) | `Qwen3.6-35B-A3B` (cipher), `Qwen3.6-35B-A3B` (sage) | `MiniMax-M2.7` (cipher), `Qwen3.6-35B-A3B` (sage) |
-| `MODEL_QUANTIZATION` | Quantization level | `UD-Q4_K_M` (cipher), `UD-Q4_K_M` (sage) | `Q8_0` (cipher), `UD-Q8_K_XL` (sage) |
+| `MODEL_QUANTIZATION` | Quantization level | `UD-Q4_K_XL` (cipher), `UD-Q4_K_XL` (sage) | `Q8_0` (cipher), `UD-Q8_K_XL` (sage) |
 | `TEMP` | Sampling temperature | `1.0` (cipher), `1.0` (sage) | `1.0` (cipher), `1.0` (sage) |
 | `PORT` | Network port | `8081` (cipher), `8082` (sage) | `8081` (cipher), `8082` (sage) |
 | `CTX_SIZE` | Context window (tokens) | `81920` (cipher), `81920` (sage) | `196608` (cipher), `262144` (sage) |
