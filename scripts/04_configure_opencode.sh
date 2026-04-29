@@ -30,3 +30,13 @@ if [ "$default_opencode_version" != "$installed_opencode_version" ]; then
   ${npm_cmd} install -g "opencode-ai@$default_opencode_version";
   ${nodenv_cmd} rehash;
 fi
+
+for shell_init_script in "$HOME/.bashrc" "$HOME/.zshrc"; do
+  if [ ! -e "$shell_init_script" ]; then
+    touch $shell_init_script;
+  fi
+
+  if ! ${grep_cmd} "source \$HOME/.opencoderc" "$shell_init_script" > /dev/null 2>&1; then
+    echo -e "\n# \`opencode\` specific initialization\n[[ -e \"\$HOME/.opencoderc\" ]] && source \$HOME/.opencoderc;" >> "$shell_init_script";
+  fi
+done

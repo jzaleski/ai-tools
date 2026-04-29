@@ -60,7 +60,10 @@ The project tracks specific versions of key development tools in version files:
 | `.default-npm-version` | npm version | 11.12.1 |
 | `.default-opencode-version` | opencode-ai version | 1.14.28 |
 
-These versions are managed and installed via the bootstrap system
+These versions are managed and installed via the bootstrap system.
+
+Additionally, the bootstrap system installs the following system utilities via Homebrew:
+- `jq` — JSON query and transformation tool (required for opencode.sh wrapper)
 
 ## Opencode Agent Configuration(s)
 
@@ -293,10 +296,10 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 
 | Provider | Endpoint | Model | Context | Input | Output | Modalities |
 |----------|----------|-------|---------|-------|--------|------------|
-| local - cipher - stable | `localhost:8081` | jzaleski/cipher | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| local - sage - stable | `localhost:8082` | jzaleski/sage | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| server - cipher - stable | `server-hostname-or-ip:8081` | jzaleski/cipher | 196,608 | 163,840 | 32,768 | text in/out only |
-| server - sage - stable | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| llama.cpp (local - jzaleski/cipher) | `localhost:8081` | jzaleski/cipher | 81,920 | 73,728 | 8,192 | text+image in, text out |
+| llama.cpp (local - jzaleski/sage) | `localhost:8082` | jzaleski/sage | 81,920 | 73,728 | 8,192 | text+image in, text out |
+| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8081` | jzaleski/cipher | 196,608 | 163,840 | 32,768 | text in/out only |
+| llama.cpp (server - jzaleski/sage) | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text+image in, text out |
 
 **Note:** Local cipher supports image input via the opencode provider configuration. Server cipher does not support image input.
 
@@ -317,6 +320,25 @@ opencode "your question or task"
 opencode --agent implement "implement this feature"
 opencode --agent architect "plan and build out the changes needed"
 ```
+
+### Opencode Wrapper Script
+
+The project includes `home/.local/lib/opencode.sh`, a wrapper script for the opencode CLI that manages model history and cache state:
+
+```bash
+# Via symlink after bootstrap
+~/.local/lib/opencode.sh [options] [query]
+```
+
+**Features:**
+- Automatically resets opencode model history on session start (configurable)
+- Clears model cache to ensure fresh model selection
+- Supports `--continue`, `-s`, or `--session` flags to preserve history/cache across invocations
+- Requires `jq` for JSON manipulation (installed via bootstrap)
+
+**Environment Variables:**
+- `RESET_OPENCODE_HISTORY` — Reset model history on each invocation (default: `true`)
+- `RESET_OPENCODE_MODELS_CACHE` — Clear model cache on each invocation (default: `true`)
 
 ### Configuration Notes
 

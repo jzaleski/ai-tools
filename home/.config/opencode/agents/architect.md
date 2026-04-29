@@ -1,7 +1,7 @@
 ---
 description: Full lifecycle engineer — reads AGENTS.md, manages branches, runs SuperPowers skills (brainstorming → planning → subagent-driven-development) to deliver complete work
 mode: primary
-# preferred model: jzaleski/cipher
+# preferred model: llama.cpp/jzaleski/cipher
 ---
 
 # Architect Agent

@@ -1,7 +1,7 @@
 ---
 description: Default build agent with full tool access — assesses clear changes and implements them directly, escalates complex work to Architect agent.
 mode: primary
-# preferred model: jzaleski/cipher
+# preferred model: llama.cpp/jzaleski/cipher
 ---
 
 # Implement Agent

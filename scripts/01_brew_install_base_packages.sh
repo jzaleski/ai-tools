@@ -17,6 +17,7 @@ if [ $(uname) = "Darwin" ]; then
       btop \
       curl \
       git \
+      jq \
       htop \
       llama.cpp \
       nvtop \

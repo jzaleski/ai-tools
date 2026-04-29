@@ -180,10 +180,10 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 ```
 
 The opencode configuration defines 4 provider endpoints:
-- **llama.cpp (local - cipher - stable)**: `localhost:8081` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (local - sage - stable)**: `localhost:8082` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (server - cipher - stable)**: `server-hostname-or-ip:8081`, 196K context
-- **llama.cpp (server - sage - stable)**: `server-hostname-or-ip:8082`, 262K context
+- **llama.cpp (local - jzaleski/cipher)**: `localhost:8081` — Qwen3.6-35B-A3B, 81K context
+- **llama.cpp (local - jzaleski/sage)**: `localhost:8082` — Qwen3.6-35B-A3B, 81K context
+- **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8081`, 196K context
+- **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8082`, 262K context
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
