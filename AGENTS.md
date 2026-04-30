@@ -13,8 +13,9 @@ Supports coding assistance (Qwen3.6-35B-A3B local, MiniMax-M2.7 server) and gene
 
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
-- **architect.md**: Full lifecycle engineer — reads AGENTS.md, manages branches, runs SuperPowers skills (brainstorming → planning → implementation) to deliver complete work
-- **implement.md**: Default build agent with full tool access for implementing changes — includes escalation to SuperPowers skills for complex multi-step work
+- **architect.md**: Full lifecycle engineer — ensures AGENTS.md exists (generating it if needed), manages branches, runs SuperPowers skills (brainstorming → planning → implementation) to deliver complete work
+- **implement.md**: Default build agent with full tool access for implementing changes — leaves all changes in the working tree, escalates complex work to Architect
+- **analyze.md**: Data analyst agent — ingests data in any format (PDF, XLSX, CSV, TSV, JSON, etc.), extracts and normalizes it into reusable artifacts, analyzes it, and produces a report in the user-specified format
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `implement`.
 
@@ -160,6 +161,11 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 │ ┌──────────────┐ │
 │ │ Architect    │ │
 │ │ [lifecycle]  │ │
+│ └──────────────┘ │
+│                  │
+│ ┌──────────────┐ │
+│ │ Analyze      │ │
+│ │ [data/report]│ │
 │ └──────────────┘ │
 └─────────┬────────┘
           │
