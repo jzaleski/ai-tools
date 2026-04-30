@@ -10,6 +10,12 @@ if [ -z "$cat_cmd" ]; then
   exit 1;
 fi
 
+grep_cmd=$(which grep 2> /dev/null || echo -n);
+if [ -z "$grep_cmd" ]; then
+  echo "Error: Could not logrepe the \"grep\" command" >&2;
+  exit 1;
+fi
+
 nodenv_cmd="$HOME/.nodenv/bin/nodenv";
 if [ ! -e "$nodenv_cmd" ]; then
   echo "Error: Could not locate the \"nodenv\" command" >&2;
