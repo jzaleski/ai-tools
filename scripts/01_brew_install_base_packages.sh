@@ -24,6 +24,7 @@ if [ $(uname) = "Darwin" ]; then
       ollama \
       openssl \
       readline \
+      sqlite \
       wget \
       zsh;
     do

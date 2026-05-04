@@ -18,7 +18,20 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── run-sage.sh                 # Sage model (Qwen3.6-35B-A3B local and server)
 │   └── run-open-webui.sh           # Open WebUI Docker wrapper
 ├── scripts/                        # Bootstrap scripts (executed by bin/bootstrap.sh)
+│   ├── 01_brew_install_base_packages.sh  # Installs Homebrew and base packages
+│   ├── 02_configure_nodenv.sh      # Installs/updates nodenv and node-build plugin
+│   ├── 03_configure_node.sh        # Installs Node.js and npm via nodenv
+│   └── 04_configure_opencode.sh    # Installs opencode-ai and configures shell init
 ├── home/                           # Dotfiles and config files to symlink
+│   ├── .config/opencode/           # Opencode configuration and agent definitions
+│   │   ├── agents/
+│   │   │   ├── analyze.md          # Data analyst agent
+│   │   │   ├── architect.md        # Full lifecycle engineer agent
+│   │   │   └── implement.md        # Default build agent
+│   │   └── opencode.json           # Opencode provider and agent configuration
+│   ├── .local/lib/
+│   │   └── opencode.sh             # Opencode wrapper script (session persistence, cache reset)
+│   └── .opencoderc                 # Shell alias: opencode → ~/.local/lib/opencode.sh
 ├── docker-compose-files/
 │   └── open-webui.yml              # Docker Compose configuration for Open WebUI
 ├── .default-node-version           # Default node version
@@ -44,6 +57,17 @@ The bootstrap script:
 - Executes scripts in `scripts/` in sorted order
 - Supports `sudo_scripts/` for root-level operations (none currently)
 
+### Bootstrap Scripts
+
+Scripts run in lexicographic order:
+
+| Script | Purpose |
+|--------|---------|
+| `01_brew_install_base_packages.sh` | Installs Homebrew (if missing) and installs/upgrades: `ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh` |
+| `02_configure_nodenv.sh` | Clones/updates `nodenv` to `~/.nodenv` and the `node-build` plugin |
+| `03_configure_node.sh` | Installs the Node.js version from `.default-node-version` via nodenv; installs npm version from `.default-npm-version` |
+| `04_configure_opencode.sh` | Installs `opencode-ai` version from `.default-opencode-version` via npm; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+
 ## Prerequisites
 
 - At least 16GB RAM for 20B+ models
@@ -58,19 +82,17 @@ The project tracks specific versions of key development tools in version files:
 |------|-------------|---------|
 | `.default-node-version` | Node.js version for nodenv | 24.15.0 |
 | `.default-npm-version` | npm version | 11.12.1 |
-| `.default-opencode-version` | opencode-ai version | 1.14.28 |
+| `.default-opencode-version` | opencode-ai version | 1.14.33 |
 
 These versions are managed and installed via the bootstrap system.
-
-Additionally, the bootstrap system installs the following system utilities via Homebrew:
-- `jq` — JSON query and transformation tool (required for opencode.sh wrapper)
 
 ## Opencode Agent Configuration(s)
 
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
-- **architect.md**: Full lifecycle engineer — reads AGENTS.md, manages branches, runs SuperPowers skills (brainstorming → planning → implementation) to deliver complete work
-- **implement.md**: Default build agent with full tool access for implementing changes — includes escalation to SuperPowers skills for complex multi-step work
+- **analyze.md**: Data analyst agent — ingests data in any format (PDF, XLSX, CSV, TSV, JSON, etc.), extracts and normalizes it into reusable artifacts, analyzes it, and produces a report in the user-specified format
+- **architect.md**: Full lifecycle engineer — ensures AGENTS.md exists (generating it if needed), manages branches, runs SuperPowers skills (brainstorming → planning → implementation) to deliver complete work
+- **implement.md**: Default build agent with full tool access for implementing changes — leaves all changes in the working tree, escalates complex work to Architect
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `implement`.
 
@@ -81,7 +103,7 @@ You can override default settings via environment variables. The same variables 
 **Common Variables:**
 - `MODEL_PROVIDER`: Provider/organization name for the model (default: unsloth)
 - `MODEL_NAME`: Name of the model to load (no -GGUF suffix, defaults to local/server mode below)
-- `MODEL_QUANTIZATION`: Full quantization specification (default: Q4_K_M for local, Q8_0 for server)
+- `MODEL_QUANTIZATION`: Full quantization specification (default: UD-Q4_K_XL for local, Q8_0/UD-Q8_K_XL for server)
 - `HOST`: Network interface address to bind the server to (default: 127.0.0.1 for local, 0.0.0.0 for server)
 - `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for cipher, 8082 for sage, 8080 for WebUI)
 - `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/cipher or jzaleski/sage)
@@ -270,6 +292,11 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │  │ Architect      │  │
 │  │ [lifecycle]    │  │
 │  └────────────────┘  │
+│                      │
+│  ┌────────────────┐  │
+│  │ Analyze        │  │
+│  │ [data/report]  │  │
+│  └────────────────┘  │
 └──────────┬───────────┘
            │
            ▼
@@ -301,14 +328,32 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 | llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8081` | jzaleski/cipher | 196,608 | 163,840 | 32,768 | text in/out only |
 | llama.cpp (server - jzaleski/sage) | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text+image in, text out |
 
-**Note:** Local cipher supports image input via the opencode provider configuration. Server cipher does not support image input.
+**Note:** Local cipher and sage support image input via the opencode provider configuration. Server cipher does not support image input.
 
 ### Agent Roles
 
 | Agent | Mode | Capabilities | Output Style |
 |-------|------|--------------|--------------|
-| implement | primary | Full tool access, code changes, SuperPowers skill escalation for complex work | Implementation-ready |
-| architect | secondary | Full lifecycle engineering — brainstorming → planning → implementation using SuperPowers skills | Complete, tested changes |
+| implement | primary (default) | Full tool access, code changes; escalates complex/ambiguous work to Architect | Changes left in working tree |
+| architect | primary | Full lifecycle engineering — brainstorming → planning → implementation using SuperPowers skills; manages branches and commits | Complete, tested changes |
+| analyze | primary | Data ingestion and wrangling (PDF, XLSX, CSV, TSV, JSON, etc.); normalizes data, analyzes, and produces reports | Report in user-specified format |
+
+### Disabled Built-in Agents
+
+The `build` and `plan` agents that ship with opencode are disabled in `opencode.json` — only the three custom agents above are active.
+
+### Plugins
+
+The `superpowers` plugin (`superpowers@git+https://github.com/obra/superpowers.git`) is loaded via `opencode.json`. It provides the skill system used by the Architect and Implement agents (brainstorming, writing-plans, subagent-driven-development, systematic-debugging, etc.).
+
+### MCP Integrations
+
+The following MCP integrations are configured but **disabled by default**:
+
+| Integration | URL | Notes |
+|-------------|-----|-------|
+| Jira | `https://mcp.atlassian.com/v1/mcp` | Enable in `opencode.json` to use |
+| Vercel | `https://mcp.vercel.com/v1/mcp` | Enable in `opencode.json` to use |
 
 ### Usage
 
@@ -319,22 +364,29 @@ opencode "your question or task"
 # Specify a different agent
 opencode --agent implement "implement this feature"
 opencode --agent architect "plan and build out the changes needed"
+opencode --agent analyze "analyze this data file"
 ```
 
 ### Opencode Wrapper Script
 
-The project includes `home/.local/lib/opencode.sh`, a wrapper script for the opencode CLI that manages model history and cache state:
+The project includes `home/.local/lib/opencode.sh`, a wrapper script for the opencode CLI that manages model history, cache state, and session persistence. It is aliased to the `opencode` command via `home/.opencoderc`, which is sourced from `~/.bashrc` and `~/.zshrc` by the bootstrap system.
 
 ```bash
-# Via symlink after bootstrap
+# Via alias after bootstrap
+opencode [options] [query]
+
+# Direct invocation
 ~/.local/lib/opencode.sh [options] [query]
 ```
 
 **Features:**
+- Persists the last session ID to `.last-opencode-session` in the git repo root after each run
+- Resumes sessions via `--continue` by reading the persisted session ID (works even after moving the repo)
 - Automatically resets opencode model history on session start (configurable)
 - Clears model cache to ensure fresh model selection
 - Supports `--continue`, `-s`, or `--session` flags to preserve history/cache across invocations
-- Requires `jq` for JSON manipulation (installed via bootstrap)
+
+**Required binaries** (all installed via bootstrap): `cat`, `git`, `jq`, `opencode`, `sqlite3`
 
 **Environment Variables:**
 - `RESET_OPENCODE_HISTORY` — Reset model history on each invocation (default: `true`)
