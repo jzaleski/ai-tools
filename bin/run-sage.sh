@@ -8,9 +8,11 @@ run_local() {
     --alias "${ALIAS:-"jzaleski/sage"}" \
     --host "${HOST:-"127.0.0.1"}" \
     --port "${PORT:-"8082"}" \
+    --batch-size "${BATCH_SIZE:-"2048"}" \
     --flash-attn "${FLASH_ATTN:-"on"}" \
     --jinja \
     --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
+    --ubatch-size "${UBATCH_SIZE:-"512"}" \
     --ctx-size "${CTX_SIZE:-"81920"}" \
     --min-p ${MIN_P:-"0.0"} \
     --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
@@ -26,9 +28,11 @@ run_server() {
     --alias ${ALIAS:-"jzaleski/sage"} \
     --host ${HOST:-"0.0.0.0"} \
     --port ${PORT:-"8082"} \
+    --batch-size "${BATCH_SIZE:-"4096"}" \
     --flash-attn ${FLASH_ATTN:-"on"} \
     --jinja \
     --n-gpu-layers "${N_GPU_LAYERS:-"-1"}" \
+    --ubatch-size "${UBATCH_SIZE:-"1024"}" \
     --ctx-size "${CTX_SIZE:-"262144"}" \
     --min-p ${MIN_P:-"0.0"} \
     --presence-penalty "${PRESENCE_PENALTY:-"1.5"}" \
