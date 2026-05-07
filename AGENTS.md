@@ -13,9 +13,11 @@ Supports coding assistance (Qwen3.6-35B-A3B local and server) and general advisi
 
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
-- **architect.md**: Full lifecycle engineer — ensures AGENTS.md exists (generating it if needed), manages branches, runs SuperPowers skills (brainstorming → planning → implementation) to deliver complete work
-- **implement.md**: Default build agent with full tool access for implementing changes — leaves all changes in the working tree, escalates complex work to Architect
-- **analyze.md**: Data analyst agent — ingests data in any format (PDF, XLSX, CSV, TSV, JSON, etc.), extracts and normalizes it into reusable artifacts, analyzes it, and produces a report in the user-specified format
+- **analyze.md**: Data pipeline orchestrator — coordinates composable ingest workers for parallel multi-format data extraction, normalization, analysis, and reporting
+- **architect.md**: Lifecycle orchestrator — manages the full development lifecycle via local skills (researcher → planner → parallel coder batches → reviewer → finisher)
+- **implement.md**: Tactical implementer — assesses task scope, dispatches focused parallel workers for multi-file changes, handles straightforward tasks directly
+
+Workflow skills are vendored locally under `home/.config/opencode/skills/` (researcher, planner, coder, reviewer, finisher). No external plugin dependencies.
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `implement`.
 

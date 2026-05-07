@@ -90,11 +90,23 @@ These versions are managed and installed via the bootstrap system.
 
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
-- **analyze.md**: Data analyst agent — ingests data in any format (PDF, XLSX, CSV, TSV, JSON, etc.), extracts and normalizes it into reusable artifacts, analyzes it, and produces a report in the user-specified format
-- **architect.md**: Full lifecycle engineer — ensures AGENTS.md exists (generating it if needed), manages branches, runs SuperPowers skills (brainstorming → planning → implementation) to deliver complete work
-- **implement.md**: Default build agent with full tool access for implementing changes — leaves all changes in the working tree, escalates complex work to Architect
+- **analyze.md**: Data pipeline orchestrator — coordinates composable ingest workers for parallel multi-format data extraction, normalization, analysis, and reporting
+- **architect.md**: Lifecycle orchestrator — manages the full development lifecycle via local skills (researcher → planner → parallel coder batches → reviewer → finisher)
+- **implement.md**: Tactical implementer — assesses task scope, dispatches focused parallel workers for multi-file changes, handles straightforward tasks directly
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `implement`.
+
+### Local Skills
+
+Workflow skills are vendored locally under `home/.config/opencode/skills/` — no external plugin dependencies:
+
+| Skill | Purpose |
+|-------|---------|
+| `researcher` | Design & discovery — clarifying questions, approach proposals, spec writing with user approval gate |
+| `planner` | Task decomposition with exact file paths, code, commands, and parallel-dispatch independence analysis |
+| `coder` | Sub-agent implementer — TDD, self-review, structured status reporting |
+| `reviewer` | Dual-mode review — spec compliance (did they build what was asked?) then code quality |
+| `finisher` | Verify tests, detect workspace state, present merge/PR options, execute with cleanup |
 
 ## Environment Variables
 
@@ -341,9 +353,9 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 
 | Agent | Mode | Capabilities | Output Style |
 |-------|------|--------------|--------------|
-| implement | primary (default) | Full tool access, code changes; escalates complex/ambiguous work to Architect | Changes left in working tree |
-| architect | primary | Full lifecycle engineering — brainstorming → planning → implementation using SuperPowers skills; manages branches and commits | Complete, tested changes |
-| analyze | primary | Data ingestion and wrangling (PDF, XLSX, CSV, TSV, JSON, etc.); normalizes data, analyzes, and produces reports | Report in user-specified format |
+| implement | primary (default) | Assesses task scope; handles straightforward changes directly, dispatches parallel workers for multi-file changes; escalates complex/ambiguous work to Architect | Changes left in working tree |
+| architect | primary | Full lifecycle orchestration — researcher → planner → parallel coder batches → reviewer → finisher; manages branches and commits | Complete, tested, merged/PR'd work |
+| analyze | primary | Data pipeline orchestration — parallel ingestion of multi-format inputs, normalization, analysis, report generation | Report in user-specified format |
 
 ### Disabled Built-in Agents
 
@@ -351,7 +363,7 @@ The `build` and `plan` agents that ship with opencode are disabled in `opencode.
 
 ### Plugins
 
-The `superpowers` plugin (`superpowers@git+https://github.com/obra/superpowers.git`) is loaded via `opencode.json`. It provides the skill system used by the Architect and Implement agents (brainstorming, writing-plans, subagent-driven-development, systematic-debugging, etc.).
+None. All workflow skills are vendored locally under `home/.config/opencode/skills/`. This architecture has zero external plugin dependencies — if any third-party project disappears tomorrow, the agents continue working identically.
 
 ### MCP Integrations
 
