@@ -34,6 +34,12 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   └── run-open-webui.sh                  # Open WebUI Docker wrapper
 ├── scripts/                               # Bootstrap scripts (executed by bin/bootstrap.sh)
 ├── home/                                  # Dotfiles and config files to symlink
+│   ├── .config/opencode/
+│   │   ├── agents/                        # Agent definitions (analyze, architect, implement)
+│   │   ├── skills/                        # Vendored workflow skills (coder, finisher, planner, researcher, reviewer)
+│   │   └── opencode.json                  # Provider, agent, MCP configuration
+│   ├── .local/lib/opencode.sh             # Opencode wrapper (session persistence, cache reset)
+│   └── .opencoderc                        # Shell alias: opencode → ~/.local/lib/opencode.sh
 ├── docker-compose-files/
 │   └── open-webui.yml                     # Docker Compose configuration for Open WebUI
 ```
@@ -196,6 +202,60 @@ The opencode configuration defines 4 provider endpoints:
 - **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8082`, 262K context
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
+
+### Disabled Providers & Built-in Agents
+
+`opencode.json` disables the default `opencode` and `openai` providers via `disabled_providers`. The built-in `build` and `plan` agents are also disabled — only the three custom agents (`analyze`, `architect`, `implement`) are active.
+
+### MCP Integrations
+
+MCP integrations are declared in `opencode.json` but **disabled by default**:
+
+| Integration | URL |
+|-------------|-----|
+| Jira | `https://mcp.atlassian.com/v1/mcp` |
+| Vercel | `https://mcp.vercel.com/v1/mcp` |
+
+Toggle `enabled: true` in `opencode.json` to activate.
+
+### Opencode Wrapper
+
+`home/.local/lib/opencode.sh` wraps the `opencode` CLI to add session persistence and cache reset behavior. It is aliased via `home/.opencoderc`, which is sourced from `~/.bashrc` and `~/.zshrc` by the bootstrap system.
+
+- Persists the last session ID to `.last-opencode-session` in the git repo root
+- Resumes via `--continue` / `-s` / `--session` using the persisted ID
+- Resets model history and clears model cache on fresh sessions (configurable via `RESET_OPENCODE_HISTORY`, `RESET_OPENCODE_MODELS_CACHE`)
+- Required binaries (all installed via bootstrap): `cat`, `git`, `jq`, `opencode`, `sqlite3`
+
+---
+
+## Bootstrap System
+
+The bootstrap system sets up the local development environment:
+
+```bash
+bin/bootstrap.sh                            # Interactive
+ASSUME_YES=true bin/bootstrap.sh            # Non-interactive
+```
+
+Bootstrap scripts run in lexicographic order from `scripts/`:
+
+| Script | Purpose |
+|--------|---------|
+| `01_brew_install_base_packages.sh` | Installs Homebrew (if missing) and base packages (`ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh`) |
+| `02_configure_nodenv.sh` | Clones/updates `nodenv` and the `node-build` plugin |
+| `03_configure_node.sh` | Installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) via nodenv |
+| `04_configure_opencode.sh` | Installs `opencode-ai` (from `.default-opencode-version`); appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+
+### Tool Versions
+
+Pinned versions live in top-level dotfiles:
+
+| File | Tool |
+|------|------|
+| `.default-node-version` | Node.js (nodenv) |
+| `.default-npm-version` | npm |
+| `.default-opencode-version` | opencode-ai |
 
 ---
 

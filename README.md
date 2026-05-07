@@ -28,6 +28,12 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   │   │   ├── analyze.md          # Data analyst agent
 │   │   │   ├── architect.md        # Full lifecycle engineer agent
 │   │   │   └── implement.md        # Default build agent
+│   │   ├── skills/                 # Vendored workflow skills (no external plugins)
+│   │   │   ├── coder/              # Sub-agent implementer (TDD, self-review)
+│   │   │   ├── finisher/           # Verify, merge/PR, cleanup
+│   │   │   ├── planner/            # Task decomposition + independence analysis
+│   │   │   ├── researcher/         # Design & discovery (approval-gated)
+│   │   │   └── reviewer/           # Spec compliance + code quality review
 │   │   └── opencode.json           # Opencode provider and agent configuration
 │   ├── .local/lib/
 │   │   └── opencode.sh             # Opencode wrapper script (session persistence, cache reset)
@@ -200,6 +206,7 @@ Runs the sage model for general advising. Supports both local and server modes v
 - Ubatch size: 1024
 - Min P: 0.0
 - Presence penalty: 1.5
+- Repeat penalty: 1.0
 - Temperature: 1.0
 - Top K: 20
 - Top P: 0.95
@@ -344,7 +351,7 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 |----------|----------|-------|---------|-------|--------|------------|
 | llama.cpp (local - jzaleski/cipher) | `localhost:8081` | jzaleski/cipher | 81,920 | 73,728 | 8,192 | text+image in, text out |
 | llama.cpp (local - jzaleski/sage) | `localhost:8082` | jzaleski/sage | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8081` | jzaleski/cipher | 262,144 | 163,840 | 32,768 | text+image in, text out |
+| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8081` | jzaleski/cipher | 262,144 | 229,376 | 32,768 | text+image in, text out |
 | llama.cpp (server - jzaleski/sage) | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text+image in, text out |
 
 **Note:** All providers support image input via the opencode provider configuration.
