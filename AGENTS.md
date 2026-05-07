@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts and Docker configurations for running local LLMs using `llama-server`.
-Supports coding assistance (Qwen3.6-35B-A3B local, MiniMax-M2.7 server) and general advising (Qwen3.6-35B-A3B local and server).
+Supports coding assistance (Qwen3.6-35B-A3B local and server) and general advising (Qwen3.6-35B-A3B local and server).
 
 **No code repositories** - utilities/config only.
 
@@ -27,7 +27,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 .
 ├── bin/                                   # Main execution scripts
 │   ├── bootstrap.sh                       # System setup and configuration bootstrap
-│   ├── run-cipher.sh                      # Cipher model (Qwen3.6-35B-A3B local, MiniMax-M2.7 server)
+│   ├── run-cipher.sh                      # Cipher model (Qwen3.6-35B-A3B local and server)
 │   ├── run-sage.sh                        # Sage model (Qwen3.6-35B-A3B local and server)
 │   └── run-open-webui.sh                  # Open WebUI Docker wrapper
 ├── scripts/                               # Bootstrap scripts (executed by bin/bootstrap.sh)
@@ -90,11 +90,11 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 | Variable | Description | Default (Local) | Default (Server) |
 |----------|-------------|-----------------|------------------|
 | `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
-| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3.6-35B-A3B` (cipher), `Qwen3.6-35B-A3B` (sage) | `MiniMax-M2.7` (cipher), `Qwen3.6-35B-A3B` (sage) |
-| `MODEL_QUANTIZATION` | Quantization level | `UD-Q4_K_XL` (cipher), `UD-Q4_K_XL` (sage) | `Q8_0` (cipher), `UD-Q8_K_XL` (sage) |
+| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3.6-35B-A3B` (cipher), `Qwen3.6-35B-A3B` (sage) | `Qwen3.6-35B-A3B` (cipher), `Qwen3.6-35B-A3B` (sage) |
+| `MODEL_QUANTIZATION` | Quantization level | `UD-Q4_K_XL` (cipher), `UD-Q4_K_XL` (sage) | `UD-Q8_K_XL` (cipher), `UD-Q8_K_XL` (sage) |
 | `TEMP` | Sampling temperature | `1.0` (cipher), `1.0` (sage) | `1.0` (cipher), `1.0` (sage) |
 | `PORT` | Network port | `8081` (cipher), `8082` (sage) | `8081` (cipher), `8082` (sage) |
-| `CTX_SIZE` | Context window (tokens) | `81920` (cipher), `81920` (sage) | `196608` (cipher), `262144` (sage) |
+| `CTX_SIZE` | Context window (tokens) | `81920` (cipher), `81920` (sage) | `262144` (cipher), `262144` (sage) |
 | `MIN_P` | Nucleus min (0.0 disables) | `0.01` (cipher), `0.0` (sage) | `0.01` (cipher), `0.0` (sage) |
 | `TOP_K` | Top-K limit (0 or 0.0 disables) | `40` (cipher), `20` (sage) | `40` (cipher), `20` (sage) |
 | `REPEAT_PENALTY` | Repeat penalty (1.0 = no penalty) | `1.0` | `1.0` |
@@ -104,6 +104,8 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
 | `FLASH_ATTN` | Flash attention | `on` | `on` |
 | `N_GPU_LAYERS` | GPU layers to offload (-1 = all) | `-1` | `-1` |
+| `BATCH_SIZE` | Batch size for inference | `2048` (cipher), `2048` (sage) | `4096` (cipher), `4096` (sage) |
+| `UBATCH_SIZE` | Ubatch size for inference | `512` (cipher), `512` (sage) | `1024` (cipher), `1024` (sage) |
 | `WEBUI_AUTH` | WebUI authentication | `False` | `True` |
 | `SAGE_MODEL_PORT` | Sage model port for WebUI | `8082` | `8082` |
 | `IMAGE` | Docker image for WebUI | `ghcr.io/open-webui/open-webui:main` | `ghcr.io/open-webui/open-webui:main` |
@@ -115,8 +117,8 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 ```
 ┌──────────────────┐
 │   Cipher Model   │ (Port 8081)
-│   MiniMax-M2.7   │
-│     (server)     │
+│  Qwen3.6-35B-A3B │
+│ (local & server) │
 └──────────────────┘
 ```
 
@@ -188,7 +190,7 @@ Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
 The opencode configuration defines 4 provider endpoints:
 - **llama.cpp (local - jzaleski/cipher)**: `localhost:8081` — Qwen3.6-35B-A3B, 81K context
 - **llama.cpp (local - jzaleski/sage)**: `localhost:8082` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8081`, 196K context
+- **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8081`, 262K context
 - **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8082`, 262K context
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
@@ -199,7 +201,7 @@ Each provider specifies model limits for context window, input tokens, and outpu
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- Context size: 81920 (cipher local), 196608 (cipher server), 81920 (sage local), 262144 (sage server)
+- Context size: 81920 (cipher local), 262144 (cipher server), 81920 (sage local), 262144 (sage server)
 
 ## Docker Compose
 

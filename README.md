@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It includes support for coding assistance (Qwen3.6-35B-A3B local, MiniMax-M2.7 server) and general advising (Qwen3.6-35B-A3B local and server).
+This repository provides scripts and configurations for running local AI models using llama-server. It includes support for coding assistance (Qwen3.6-35B-A3B local and server) and general advising (Qwen3.6-35B-A3B local and server).
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -14,7 +14,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 .
 ├── bin/                            # Main execution scripts
 │   ├── bootstrap.sh                # System setup and configuration bootstrap
-│   ├── run-cipher.sh               # Cipher model (MiniMax-M2.7 server, Qwen3.6-35B-A3B local)
+│   ├── run-cipher.sh               # Cipher model (Qwen3.6-35B-A3B local and server)
 │   ├── run-sage.sh                 # Sage model (Qwen3.6-35B-A3B local and server)
 │   └── run-open-webui.sh           # Open WebUI Docker wrapper
 ├── scripts/                        # Bootstrap scripts (executed by bin/bootstrap.sh)
@@ -103,13 +103,13 @@ You can override default settings via environment variables. The same variables 
 **Common Variables:**
 - `MODEL_PROVIDER`: Provider/organization name for the model (default: unsloth)
 - `MODEL_NAME`: Name of the model to load (no -GGUF suffix, defaults to local/server mode below)
-- `MODEL_QUANTIZATION`: Full quantization specification (default: UD-Q4_K_XL for local, Q8_0/UD-Q8_K_XL for server)
+- `MODEL_QUANTIZATION`: Full quantization specification (default: UD-Q4_K_XL for local, UD-Q8_K_XL for server)
 - `HOST`: Network interface address to bind the server to (default: 127.0.0.1 for local, 0.0.0.0 for server)
 - `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for cipher, 8082 for sage, 8080 for WebUI)
 - `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/cipher or jzaleski/sage)
 - `FLASH_ATTN`: Boolean flag to enable flash attention mechanism for faster processing on supported hardware (default: on)
 - `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1 for local, -1 for server)
-- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 81920 for cipher local, 196608 for cipher server, 81920 for sage local, 262144 for sage server)
+- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 81920 for cipher local, 262144 for cipher server, 81920 for sage local, 262144 for sage server)
 - `MIN_P`: Threshold for nucleus sampling to exclude low-probability tokens (0.0-1.0)
 - `PRESENCE_PENALTY`: Factor applied to penalize repeated tokens (default: 1.5)
 - `REPEAT_PENALTY`: Factor applied to penalize repeated tokens (1.0 is no penalty)
@@ -130,6 +130,8 @@ Runs the cipher model for coding assistance. Supports both local and server mode
 - Flash attention: enabled
 - GPU layers: -1 (All)
 - Context size: 81920 tokens
+- Batch size: 2048
+- Ubatch size: 512
 - Min P: 0.01
 - Presence penalty: 1.5
 - Repeat penalty: 1.0
@@ -138,13 +140,15 @@ Runs the cipher model for coding assistance. Supports both local and server mode
 - Top P: 0.95
 
 **Server Mode Defaults:**
-- Model: `unsloth/MiniMax-M2.7-GGUF:Q8_0`
+- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q8_K_XL`
 - Alias: `jzaleski/cipher`
 - Host: 0.0.0.0
 - Port: 8081
 - Flash attention: enabled
 - GPU layers: -1
-- Context size: 196608 tokens
+- Context size: 262144 tokens
+- Batch size: 4096
+- Ubatch size: 1024
 - Min P: 0.01
 - Presence penalty: 1.5
 - Repeat penalty: 1.0
@@ -163,6 +167,8 @@ Runs the sage model for general advising. Supports both local and server modes v
 - Flash attention: enabled
 - GPU layers: -1 (All)
 - Context size: 81920 tokens
+- Batch size: 2048
+- Ubatch size: 512
 - Min P: 0.0
 - Presence penalty: 1.5
 - Repeat penalty: 1.0
@@ -178,9 +184,10 @@ Runs the sage model for general advising. Supports both local and server modes v
 - Flash attention: enabled
 - GPU layers: -1
 - Context size: 262144 tokens
+- Batch size: 4096
+- Ubatch size: 1024
 - Min P: 0.0
 - Presence penalty: 1.5
-- Repeat penalty: 1.0
 - Temperature: 1.0
 - Top K: 20
 - Top P: 0.95
@@ -253,8 +260,8 @@ docker compose -f docker-compose-files/open-webui.yml down
 ```
 ┌────────────────────┐
 │    Cipher Model    │ (Port 8081)
-│    MiniMax-M2.7    │
-│      (server)      │
+│  Qwen3.6-35B-A3B   │
+│  (local & server)  │
 └────────────────────┘
 ```
 
@@ -312,7 +319,7 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │  ┌────────────────┐  │ ┌────────────────┐
 │  │ Server Cipher  │  │ │ Server Sage    │
 │  │ remote:8081    │  │ │ remote:8082    │
-│  │ 196K context   │  │ │ 262K context   │
+│  │ 262K context   │  │ │ 262K context   │
 │  └────────────────┘  │ └────────────────┘
 └──────────────────────┘
 ```
@@ -325,10 +332,10 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 |----------|----------|-------|---------|-------|--------|------------|
 | llama.cpp (local - jzaleski/cipher) | `localhost:8081` | jzaleski/cipher | 81,920 | 73,728 | 8,192 | text+image in, text out |
 | llama.cpp (local - jzaleski/sage) | `localhost:8082` | jzaleski/sage | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8081` | jzaleski/cipher | 196,608 | 163,840 | 32,768 | text in/out only |
+| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8081` | jzaleski/cipher | 262,144 | 163,840 | 32,768 | text+image in, text out |
 | llama.cpp (server - jzaleski/sage) | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text+image in, text out |
 
-**Note:** Local cipher and sage support image input via the opencode provider configuration. Server cipher does not support image input.
+**Note:** All providers support image input via the opencode provider configuration.
 
 ### Agent Roles
 
@@ -403,10 +410,10 @@ opencode [options] [query]
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
-- Context size standardized to 81920 tokens for sage and cipher local, 262144 tokens for sage server, 196608 for cipher server
+- Context size standardized to 81920 tokens for sage and cipher local, 262144 tokens for both servers
 - For coding tasks, use run-cipher.sh:
   - Local: Qwen3.6-35B-A3B (efficient local coding)
-  - Server: MiniMax-M2.7 (powerful server-side coding)
+  - Server: Qwen3.6-35B-A3B (powerful server-side coding)
 - For general advising, use run-sage.sh:
   - Local: Qwen3.6-35B-A3B (efficient local reasoning)
   - Server: Qwen3.6-35B-A3B (powerful server-side reasoning)
