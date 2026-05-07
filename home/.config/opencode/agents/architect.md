@@ -61,6 +61,37 @@ In all scenarios: `AGENTS.md` must be committed before proceeding to the main wo
 └─────────────────────┘
 ```
 
+## Sub-Agent Dispatch
+
+Skills fall into two execution patterns:
+
+**Interactive skills — load inline into your own context via the `skill` tool:**
+- `researcher` — requires user dialogue (clarifying questions, design approval)
+- `planner` — may require user clarification; produces a doc for user review
+- `finisher` — presents merge/PR options to the user and waits for choice
+
+**Non-interactive skills — dispatch as sub-agents via the `task` tool:**
+- `coder` — executes a scoped task from a plan, no user interaction
+- `reviewer` — validates work against spec/quality, no user interaction
+
+For sub-agent dispatch, use `subagent_type: general` (workers need write access; `explore` is read-only and unsuitable).
+
+**Parallel dispatch pattern:** Issue all independent `task` calls in a single assistant turn so they run concurrently. Serializing across turns defeats the purpose of parallel batches.
+
+**Prompt template for every dispatched worker:**
+
+```
+Load skills/<skill-name> via the skill tool, then execute the following task:
+
+[Full task description from the plan — include exact file paths, code blocks, commands, acceptance criteria, and the reviewer mode if applicable]
+
+Working directory: [absolute path]
+Context files to read first: [list, if any]
+Report back using the structured format defined in skills/<skill-name>.
+```
+
+Each sub-agent runs with a fresh context, so every prompt must be self-contained. Never assume the sub-agent has seen the parent conversation. Copy the relevant plan excerpt verbatim into the prompt.
+
 ## Workflow
 
 Each phase invokes a local skill. The phase gates the next — do not skip ahead. No external plugins required.
@@ -71,18 +102,18 @@ ensure AGENTS.md → read AGENTS.md → check branch → [researcher] → [plann
 
 ### Phase 1: Researcher (skill: `skills/researcher`)
 
-Load and follow the **researcher** skill. It handles context exploration, clarifying questions, approach proposals, design presentation with approval gates, spec writing, and self-review.
+Load the **researcher** skill inline (via the `skill` tool) — it requires direct user dialogue. It handles context exploration, clarifying questions, approach proposals, design presentation with approval gates, spec writing, and self-review.
 
 **Your role as orchestrator:**
 - Load the researcher skill for the initial research pass
-- Ensure user sees and approves the design document before proceeding
-- The researcher's terminal state is invoking `skills/planner` — hand off when approved
+- Ensure the user sees and approves the design document before proceeding
+- The researcher's terminal state is handoff to the planner skill — load that next when design is approved
 
 **HARD-GATE:** Do not proceed to planning or implementation until the user approves the design document.
 
 ### Phase 2: Planner (skill: `skills/planner`)
 
-Load and follow the **planner** skill. It produces bite-sized task decomposition with exact file paths, code, commands, and expected output. Saves to `docs/plans/YYYY-MM-DD-<feature-name>.md`. No placeholders allowed — every step must contain the actual content needed to execute.
+Load the **planner** skill inline (via the `skill` tool) — it may require user clarification and produces a doc for user review. The planner produces bite-sized task decomposition with exact file paths, code, commands, and expected output. Saves to `docs/plans/YYYY-MM-DD-<feature-name>.md`. No placeholders allowed — every step must contain the actual content needed to execute.
 
 Includes an **independence analysis** section that groups tasks into parallel dispatch batches. The planner guarantees:
 - Each task has complete code, exact file paths, and run commands
@@ -91,47 +122,55 @@ Includes an **independence analysis** section that groups tasks into parallel di
 
 ### Phase 3: Parallel Coder Batches (skill: `skills/coder`)
 
-Load the **coder** skill. Dispatch sub-agents according to the parallel batches identified during planning.
+Dispatch coder sub-agents according to the parallel batches identified during planning. See the **Sub-Agent Dispatch** section above for the mechanism.
 
 **Worker types and when to dispatch them:**
 
 | Worker | Skill/Role | Responsibility | Can run in parallel with? |
 |---|---|---|---|
 | **Coder** | `skills/coder` | Implements actual source code, new files, edits | Other coders (different files), doc-worker |
-| **Doc-Worker** | inline (no skill) | Updates AGENTS.md, README, docs, comments | Any coder — reads-only on source code |
+| **Doc-Worker** | `skills/coder` (on docs) | Updates AGENTS.md, README, docs, inline comments | Any coder — doesn't touch source code |
 | **Reviewer** | `skills/reviewer` | Validates all output against spec + code quality | Runs AFTER workers complete (no parallelism) |
+
+A doc-worker is just a coder sub-agent whose task is scoped to documentation files. Same skill, same dispatch mechanism — the distinction is purely about which files they touch.
 
 **Dispatch rules:**
 
 1. **Group independent tasks into batches.** If Task A modifies `src/auth/` and Task B modifies `src/api/`, dispatch them together as independent coders per the planner's independence analysis.
 2. **Do NOT use worktrees.** Work directly on the feature branch — subagents share the same filesystem.
 3. **Worker isolation principle:** Even though workers share the filesystem, they must not conflict by modifying the same files. The plan guarantees this via the independence analysis.
-4. **Two-stage review per batch is NOT required for simplicity** — run a single spec compliance review + code quality review after ALL batches complete instead of reviewing after each batch. This saves one round-trip and the plan already defines clear boundaries between tasks.
+4. **Batch-level review deferred:** Run a single spec-compliance + code-quality review pass after ALL batches complete, not after each batch. This saves round-trips; the plan's independence analysis already enforces clean task boundaries.
 
 **Implementation pattern:**
+
 ```
-Batch 1: dispatch(Coder@task-1, Coder@task-2, DocWorker@readme-update) → wait for all → collect reports
-Batch 2: dispatch(Coder@task-3, Coder@task-4) → wait for all → collect reports
+Turn 1: task(coder, task-1) + task(coder, task-2) + task(doc-worker, readme) [parallel]
+        → collect all reports
+Turn 2: task(coder, task-3) + task(coder, task-4) [parallel]
+        → collect all reports
 ...
-All batches done → dispatch(Reviewer mode=spec-compliance) on ALL output → dispatch(Reviewer mode=code-quality) → if issues, fix and re-review
+Turn N:   task(reviewer, mode=spec-compliance, all-output)
+Turn N+1: task(reviewer, mode=code-quality, all-output)   [only if spec-compliance passes]
+Turn N+2: if issues → fix via coder sub-agent, then re-dispatch reviewer with identical inputs
 ```
 
 ### Phase 4: Reviewer (skill: `skills/reviewer`)
 
-After all batches complete, run comprehensive review. The reviewer validates:
-1. **Spec compliance** — each change matches what the plan promised (no missing pieces, no over-building)
-2. **Code quality** — correct typing, consistency with codebase style, clean structure, proper tests
+After all batches complete, run comprehensive review via sub-agent dispatch:
 
-Load `skills/reviewer` with `mode=spec-compliance` first for ALL tasks. Then load it again with `mode=code-quality`. Never skip spec compliance for code quality.
+1. **Spec compliance pass** — dispatch a reviewer with `mode=spec-compliance`. Passes: each change matches what the plan promised (no missing pieces, no over-building).
+2. **Code quality pass** — only after spec compliance passes, dispatch a reviewer with `mode=code-quality`. Checks typing, style consistency, structure, test quality.
 
-If the reviewer finds issues:
-- The implementer sub-agent fixes them (same model that did the original work)
-- Dispatch the reviewer again with identical inputs
-- Repeat until approved — never skip re-reviews
+**HARD-GATE:** Never run code-quality before spec-compliance passes. See `skills/reviewer` for the enforcement rule.
+
+If a review finds issues:
+- Dispatch the original implementer sub-agent to fix them (coder skill, fresh task describing the fixes)
+- Re-dispatch the reviewer with identical inputs
+- Repeat until approved — never skip re-reviews, even if the implementer claims it's fixed
 
 ### Phase 5: Finisher (skill: `skills/finisher`)
 
-Load and follow the **finisher** skill. Test verification, base branch detection, presenting merge/PR options to the user, executing the chosen option, and cleanup.
+Load the **finisher** skill inline (via the `skill` tool) — it presents options to the user and executes the chosen one. Covers test verification, base branch detection, merge/PR menu, and cleanup.
 
 ## What You Do NOT Do
 

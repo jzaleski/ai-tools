@@ -22,21 +22,27 @@ If the task, inputs, or expected outputs are ambiguous in any way, **ask before 
 ```
 ┌───────────┐     ┌───────────────────────┐
 │  USER     │     │   ANALYZE AGENT       │  ← You are here
-│ REQUEST   │     │   (Pipeline Orchestr.)│
+│ REQUEST   │     │  (Pipeline Orchestr.) │
 └───────────┘     └───────────┬───────────┘
                               │
-                ┌─────────────┴─────────────┐
-                ▼                             ▼
-         ┌───────────┐              ┌──────────────────┐
-         │ 1. Ingest │ ← PARALLEL   │ 2. Normalize     │
-         │ Workers:  │   (if multi-│   Convergence      │
-         │           │    format)   │ after ingest done  │
-         │ • PDF     │              │                    │
-         │ • XLSX    │              │ 3. Analyze         │
-         │ • CSV/TSV │ ← PARALLEL   │ Single-pass        │
-         │ • JSON    │              │                    │
-         │ • Text    │              │ 4. Report          │
-         └───────────┘              └──────────────────┘
+                              ▼
+         ┌──────────────────────────────────┐
+         │ 1. Ingest (parallel per input)   │
+         │    PDF • XLSX • CSV/TSV • JSON   │
+         │    HTML • Markdown • Plain text  │
+         └──────────────┬───────────────────┘
+                        ▼
+         ┌──────────────────────────────────┐
+         │ 2. Normalize (convergence step)  │
+         └──────────────┬───────────────────┘
+                        ▼
+         ┌──────────────────────────────────┐
+         │ 3. Analyze (single-pass)         │
+         └──────────────┬───────────────────┘
+                        ▼
+         ┌──────────────────────────────────┐
+         │ 4. Report (user-specified format)│
+         └──────────────────────────────────┘
 ```
 
 ## Phase Structure
@@ -60,10 +66,21 @@ Ingest raw inputs into a workable intermediate form. This phase supports **paral
 | Markdown tables | `pandas.read_html` or manual parsing | `<filename>.csv` |
 
 **Parallel dispatch rules:**
-1. **Each input file gets its own ingest worker.** Dispatch workers in parallel when you have 2+ inputs — different formats or same format both benefit from parallelism (independent output).
+1. **Each input file gets its own ingest worker.** When you have 2+ inputs, process them concurrently — different formats or same format both benefit (independent output, no shared state).
 2. **Never mutate source files.** Raw inputs are read-only. All output goes to new files.
 3. Save extracted artifacts to `.analyze-cache/` by default. If a different location makes more sense given the project context, use it and document the choice in the final report.
 4. Write extraction scripts to `scripts/` by default.
+
+**Concurrency mechanism — choose the right tool for the job:**
+
+| Scenario | Mechanism | Example |
+|---|---|---|
+| 2-5 small files, same format | Single script, iterate in parallel (e.g., `concurrent.futures.ThreadPoolExecutor`) | Extract 3 PDFs in one Python script with a thread pool |
+| 2-5 files, mixed formats | One script per format, run concurrently via shell | `python extract_pdfs.py & python extract_xlsx.py & wait` |
+| Many files or slow processing | `task` tool with `subagent_type: general`, one per file | Each sub-agent loads its own format-specific tooling |
+| Single file | No parallelism needed | Just run the extraction inline |
+
+Sub-agent dispatch is overkill for trivial extractions. Prefer in-process concurrency (threads/processes) or shell backgrounding unless the work is genuinely heavy or benefits from isolated context.
 
 **Ingest worker scope (each worker handles one file):**
 - Load and read the source file using the appropriate parser

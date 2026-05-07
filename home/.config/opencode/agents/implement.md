@@ -24,14 +24,13 @@ Before doing ANY work:
                             │
                   ┌─────────┴─────────┐
                   │                   │
-              straightforward      multi-file / complex
+              straightforward    multi-file / independent
                   │                   │
-          ┌───────▼───────┐    ┌──────▼──────┐
-          │  Direct:      │    │ Dispatch:   │
-          │  coder +      │    │ Coder skill │ ← parallel per independent file group
-          │  inline verify│    │ (indep. grp)│ ← parallel per independent file group
-          │               │    │ Reviewer    │ ← runs after all coders done (inline, no separate sub-agent)
-          └───────────────┘    └─────────────┘
+          ┌───────▼───────┐   ┌───────▼────────┐
+          │ Direct:       │   │ Dispatch:      │
+          │ edit + verify │   │ coder per group│ ← parallel
+          │ inline        │   │ + inline verify│ ← after all done
+          └───────────────┘   └────────────────┘
 ```
 
 ## Core Principles
@@ -66,12 +65,32 @@ Before choosing an implementation path, evaluate:
 ### Path B: Multi-File Changes (Parallel Dispatch)
 
 1. **Group files by independence.** Which files can be modified without waiting for others? Each independent group becomes a coder sub-agent task.
-2. **Dispatch coders in parallel** for each independent file group, loading `skills/coder` with the full task description.
+2. **Dispatch coders in parallel** for each independent file group (see *Sub-Agent Dispatch* below).
 3. **Inline verifier runs after all coders complete.** You read all changes yourself (no separate sub-agent needed for verification at this scope), checking:
    - Consistency across files (no orphaned references)
    - Correctness against AGENTS.md rules
    - No new TODO/FIXME comments without explanation
 4. Leave all changes in the working tree — do not stage, commit, or push.
+
+## Sub-Agent Dispatch
+
+When Path B requires spawning coder sub-agents, use the `task` tool with `subagent_type: general` (coders need write access; `explore` is read-only and unsuitable).
+
+**Parallel dispatch pattern:** Issue all independent `task` calls in a single assistant turn so they run concurrently. Do not serialize them across turns unless they have a true dependency.
+
+**Prompt template for each coder:**
+
+```
+Load skills/coder via the skill tool, then execute the following task:
+
+[Full task description — files to create/modify, exact code changes, acceptance criteria]
+
+Working directory: [absolute path]
+Context files to read first: [list]
+Report back with the structured status format defined in skills/coder.
+```
+
+Each coder runs with a fresh context, so the prompt must be self-contained. Never assume the sub-agent has seen the parent conversation.
 
 ## What You Do NOT Do
 
