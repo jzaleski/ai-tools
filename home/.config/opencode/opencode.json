@@ -1,11 +1,12 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
-  "default_agent": "implement",
   "agent": {
     "build": { "disable": true },
     "plan": { "disable": true }
   },
+  "default_agent": "implement",
+  "disabled_providers": ["opencode", "openai"],
   "provider": {
     "llama.cpp (local - jzaleski/cipher)": {
       "npm": "@ai-sdk/openai-compatible",
