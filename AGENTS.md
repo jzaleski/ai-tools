@@ -28,11 +28,13 @@ Agent configurations are managed via the bootstrap system and integrate with the
 ```
 .
 ├── bin/                                   # Main execution scripts
-│   ├── bootstrap.sh                       # System setup and configuration bootstrap
-│   ├── run-cipher.sh                      # Cipher model (Qwen3.6-35B-A3B local and server)
-│   ├── run-sage.sh                        # Sage model (Qwen3.6-35B-A3B local and server)
-│   └── run-open-webui.sh                  # Open WebUI Docker wrapper
-├── scripts/                               # Bootstrap scripts (executed by bin/bootstrap.sh)
+│   ├── bootstrap                          # System setup and configuration bootstrap
+│   ├── install-dependencies               # Installs/upgrades Homebrew base packages
+│   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
+│   ├── configure-opencode                 # Installs opencode-ai and configures shell init
+│   ├── run-cipher                         # Cipher model (Qwen3.6-35B-A3B local and server)
+│   ├── run-sage                           # Sage model (Qwen3.6-35B-A3B local and server)
+│   └── run-open-webui                     # Open WebUI Docker wrapper
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (analyze, architect, implement)
@@ -51,15 +53,15 @@ Agent configurations are managed via the bootstrap system and integrate with the
 Scripts in `bin/` support **local** and **server** modes:
 
 ```bash
-./bin/run-cipher.sh                        # Local mode
-./bin/run-cipher.sh --server               # Server mode
-./bin/run-sage.sh                          # Local mode
-./bin/run-sage.sh --server                 # Server mode
-./bin/run-open-webui.sh                    # Local mode
-./bin/run-open-webui.sh --server           # Server mode
+./bin/run-cipher                           # Local mode
+./bin/run-cipher --server                  # Server mode
+./bin/run-sage                             # Local mode
+./bin/run-sage --server                    # Server mode
+./bin/run-open-webui                       # Local mode
+./bin/run-open-webui --server              # Server mode
 ```
 
-Test with: `bash -x ./bin/run-cipher.sh` or `bash -x ./bin/run-sage.sh`
+Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 
 ---
 
@@ -234,18 +236,26 @@ Toggle `enabled: true` in `opencode.json` to activate.
 The bootstrap system sets up the local development environment:
 
 ```bash
-bin/bootstrap.sh                            # Interactive
-ASSUME_YES=true bin/bootstrap.sh            # Non-interactive
+bin/bootstrap                               # Interactive
+ASSUME_YES=true bin/bootstrap               # Non-interactive
 ```
 
-Bootstrap scripts run in lexicographic order from `scripts/`:
+Bootstrap scripts are defined as an explicit ordered array in `bin/bootstrap` and live alongside it in `bin/`:
 
 | Script | Purpose |
 |--------|---------|
-| `01_brew_install_base_packages.sh` | Installs Homebrew (if missing) and base packages (`ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh`) |
-| `02_configure_nodenv.sh` | Clones/updates `nodenv` and the `node-build` plugin |
-| `03_configure_node.sh` | Installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) via nodenv |
-| `04_configure_opencode.sh` | Installs `opencode-ai` (from `.default-opencode-version`); appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+| `bin/install-dependencies` | Installs Homebrew (if missing) and base packages (`ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh`) |
+| `bin/configure-node` | Clones/updates `nodenv` and the `node-build` plugin; installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) |
+| `bin/configure-opencode` | Installs `opencode-ai` (from `.default-opencode-version`); appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+
+To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
+```bash
+BOOTSTRAP_SCRIPTS="configure-node,configure-opencode" bin/bootstrap
+```
+To skip specific scripts, use `BOOTSTRAP_SKIP`:
+```bash
+BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
+```
 
 ### Tool Versions
 

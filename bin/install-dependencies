@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+cd $(dirname $0)/..;
+
 if [ $(uname) = "Darwin" ]; then
   brew_cmd=$(which brew 2> /dev/null || echo -n);
   if [ -z "$brew_cmd" ]; then

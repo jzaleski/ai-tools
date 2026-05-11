@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-# ensure that bootstrap is running from the project-root
 cd $(dirname $0)/..;
 
 # ensure that all submodules are initialized and up to date (if we're working
@@ -43,23 +42,55 @@ done
 # reload the shell-config (it may have changed)
 source $HOME/.bashrc;
 
-# run scripts optionally w/ any abitrary prefix (e.g. "sudo")
-function run_scripts() {
-  if [ -e "$1" ]; then
-    for f in $(\find $1 -type f -o -type l | \grep -E "^$1/[^\.](.+)" | \sed "s/$1\///g" | sort); do
-      $2 $1/$f;
-    done
-  fi
-}
-
 # mock away the `shell_session_update` function w/ a noop
 function shell_session_update() {
   :;
 }
 
-# run any files in "sudo_script" (the assumption is that things requiring root
-# should occur first)
-which sudo > /dev/null 2>&1 && run_scripts "sudo_scripts" "sudo -E"
+# Default scripts to run (all of them, in order)
+# Users can override by setting BOOTSTRAP_SCRIPTS environment variable
+# Example: BOOTSTRAP_SCRIPTS="configure-node,configure-opencode" bin/bootstrap
+if [ -z "$BOOTSTRAP_SCRIPTS" ]; then
+  bin_scripts=(
+    install-dependencies \
+    configure-git \
+    configure-node \
+    configure-opencode \
+  );
+else
+  IFS=',' read -ra bin_scripts <<< "$BOOTSTRAP_SCRIPTS";
+fi
 
-# run any files in "script"
-run_scripts "scripts"
+# Skip scripts based on BOOTSTRAP_SKIP environment variable
+# Example: BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
+if [ -n "$BOOTSTRAP_SKIP" ]; then
+  IFS=',' read -ra skip_scripts <<< "$BOOTSTRAP_SKIP";
+else
+  skip_scripts=();
+fi
+
+echo "Starting bootstrap process...";
+echo "";
+
+for script in ${bin_scripts[@]}; do
+  # Check if this script should be skipped
+  skip=false;
+  for skip_script in ${skip_scripts[@]}; do
+    if [ "$script" = "$skip_script" ]; then
+      skip=true;
+      break;
+    fi
+  done
+
+  if [ "$skip" = true ]; then
+    echo "Skipping: $script";
+    continue;
+  fi
+
+  echo "Running: $script";
+  bin/"$script";
+  echo "Completed: $script";
+  echo "";
+done
+
+echo "Bootstrap process complete!";

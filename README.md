@@ -13,15 +13,13 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 ```
 .
 ├── bin/                            # Main execution scripts
-│   ├── bootstrap.sh                # System setup and configuration bootstrap
-│   ├── run-cipher.sh               # Cipher model (Qwen3.6-35B-A3B local and server)
-│   ├── run-sage.sh                 # Sage model (Qwen3.6-35B-A3B local and server)
-│   └── run-open-webui.sh           # Open WebUI Docker wrapper
-├── scripts/                        # Bootstrap scripts (executed by bin/bootstrap.sh)
-│   ├── 01_brew_install_base_packages.sh  # Installs Homebrew and base packages
-│   ├── 02_configure_nodenv.sh      # Installs/updates nodenv and node-build plugin
-│   ├── 03_configure_node.sh        # Installs Node.js and npm via nodenv
-│   └── 04_configure_opencode.sh    # Installs opencode-ai and configures shell init
+│   ├── bootstrap                   # System setup and configuration bootstrap
+│   ├── install-dependencies        # Installs/upgrades Homebrew base packages
+│   ├── configure-node              # Clones/updates nodenv, installs Node.js and npm
+│   ├── configure-opencode          # Installs opencode-ai and configures shell init
+│   ├── run-cipher                  # Cipher model (Qwen3.6-35B-A3B local and server)
+│   ├── run-sage                    # Sage model (Qwen3.6-35B-A3B local and server)
+│   └── run-open-webui              # Open WebUI Docker wrapper
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -51,28 +49,35 @@ The project includes a bootstrap system for setting up your development environm
 
 ```bash
 # Run bootstrap (will prompt before overwriting)
-bin/bootstrap.sh
+bin/bootstrap
 
 # Run bootstrap non-interactively (overwrite without prompt)
-ASSUME_YES=true bin/bootstrap.sh
+ASSUME_YES=true bin/bootstrap
 ```
 
 The bootstrap script:
 - Initializes and updates git submodules if present (none currently)
 - Copies files from `home/` to your `$HOME` directory
-- Executes scripts in `scripts/` in sorted order
-- Supports `sudo_scripts/` for root-level operations (none currently)
+- Runs an explicit ordered array of scripts from `bin/`
 
 ### Bootstrap Scripts
 
-Scripts run in lexicographic order:
+Scripts run in the order defined in the `bin_scripts` array in `bin/bootstrap`:
 
 | Script | Purpose |
 |--------|---------|
-| `01_brew_install_base_packages.sh` | Installs Homebrew (if missing) and installs/upgrades: `ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh` |
-| `02_configure_nodenv.sh` | Clones/updates `nodenv` to `~/.nodenv` and the `node-build` plugin |
-| `03_configure_node.sh` | Installs the Node.js version from `.default-node-version` via nodenv; installs npm version from `.default-npm-version` |
-| `04_configure_opencode.sh` | Installs `opencode-ai` version from `.default-opencode-version` via npm; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+| `bin/install-dependencies` | Installs Homebrew (if missing) and installs/upgrades: `ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh` |
+| `bin/configure-node` | Clones/updates `nodenv` to `~/.nodenv` and the `node-build` plugin; installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) |
+| `bin/configure-opencode` | Installs `opencode-ai` version from `.default-opencode-version` via npm; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+
+To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
+```bash
+BOOTSTRAP_SCRIPTS="configure-node,configure-opencode" bin/bootstrap
+```
+To skip specific scripts, use `BOOTSTRAP_SKIP`:
+```bash
+BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
+```
 
 ## Prerequisites
 
@@ -137,7 +142,7 @@ You can override default settings via environment variables. The same variables 
 
 ## Components
 
-### run-cipher.sh
+### run-cipher
 Runs the cipher model for coding assistance. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
@@ -174,7 +179,7 @@ Runs the cipher model for coding assistance. Supports both local and server mode
 - Top K: 40
 - Top P: 0.95
 
-### run-sage.sh
+### run-sage
 Runs the sage model for general advising. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
@@ -211,7 +216,7 @@ Runs the sage model for general advising. Supports both local and server modes v
 - Top K: 20
 - Top P: 0.95
 
-### run-open-webui.sh
+### run-open-webui
 Starts Open WebUI interface using Docker. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
@@ -235,22 +240,22 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 
 ```bash
 # Run cipher model (local mode)
-./bin/run-cipher.sh
+./bin/run-cipher
 
 # Run cipher model (server mode)
-./bin/run-cipher.sh --server
+./bin/run-cipher --server
 
 # Run sage model (local mode)
-./bin/run-sage.sh
+./bin/run-sage
 
 # Run sage model (server mode)
-./bin/run-sage.sh --server
+./bin/run-sage --server
 
 # Start Open WebUI (local mode, auth disabled)
-./bin/run-open-webui.sh
+./bin/run-open-webui
 
 # Start Open WebUI (server mode, auth enabled)
-./bin/run-open-webui.sh --server
+./bin/run-open-webui --server
 ```
 
 ## Docker Compose
@@ -430,10 +435,10 @@ opencode [options] [query]
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
 - Context size standardized to 81920 tokens for sage and cipher local, 262144 tokens for both servers
-- For coding tasks, use run-cipher.sh:
+- For coding tasks, use run-cipher:
   - Local: Qwen3.6-35B-A3B (efficient local coding)
   - Server: Qwen3.6-35B-A3B (powerful server-side coding)
-- For general advising, use run-sage.sh:
+- For general advising, use run-sage:
   - Local: Qwen3.6-35B-A3B (efficient local reasoning)
   - Server: Qwen3.6-35B-A3B (powerful server-side reasoning)
 

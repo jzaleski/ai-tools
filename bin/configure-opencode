@@ -12,7 +12,7 @@ fi
 
 grep_cmd=$(which grep 2> /dev/null || echo -n);
 if [ -z "$grep_cmd" ]; then
-  echo "Error: Could not logrepe the \"grep\" command" >&2;
+  echo "Error: Could not locate the \"grep\" command" >&2;
   exit 1;
 fi
 

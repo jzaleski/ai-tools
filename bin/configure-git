@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -e;
+
+cd $(dirname $0)/..;
+
+git_cmd=$(which git 2> /dev/null || echo -n);
+if [ -z "$git_cmd" ]; then
+  echo "❌ Error: Could not locate the \"git\" command" >&2;
+  exit 1;
+fi
+
+core_excludes_file=$(${git_cmd} config --global core.excludesfile 2> /dev/null || echo -n);
+if [ -z "$core_excludes_file" ]; then
+  ${git_cmd} config --global core.excludesfile "~/.gitignore";
+fi
