@@ -14,12 +14,11 @@ Supports coding assistance (Qwen3.6-35B-A3B local and server) and general advisi
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
 - **analyze.md**: Data pipeline orchestrator — coordinates composable ingest workers for parallel multi-format data extraction, normalization, analysis, and reporting
-- **architect.md**: Lifecycle orchestrator — manages the full development lifecycle via local skills (researcher → planner → parallel coder batches → reviewer → finisher)
-- **implement.md**: Tactical implementer — assesses task scope, dispatches focused parallel workers for multi-file changes, handles straightforward tasks directly
+- **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
 
 Workflow skills are vendored locally under `home/.config/opencode/skills/` (researcher, planner, coder, reviewer, finisher). No external plugin dependencies.
 
-Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `implement`.
+Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `engineer`.
 
 ---
 
@@ -37,7 +36,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   └── run-open-webui                     # Open WebUI Docker wrapper
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
-│   │   ├── agents/                        # Agent definitions (analyze, architect, implement)
+│   │   ├── agents/                        # Agent definitions (analyze, engineer)
 │   │   ├── skills/                        # Vendored workflow skills (coder, finisher, planner, researcher, reviewer)
 │   │   └── opencode.json                  # Provider, agent, MCP configuration
 │   ├── .local/lib/opencode.sh             # Opencode wrapper (session persistence, cache reset)
@@ -166,13 +165,12 @@ Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 │   Opencode CLI   │
 │                  │
 │ ┌──────────────┐ │
-│ │ Implement    │ │ (default)
-│ │ [full tools] │ │
-│ └──────────────┘ │
-│                  │
-│ ┌──────────────┐ │
-│ │ Architect    │ │
-│ │ [lifecycle]  │ │
+│ │ Engineer     │ │ (default)
+│ │ [adaptive:   │ │
+│ │  triage →    │ │
+│ │  direct /    │ │
+│ │  dispatch /  │ │
+│ │  lifecycle]  │ │
 │ └──────────────┘ │
 │                  │
 │ ┌──────────────┐ │
@@ -207,7 +205,7 @@ Each provider specifies model limits for context window, input tokens, and outpu
 
 ### Disabled Providers & Built-in Agents
 
-`opencode.json` disables the default `opencode` and `openai` providers via `disabled_providers`. The built-in `build` and `plan` agents are also disabled — only the three custom agents (`analyze`, `architect`, `implement`) are active.
+`opencode.json` disables the default `opencode` and `openai` providers via `disabled_providers`. The built-in `build` and `plan` agents are also disabled — only the two custom agents (`analyze`, `engineer`) are active.
 
 ### MCP Integrations
 

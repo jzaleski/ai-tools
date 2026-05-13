@@ -165,7 +165,7 @@ After saving the plan:
 
 > "Plan complete and saved to `docs/plans/<filename>.md`. Ready for parallel dispatch via skills/coder."
 
-The plan is now ready for the architect agent to execute — it will dispatch coders in batches per the independence analysis. No further handoff needed from this skill.
+The plan is now ready for the orchestrating agent to execute — it will dispatch coders in batches per the independence analysis. No further handoff needed from this skill.
 
 ## Key Principles
 

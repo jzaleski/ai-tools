@@ -24,8 +24,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
 │   │   │   ├── analyze.md          # Data analyst agent
-│   │   │   ├── architect.md        # Full lifecycle engineer agent
-│   │   │   └── implement.md        # Default build agent
+│   │   │   └── engineer.md         # Adaptive software engineer (default)
 │   │   ├── skills/                 # Vendored workflow skills (no external plugins)
 │   │   │   ├── coder/              # Sub-agent implementer (TDD, self-review)
 │   │   │   ├── finisher/           # Verify, merge/PR, cleanup
@@ -102,10 +101,9 @@ These versions are managed and installed via the bootstrap system.
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
 - **analyze.md**: Data pipeline orchestrator — coordinates composable ingest workers for parallel multi-format data extraction, normalization, analysis, and reporting
-- **architect.md**: Lifecycle orchestrator — manages the full development lifecycle via local skills (researcher → planner → parallel coder batches → reviewer → finisher)
-- **implement.md**: Tactical implementer — assesses task scope, dispatches focused parallel workers for multi-file changes, handles straightforward tasks directly
+- **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
 
-Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `implement`.
+Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `engineer`.
 
 ### Local Skills
 
@@ -315,13 +313,12 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │    Opencode CLI      │
 │                      │
 │  ┌────────────────┐  │
-│  │ Implement      │◄─┼── default agent
-│  │ [full tools]   │  │
-│  └────────────────┘  │
-│                      │
-│  ┌────────────────┐  │
-│  │ Architect      │  │
-│  │ [lifecycle]    │  │
+│  │ Engineer       │◄─┼── default agent
+│  │ [adaptive:     │  │
+│  │  triage →      │  │
+│  │  direct /      │  │
+│  │  dispatch /    │  │
+│  │  lifecycle]    │  │
 │  └────────────────┘  │
 │                      │
 │  ┌────────────────┐  │
@@ -365,13 +362,12 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 
 | Agent | Mode | Capabilities | Output Style |
 |-------|------|--------------|--------------|
-| implement | primary (default) | Assesses task scope; handles straightforward changes directly, dispatches parallel workers for multi-file changes; escalates complex/ambiguous work to Architect | Changes left in working tree |
-| architect | primary | Full lifecycle orchestration — researcher → planner → parallel coder batches → reviewer → finisher; manages branches and commits | Complete, tested, merged/PR'd work |
+| engineer | primary (default) | Adaptive scope triage — handles trivial changes directly (Path A), dispatches parallel coders for multi-file work (Path B), or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger/ambiguous features (Path C) | Path A/B: working tree (may commit if clearly safe on Path A); Path C: feature branch with commits/PR |
 | analyze | primary | Data pipeline orchestration — parallel ingestion of multi-format inputs, normalization, analysis, report generation | Report in user-specified format |
 
 ### Disabled Built-in Agents
 
-The `build` and `plan` agents that ship with opencode are disabled in `opencode.json` — only the three custom agents above are active.
+The `build` and `plan` agents that ship with opencode are disabled in `opencode.json` — only the two custom agents above are active.
 
 ### Plugins
 
@@ -389,12 +385,11 @@ The following MCP integrations are configured but **disabled by default**:
 ### Usage
 
 ```bash
-# Run opencode with default agent (implement)
+# Run opencode with default agent (engineer)
 opencode "your question or task"
 
 # Specify a different agent
-opencode --agent implement "implement this feature"
-opencode --agent architect "plan and build out the changes needed"
+opencode --agent engineer "implement this feature"
 opencode --agent analyze "analyze this data file"
 ```
 
@@ -426,7 +421,7 @@ opencode [options] [query]
 ### Configuration Notes
 
 - `autoupdate`: disabled (manual updates only)
-- `default_agent`: `implement` (full tool access for general work)
+- `default_agent`: `engineer` (full tool access for general work)
 - Server providers use `server-hostname-or-ip` placeholder - replace with actual hostname/IP
 - Input/output token limits set to optimize for local inference constraints
 

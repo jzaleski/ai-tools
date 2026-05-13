@@ -9,7 +9,7 @@
       "disable": true
     }
   },
-  "default_agent": "implement",
+  "default_agent": "engineer",
   "disabled_providers": [
     "opencode",
     "openai"
