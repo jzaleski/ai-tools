@@ -96,7 +96,7 @@ Never push to a remote unless the user explicitly asks, and never force-push to 
 
 1. Read relevant files before making changes — never assume structure or types.
 2. Make the smallest change that solves the problem correctly.
-3. Run a verifier: syntax check, type check, or the relevant test(s). If the repo has a standard test command in `AGENTS.md`, use it.
+3. Run a verifier: syntax check, type check, or the relevant test(s). If the repo has a standard test command in `AGENTS.md`, use it. **If verification fails, fix and retry once. If it still fails, explain the error to the user and stop — do not leave broken code claiming the change is done.**
 4. Apply the commit discipline rules above.
 
 That's it. No skills, no sub-agents, no ceremony.
@@ -239,7 +239,6 @@ Only required for Path B and Path C (or any time the user asks explicitly). If `
 - **Do not dispatch conflicting parallel workers** (same files) — the plan's independence analysis prevents this on Path C; on Path B you enforce it when grouping.
 - **Do not use git worktrees** — work directly on the current/feature branch.
 - **Do not leave `TODO`/`FIXME` comments** without an explanation of why and what unblocks them.
-- **Do not commit during Path B.** Leave the multi-file diff in the working tree for the user.
 - **Do not take on data analysis / report generation work** — redirect the user to the `analyze` agent.
 
 ## External Dependencies
