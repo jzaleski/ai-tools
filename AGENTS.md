@@ -4,7 +4,7 @@ Guidelines for agentic coding tools in this repository.
 
 ## Project Overview
 
-Shell scripts and Docker configurations for running local LLMs using `llama-server`.
+Shell scripts for running local LLMs using `llama-server`.
 Supports coding assistance (Qwen3.6-35B-A3B local and server) and general advising (Qwen3.6-35B-A3B local and server).
 
 **No code repositories** - utilities/config only.
@@ -32,8 +32,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode                 # Installs opencode-ai and configures shell init
 │   ├── run-cipher                         # Cipher model (Qwen3.6-35B-A3B local and server)
-│   ├── run-sage                           # Sage model (Qwen3.6-35B-A3B local and server)
-│   └── run-open-webui                     # Open WebUI Docker wrapper
+│   └── run-sage                           # Sage model (Qwen3.6-35B-A3B local and server)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (analyze, engineer)
@@ -41,8 +40,6 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   │   └── opencode.json                  # Provider, agent, MCP configuration
 │   ├── .local/lib/opencode.sh             # Opencode wrapper (session persistence, cache reset)
 │   └── .opencoderc                        # Shell alias: opencode → ~/.local/lib/opencode.sh
-├── docker-compose-files/
-│   └── open-webui.yml                     # Docker Compose configuration for Open WebUI
 ```
 
 ---
@@ -56,8 +53,6 @@ Scripts in `bin/` support **local** and **server** modes:
 ./bin/run-cipher --server                  # Server mode
 ./bin/run-sage                             # Local mode
 ./bin/run-sage --server                    # Server mode
-./bin/run-open-webui                       # Local mode
-./bin/run-open-webui --server              # Server mode
 ```
 
 Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
@@ -76,7 +71,6 @@ Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 
 ### Configuration Files
 
-- Docker Compose: Use `snake_case` naming
 - Environment Variables: Use `${VAR:-default}` syntax
 
 ### Documentation
@@ -89,7 +83,7 @@ Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 
 - Scripts: `run-{component}.sh`
 - Modes: `local` / `server`
-- Ports: 8080 (WebUI), 8081 (cipher), 8082 (sage)
+- Ports: 8081 (cipher), 8082 (sage)
 - Aliases: `jzaleski/{component}`
 
 ---
@@ -115,9 +109,6 @@ Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 | `N_GPU_LAYERS` | GPU layers to offload (-1 = all) | `-1` | `-1` |
 | `BATCH_SIZE` | Batch size for inference | `2048` (cipher), `2048` (sage) | `4096` (cipher), `4096` (sage) |
 | `UBATCH_SIZE` | Ubatch size for inference | `512` (cipher), `512` (sage) | `1024` (cipher), `1024` (sage) |
-| `WEBUI_AUTH` | WebUI authentication | `False` | `True` |
-| `SAGE_MODEL_PORT` | Sage model port for WebUI | `8082` | `8082` |
-| `IMAGE` | Docker image for WebUI | `ghcr.io/open-webui/open-webui:main` | `ghcr.io/open-webui/open-webui:main` |
 
 ---
 
@@ -132,23 +123,6 @@ Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 ```
 
 ```
-┌──────────────────┐
-│    Sage Model    │ (Port 8082)
-│  Qwen3.6-35B-A3B │
-│ (local & server) │
-└──────────────────┘
-```
-
-```
-┌──────────────────┐
-│    Open WebUI    │ (Port 8080)
-│                  │
-│   ┌──────────┐   │
-│   │  Client  │   │
-│   └─────┬────┘   │
-└─────────┼────────┘
-          │
-          ▼
 ┌──────────────────┐
 │    Sage Model    │ (Port 8082)
 │  Qwen3.6-35B-A3B │
@@ -273,18 +247,11 @@ Pinned versions live in top-level dotfiles:
 - Use Q4-Q6 quantization for memory-constrained environments
 - Context size: 81920 (cipher local), 262144 (cipher server), 81920 (sage local), 262144 (sage server)
 
-## Docker Compose
-
-```bash
-docker compose -f docker-compose-files/open-webui.yml up
-docker compose -f docker-compose-files/open-webui.yml down
-```
-
 ## Troubleshooting
 
 **Model not loading**: Verify RAM (16GB+), GPU/VRAM, model name and quantization.
 
-**Connection failures**: Verify llama-server running, check `SAGE_MODEL_PORT`, ensure Docker host access.
+**Connection failures**: Verify llama-server running.
 
 **Performance issues**: Enable flash attention, reduce context size, adjust quantization.
 
@@ -292,5 +259,4 @@ docker compose -f docker-compose-files/open-webui.yml down
 
 - Do not modify model defaults without clear reason — quantization levels and context sizes are tuned for specific hardware profiles
 - Do not change port allocations without updating all dependent configurations
-- Do not enable authentication in local mode unless explicitly required
 - Do not skip `set -e` error handling in shell scripts

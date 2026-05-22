@@ -18,8 +18,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── configure-node              # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode          # Installs opencode-ai and configures shell init
 │   ├── run-cipher                  # Cipher model (Qwen3.6-35B-A3B local and server)
-│   ├── run-sage                    # Sage model (Qwen3.6-35B-A3B local and server)
-│   └── run-open-webui              # Open WebUI Docker wrapper
+│   └── run-sage                    # Sage model (Qwen3.6-35B-A3B local and server)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -35,8 +34,6 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── .local/lib/
 │   │   └── opencode.sh             # Opencode wrapper script (session persistence, cache reset)
 │   └── .opencoderc                 # Shell alias: opencode → ~/.local/lib/opencode.sh
-├── docker-compose-files/
-│   └── open-webui.yml              # Docker Compose configuration for Open WebUI
 ├── .default-node-version           # Default node version
 ├── .default-npm-version            # Default npm version
 └── .default-opencode-version       # Default opencode-ai version
@@ -82,7 +79,6 @@ BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
 
 - At least 16GB RAM for 20B+ models
 - GPU support (recommended)
-- Docker (optional; for Open WebUI)
 
 ## Tool Versions
 
@@ -126,7 +122,7 @@ You can override default settings via environment variables. The same variables 
 - `MODEL_NAME`: Name of the model to load (no -GGUF suffix, defaults to local/server mode below)
 - `MODEL_QUANTIZATION`: Full quantization specification (default: UD-Q4_K_XL for local, UD-Q8_K_XL for server)
 - `HOST`: Network interface address to bind the server to (default: 127.0.0.1 for local, 0.0.0.0 for server)
-- `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for cipher, 8082 for sage, 8080 for WebUI)
+- `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for cipher, 8082 for sage)
 - `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/cipher or jzaleski/sage)
 - `FLASH_ATTN`: Boolean flag to enable flash attention mechanism for faster processing on supported hardware (default: on)
 - `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1 for local, -1 for server)
@@ -214,24 +210,6 @@ Runs the sage model for general advising. Supports both local and server modes v
 - Top K: 20
 - Top P: 0.95
 
-### run-open-webui
-Starts Open WebUI interface using Docker. Supports both local and server modes via `--server` flag.
-
-**Local Mode Defaults:**
-- Port: 8080
-- Auth: disabled
-- Uses sage model on port 8082
-
-**Server Mode Defaults:**
-- Port: 8080
-- Auth: enabled
-- Uses sage model on port 8082
-
-**Environment Variables:**
-- `WEBUI_AUTH`: Enable authentication in WebUI (default: False for local, True for server)
-- `SAGE_MODEL_PORT`: Custom sage model port (default: 8082)
-- `IMAGE`: Docker image to use (default: ghcr.io/open-webui/open-webui:main)
-
 ## Usage
 
 ### Running Individual Models
@@ -248,25 +226,6 @@ Starts Open WebUI interface using Docker. Supports both local and server modes v
 
 # Run sage model (server mode)
 ./bin/run-sage --server
-
-# Start Open WebUI (local mode, auth disabled)
-./bin/run-open-webui
-
-# Start Open WebUI (server mode, auth enabled)
-./bin/run-open-webui --server
-```
-
-## Docker Compose
-
-Open WebUI can also be managed via Docker Compose:
-
-```bash
-docker compose -f docker-compose-files/open-webui.yml up
-```
-
-Stop with:
-```bash
-docker compose -f docker-compose-files/open-webui.yml down
 ```
 
 ## Architecture
@@ -284,23 +243,6 @@ docker compose -f docker-compose-files/open-webui.yml down
 │    Cipher Model    │ (Port 8081)
 │  Qwen3.6-35B-A3B   │
 │  (local & server)  │
-└────────────────────┘
-```
-
-```
-┌────────────────────┐
-│     Open WebUI     │ (Port 8080)
-│                    │
-│    ┌──────────┐    │
-│    │  Client  │    │
-│    └─────┬────┘    │
-└──────────┼─────────┘
-           │
-           ▼
-┌────────────────────┐
-│     Sage Model     │ (Port 8082)
-│   Qwen3.6-35B-A3B  │
-│   (local & server) │
 └────────────────────┘
 ```
 
@@ -450,11 +392,6 @@ opencode [options] [query]
 - Enable flash attention
 - Reduce context size
 - Adjust quantization level
-
-**WebUI connection issues:**
-- Verify sage model is running on configured port
-- Check firewall settings
-- Ensure Docker can reach host.docker.internal
 
 **Quality issues:**
 - Adjust `MIN_P` and `TOP_K` values based on desired response style (0 or 0.0 disables these sampling methods)
