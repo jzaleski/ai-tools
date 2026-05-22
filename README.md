@@ -17,8 +17,10 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── install-dependencies        # Installs/upgrades Homebrew base packages
 │   ├── configure-node              # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode          # Installs opencode-ai and configures shell init
-│   ├── run-cipher                  # Cipher model (Qwen3.6-35B-A3B local and server)
-│   └── run-sage                    # Sage model (Qwen3.6-35B-A3B local and server)
+│   └── run-router                  # Router server — all models via --models-preset
+├── conf/                           # llama-server INI preset files
+│   ├── router-local.ini            # Router preset: local profile (Q4, 81K ctx, 127.0.0.1)
+│   └── router-server.ini           # Router preset: server profile (Q8, 262K ctx, 0.0.0.0)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -115,135 +117,67 @@ Workflow skills are vendored locally under `home/.config/opencode/skills/` — n
 
 ## Environment Variables
 
-You can override default settings via environment variables. The same variables apply to both local and server modes. Environment defaults differ between local and server modes as shown in the Components section.
+You can override default settings via environment variables. The same variables apply to both local and server modes.
 
 **Common Variables:**
-- `MODEL_PROVIDER`: Provider/organization name for the model (default: unsloth)
-- `MODEL_NAME`: Name of the model to load (no -GGUF suffix, defaults to local/server mode below)
-- `MODEL_QUANTIZATION`: Full quantization specification (default: UD-Q4_K_XL for local, UD-Q8_K_XL for server)
 - `HOST`: Network interface address to bind the server to (default: 127.0.0.1 for local, 0.0.0.0 for server)
-- `PORT`: Network port for the server to listen on for incoming connections (default: 8081 for cipher, 8082 for sage)
-- `ALIAS`: Custom name to register the model with llama-server (default: jzaleski/cipher or jzaleski/sage)
-- `FLASH_ATTN`: Boolean flag to enable flash attention mechanism for faster processing on supported hardware (default: on)
-- `N_GPU_LAYERS`: Number of layers to offload to GPU (-1 for all layers, default: -1 for local, -1 for server)
-- `CTX_SIZE`: Maximum number of tokens the model can process in a single context window (default: 81920 for cipher local, 262144 for cipher server, 81920 for sage local, 262144 for sage server)
-- `MIN_P`: Threshold for nucleus sampling to exclude low-probability tokens (0.0-1.0)
-- `PRESENCE_PENALTY`: Factor applied to penalize repeated tokens (default: 1.5)
-- `REPEAT_PENALTY`: Factor applied to penalize repeated tokens (1.0 is no penalty)
-- `TEMP`: Controls randomness and creativity in model responses
-- `TOP_K`: Limit on the number of most likely tokens to consider during generation (0 or 0.0 disables top-k sampling)
-- `TOP_P`: Controls nucleus sampling - cumulative probability threshold for token selection (0.95 default)
+- `PORT`: Network port for the server to listen on (default: 8080)
 
 ## Components
 
-### run-cipher
-Runs the cipher model for coding assistance. Supports both local and server modes via `--server` flag.
+### run-router
+Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading all models defined in the appropriate INI preset file. Clients route to a specific model via `?model=jzaleski/cipher` or `?model=jzaleski/sage`. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
-- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL`
-- Alias: `jzaleski/cipher`
+- Preset: `conf/router-local.ini`
 - Host: 127.0.0.1
-- Port: 8081
-- Flash attention: enabled
-- GPU layers: -1 (All)
+- Port: 8080
+- Quantization: UD-Q4_K_XL (both models)
 - Context size: 81920 tokens
-- Batch size: 2048
-- Ubatch size: 512
-- Min P: 0.01
-- Presence penalty: 1.5
-- Repeat penalty: 1.0
-- Temperature: 1.0
-- Top K: 40
-- Top P: 0.95
+- Batch size: 2048 / Ubatch size: 512
 
 **Server Mode Defaults:**
-- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q8_K_XL`
-- Alias: `jzaleski/cipher`
+- Preset: `conf/router-server.ini`
 - Host: 0.0.0.0
-- Port: 8081
-- Flash attention: enabled
-- GPU layers: -1
+- Port: 8080
+- Quantization: UD-Q8_K_XL (both models)
 - Context size: 262144 tokens
-- Batch size: 4096
-- Ubatch size: 1024
-- Min P: 0.01
-- Presence penalty: 1.5
-- Repeat penalty: 1.0
-- Temperature: 1.0
-- Top K: 40
-- Top P: 0.95
+- Batch size: 4096 / Ubatch size: 1024
 
-### run-sage
-Runs the sage model for general advising. Supports both local and server modes via `--server` flag.
-
-**Local Mode Defaults:**
-- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL`
-- Alias: `jzaleski/sage`
-- Host: 127.0.0.1
-- Port: 8082
-- Flash attention: enabled
-- GPU layers: -1 (All)
-- Context size: 81920 tokens
-- Batch size: 2048
-- Ubatch size: 512
-- Min P: 0.0
-- Presence penalty: 1.5
-- Repeat penalty: 1.0
-- Temperature: 1.0
-- Top K: 20
-- Top P: 0.95
-
-**Server Mode Defaults:**
-- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q8_K_XL`
-- Alias: `jzaleski/sage`
-- Host: 0.0.0.0
-- Port: 8082
-- Flash attention: enabled
-- GPU layers: -1
-- Context size: 262144 tokens
-- Batch size: 4096
-- Ubatch size: 1024
-- Min P: 0.0
-- Presence penalty: 1.5
-- Repeat penalty: 1.0
-- Temperature: 1.0
-- Top K: 20
-- Top P: 0.95
+**Environment Variables:**
+- `HOST`: Override bind address
+- `PORT`: Override listen port (default: 8080)
 
 ## Usage
 
-### Running Individual Models
+```bash
+# Start router (local mode — both models on localhost:8080)
+./bin/run-router
+
+# Start router (server mode — both models on 0.0.0.0:8080)
+./bin/run-router --server
+```
+
+Clients select a model via the `model` query parameter or request body field:
 
 ```bash
-# Run cipher model (local mode)
-./bin/run-cipher
-
-# Run cipher model (server mode)
-./bin/run-cipher --server
-
-# Run sage model (local mode)
-./bin/run-sage
-
-# Run sage model (server mode)
-./bin/run-sage --server
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/cipher ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/sage   ...
 ```
 
 ## Architecture
 
 ```
-┌────────────────────┐
-│     Sage Model     │ (Port 8082)
-│   Qwen3.6-35B-A3B  │
-│  (local & server)  │
-└────────────────────┘
-```
-
-```
-┌────────────────────┐
-│    Cipher Model    │ (Port 8081)
-│  Qwen3.6-35B-A3B   │
-│  (local & server)  │
-└────────────────────┘
+┌──────────────────────────────────────┐
+│           Router Server              │ (Port 8080)
+│          --models-preset             │
+│                                      │
+│  ┌──────────────┐ ┌───────────────┐  │
+│  │jzaleski/     │ │jzaleski/      │  │
+│  │cipher        │ │sage           │  │
+│  │(Qwen3.6-35B) │ │(Qwen3.6-35B)  │  │
+│  └──────────────┘ └───────────────┘  │
+└──────────────────────────────────────┘
 ```
 
 ## Opencode Agent Architecture
@@ -275,13 +209,13 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │                      │
 │  ┌────────────────┐  │ ┌────────────────┐
 │  │ Local Cipher   │  │ │ Local Sage     │
-│  │ localhost:8081 │  │ │ localhost:8082 │
+│  │ localhost:8080 │  │ │ localhost:8080 │
 │  │ 81K context    │  │ │ 81K context    │
 │  └────────────────┘  │ └────────────────┘
 │                      │
 │  ┌────────────────┐  │ ┌────────────────┐
 │  │ Server Cipher  │  │ │ Server Sage    │
-│  │ remote:8081    │  │ │ remote:8082    │
+│  │ remote:8080    │  │ │ remote:8080    │
 │  │ 262K context   │  │ │ 262K context   │
 │  └────────────────┘  │ └────────────────┘
 └──────────────────────┘
@@ -293,10 +227,10 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provid
 
 | Provider | Endpoint | Model | Context | Input | Output | Modalities |
 |----------|----------|-------|---------|-------|--------|------------|
-| llama.cpp (local - jzaleski/cipher) | `localhost:8081` | jzaleski/cipher | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| llama.cpp (local - jzaleski/sage) | `localhost:8082` | jzaleski/sage | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8081` | jzaleski/cipher | 262,144 | 229,376 | 32,768 | text+image in, text out |
-| llama.cpp (server - jzaleski/sage) | `server-hostname-or-ip:8082` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| llama.cpp (local - jzaleski/cipher) | `localhost:8080` | jzaleski/cipher | 81,920 | 73,728 | 8,192 | text+image in, text out |
+| llama.cpp (local - jzaleski/sage) | `localhost:8080` | jzaleski/sage | 81,920 | 73,728 | 8,192 | text+image in, text out |
+| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8080` | jzaleski/cipher | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| llama.cpp (server - jzaleski/sage) | `server-hostname-or-ip:8080` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text+image in, text out |
 
 **Note:** All providers support image input via the opencode provider configuration.
 
@@ -371,13 +305,7 @@ opencode [options] [query]
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
-- Context size standardized to 81920 tokens for sage and cipher local, 262144 tokens for both servers
-- For coding tasks, use run-cipher:
-  - Local: Qwen3.6-35B-A3B (efficient local coding)
-  - Server: Qwen3.6-35B-A3B (powerful server-side coding)
-- For general advising, use run-sage:
-  - Local: Qwen3.6-35B-A3B (efficient local reasoning)
-  - Server: Qwen3.6-35B-A3B (powerful server-side reasoning)
+- Context size: 81920 tokens (local), 262144 tokens (server)
 
 ## Troubleshooting
 

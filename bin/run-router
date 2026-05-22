@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -e;
+
+CONF_DIR="$(dirname "$0")/../conf";
+
+run_local() {
+  exec llama-server \
+    --host "${HOST:-"127.0.0.1"}" \
+    --port "${PORT:-"8080"}" \
+    --models-preset "${CONF_DIR}/router-local.ini";
+}
+
+run_server() {
+  exec llama-server \
+    --host "${HOST:-"0.0.0.0"}" \
+    --port "${PORT:-"8080"}" \
+    --models-preset "${CONF_DIR}/router-server.ini";
+}
+
+if [[ "${1:-}" == "--server" ]]; then
+  run_server;
+else
+  run_local;
+fi

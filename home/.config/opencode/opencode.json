@@ -19,7 +19,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "llama.cpp (local - jzaleski/cipher)",
       "options": {
-        "baseURL": "http://localhost:8081/v1"
+        "baseURL": "http://localhost:8080/v1"
       },
       "models": {
         "jzaleski/cipher": {
@@ -45,7 +45,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "llama.cpp (local - jzaleski/sage)",
       "options": {
-        "baseURL": "http://localhost:8082/v1"
+        "baseURL": "http://localhost:8080/v1"
       },
       "models": {
         "jzaleski/sage": {
@@ -71,7 +71,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "llama.cpp (server - jzaleski/cipher)",
       "options": {
-        "baseURL": "http://server-hostname-or-ip:8081/v1"
+        "baseURL": "http://server-hostname-or-ip:8080/v1"
       },
       "models": {
         "jzaleski/cipher": {
@@ -97,7 +97,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "llama.cpp (server - jzaleski/sage)",
       "options": {
-        "baseURL": "http://server-hostname-or-ip:8082/v1"
+        "baseURL": "http://server-hostname-or-ip:8080/v1"
       },
       "models": {
         "jzaleski/sage": {

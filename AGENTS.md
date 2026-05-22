@@ -31,8 +31,10 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── install-dependencies               # Installs/upgrades Homebrew base packages
 │   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode                 # Installs opencode-ai and configures shell init
-│   ├── run-cipher                         # Cipher model (Qwen3.6-35B-A3B local and server)
-│   └── run-sage                           # Sage model (Qwen3.6-35B-A3B local and server)
+│   └── run-router                         # Router server (all models via --models-preset)
+├── conf/                                  # llama-server INI preset files
+│   ├── router-local.ini                   # Router preset: local profile
+│   └── router-server.ini                  # Router preset: server profile
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (analyze, engineer)
@@ -49,13 +51,11 @@ Agent configurations are managed via the bootstrap system and integrate with the
 Scripts in `bin/` support **local** and **server** modes:
 
 ```bash
-./bin/run-cipher                           # Local mode
-./bin/run-cipher --server                  # Server mode
-./bin/run-sage                             # Local mode
-./bin/run-sage --server                    # Server mode
+./bin/run-router                           # Local mode (all models via --models-preset)
+./bin/run-router --server                  # Server mode (all models via --models-preset)
 ```
 
-Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
+Test with: `bash -x ./bin/run-router`
 
 ---
 
@@ -83,7 +83,7 @@ Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 
 - Scripts: `run-{component}.sh`
 - Modes: `local` / `server`
-- Ports: 8081 (cipher), 8082 (sage)
+- Ports: 8080 (all scripts)
 - Aliases: `jzaleski/{component}`
 
 ---
@@ -92,42 +92,25 @@ Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 
 | Variable | Description | Default (Local) | Default (Server) |
 |----------|-------------|-----------------|------------------|
-| `MODEL_PROVIDER` | HuggingFace org | `unsloth` | `unsloth` |
-| `MODEL_NAME` | Model name (no -GGUF) | `Qwen3.6-35B-A3B` (cipher), `Qwen3.6-35B-A3B` (sage) | `Qwen3.6-35B-A3B` (cipher), `Qwen3.6-35B-A3B` (sage) |
-| `MODEL_QUANTIZATION` | Quantization level | `UD-Q4_K_XL` (cipher), `UD-Q4_K_XL` (sage) | `UD-Q8_K_XL` (cipher), `UD-Q8_K_XL` (sage) |
-| `TEMP` | Sampling temperature | `1.0` (cipher), `1.0` (sage) | `1.0` (cipher), `1.0` (sage) |
-| `PORT` | Network port | `8081` (cipher), `8082` (sage) | `8081` (cipher), `8082` (sage) |
-| `CTX_SIZE` | Context window (tokens) | `81920` (cipher), `81920` (sage) | `262144` (cipher), `262144` (sage) |
-| `MIN_P` | Nucleus min (0.0 disables) | `0.01` (cipher), `0.0` (sage) | `0.01` (cipher), `0.0` (sage) |
-| `TOP_K` | Top-K limit (0 or 0.0 disables) | `40` (cipher), `20` (sage) | `40` (cipher), `20` (sage) |
-| `REPEAT_PENALTY` | Repeat penalty (1.0 = no penalty) | `1.0` | `1.0` |
-| `PRESENCE_PENALTY` | Presence penalty | `1.5` (cipher), `1.5` (sage) | `1.5` (cipher), `1.5` (sage) |
-| `TOP_P` | Nucleus top-p (cumulative prob threshold) | `0.95` | `0.95` |
-| `ALIAS` | Model alias | `jzaleski/cipher`, `jzaleski/sage` | `jzaleski/cipher`, `jzaleski/sage` |
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
-| `FLASH_ATTN` | Flash attention | `on` | `on` |
-| `N_GPU_LAYERS` | GPU layers to offload (-1 = all) | `-1` | `-1` |
-| `BATCH_SIZE` | Batch size for inference | `2048` (cipher), `2048` (sage) | `4096` (cipher), `4096` (sage) |
-| `UBATCH_SIZE` | Ubatch size for inference | `512` (cipher), `512` (sage) | `1024` (cipher), `1024` (sage) |
+| `PORT` | Network port | `8080` | `8080` |
+
+Model-specific parameters (quantization, context size, sampling settings, etc.) are configured in the INI preset files under `conf/`.
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────┐
-│   Cipher Model   │ (Port 8081)
-│  Qwen3.6-35B-A3B │
-│ (local & server) │
-└──────────────────┘
-```
-
-```
-┌──────────────────┐
-│    Sage Model    │ (Port 8082)
-│  Qwen3.6-35B-A3B │
-│ (local & server) │
-└──────────────────┘
+┌──────────────────────────────────┐
+│         Router Server            │ (Port 8080)
+│        --models-preset           │
+│                                  │
+│  ┌─────────────┐ ┌─────────────┐ │
+│  │jzaleski/    │ │jzaleski/    │ │
+│  │cipher       │ │sage         │ │
+│  └─────────────┘ └─────────────┘ │
+└──────────────────────────────────┘
 ```
 
 ---
@@ -159,7 +142,7 @@ Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 │                  │
 │ ┌──────────────┐ │ ┌───────────────┐
 │ │ Local Cipher │ │ │ Local Sage    │
-│ │ Port 8081    │ │ │ Port 8082     │
+│ │ Port 8080    │ │ │ Port 8080     │
 │ └──────────────┘ │ └───────────────┘
 │                  │
 │ ┌──────────────┐ │ ┌───────────────┐
@@ -170,10 +153,10 @@ Test with: `bash -x ./bin/run-cipher` or `bash -x ./bin/run-sage`
 ```
 
 The opencode configuration defines 4 provider endpoints:
-- **llama.cpp (local - jzaleski/cipher)**: `localhost:8081` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (local - jzaleski/sage)**: `localhost:8082` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8081`, 262K context
-- **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8082`, 262K context
+- **llama.cpp (local - jzaleski/cipher)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
+- **llama.cpp (local - jzaleski/sage)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
+- **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8080`, 262K context
+- **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8080`, 262K context
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
@@ -245,7 +228,7 @@ Pinned versions live in top-level dotfiles:
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- Context size: 81920 (cipher local), 262144 (cipher server), 81920 (sage local), 262144 (sage server)
+- Context size: 81920 tokens (local), 262144 tokens (server)
 
 ## Troubleshooting
 
