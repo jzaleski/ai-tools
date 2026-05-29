@@ -9,14 +9,14 @@ run_llama_cpp_local() {
   exec llama-server \
     --host "${HOST:-"127.0.0.1"}" \
     --port "${PORT:-"8080"}" \
-    --models-preset "${CONF_DIR}/router-local.ini";
+    --models-preset "${CONF_DIR}/llama-cpp-local.ini";
 }
 
 run_llama_cpp_server() {
   exec llama-server \
     --host "${HOST:-"0.0.0.0"}" \
     --port "${PORT:-"8080"}" \
-    --models-preset "${CONF_DIR}/router-server.ini";
+    --models-preset "${CONF_DIR}/llama-cpp-server.ini";
 }
 
 run_vllm_local() {

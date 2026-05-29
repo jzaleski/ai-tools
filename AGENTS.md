@@ -34,8 +34,8 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── configure-vllm                     # Installs vllm-metal; symlinks venv to ~/.venvs/vllm
 │   └── run-router                         # Router server (llama.cpp or vLLM via --experimental)
 ├── conf/                                  # llama-server INI presets + vLLM YAML config
-│   ├── router-local.ini                   # Router preset: local profile
-│   ├── router-server.ini                  # Router preset: server profile
+│   ├── llama-cpp-local.ini                # Router preset: local profile
+│   ├── llama-cpp-server.ini               # Router preset: server profile
 │   └── vllm-server.yaml                   # vLLM server config (vllm serve --config)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/

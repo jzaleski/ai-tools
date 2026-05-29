@@ -20,8 +20,8 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── configure-vllm              # Installs vllm-metal; symlinks venv to ~/.venvs/vllm
 │   └── run-router                  # Router server (llama.cpp or vLLM via --experimental)
 ├── conf/                           # llama-server INI presets + vLLM YAML config
-│   ├── router-local.ini            # Router preset: local profile (Q4, q4_0 KV, 81K ctx, 127.0.0.1)
-│   ├── router-server.ini           # Router preset: server profile (Q8, q8_0 KV, 131K ctx, 0.0.0.0)
+│   ├── llama-cpp-local.ini         # Router preset: local profile (Q4, q4_0 KV, 81K ctx, 127.0.0.1)
+│   ├── llama-cpp-server.ini        # Router preset: server profile (Q8, q8_0 KV, 131K ctx, 0.0.0.0)
 │   └── vllm-server.yaml            # vLLM server config (vllm serve --config)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
@@ -140,7 +140,7 @@ You can override default settings via environment variables. The same variables 
 Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading all models defined in the appropriate INI preset file. Clients route to a specific model via `?model=jzaleski/cipher` or `?model=jzaleski/sage`. Supports both local and server modes via `--server` flag.
 
 **Local Mode Defaults:**
-- Preset: `conf/router-local.ini`
+- Preset: `conf/llama-cpp-local.ini`
 - Host: 127.0.0.1
 - Port: 8080
 - Quantization: UD-Q4_K_XL (both models)
@@ -149,7 +149,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Batch size: 2048 / Ubatch size: 512
 
 **Server Mode Defaults:**
-- Preset: `conf/router-server.ini`
+- Preset: `conf/llama-cpp-server.ini`
 - Host: 0.0.0.0
 - Port: 8080
 - Quantization: UD-Q8_K_XL (both models)
