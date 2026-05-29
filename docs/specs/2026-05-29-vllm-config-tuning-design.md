@@ -1,0 +1,160 @@
+# Design: vLLM Config Tuning & cipher/sage Client Mapping
+
+**Date:** 2026-05-29
+**Branch:** `vllm-config-tuning`
+**Status:** Awaiting user approval
+
+## Problem Statement
+
+Two issues surfaced while running the vLLM (Metal) backend via
+`bin/run-router --server --experimental`:
+
+1. **Hard requirement violation:** Only `jzaleski/cipher` was registered with
+   vLLM; `jzaleski/sage` was absent. vLLM serves one model per process, unlike
+   the llama.cpp `--models-preset` router which hosts multiple aliases.
+   *(Already fixed in the working tree — see Component A.)*
+
+2. **cipher/sage are behaviorally identical on vLLM.** The original work mapped
+   the llama.cpp INI presets to a vLLM YAML 1:1, but per-alias sampling
+   (`top_k`, `min_p`, penalties) is a **server-side** feature in the llama.cpp
+   router that vLLM does not have. The vLLM YAML relegated those params to
+   comments, so today both aliases hit the same weights with the model's
+   baked-in `generation_config.json` defaults (`top_k: 20`). The distinction
+   only matters if the **client** sends per-request sampling.
+
+3. **Perceived slow token generation.** Investigated; see Findings.
+
+## Research Findings
+
+### F1 — Prefix caching MUST stay disabled (not a bug)
+
+Core vLLM `vllm/config/model.py:1804-1809`: `is_prefix_caching_supported`
+returns `False` for any generative model with `attn_type == "hybrid"`
+("Hybrid models do not support prefix caching since the feature is still
+experimental"). Qwen3.6-35B-A3B is hybrid (startup log: "10 SDPA layers,
+30 linear layers"). Therefore `enable-prefix-caching: false` in
+`conf/vllm-server.yaml` is **correct and mandatory**. The full-prefill cost on
+every request (~1290 tok/s prompt throughput recurring per request in the log)
+is inherent to this model on vLLM and is NOT fixable via config. The existing
+config comment is accurate; we will reinforce it with the source citation.
+
+**Decision:** Leave prefix caching off. No change. Document why.
+
+### F2 — Model natively supports 262144 context
+
+`mlx-community/Qwen3.6-35B-A3B-8bit` `config.json`:
+`max_position_embeddings: 262144`, `rope_type: default` (no scaling). So
+`max-model-len: 262144` is the model's true trained max. Lowering it is a
+deliberate latency/memory tradeoff, not a correctness fix.
+
+### F3 — Memory cost of current sizing
+
+Startup log breakdown: `hybrid_gdn_state=65.93GB (64.4MB/seq * max_num_seqs=1024)`,
+KV budget 340.56GB, and post-init "Metal memory: 86.4GB available" (down from
+535.9GB). The implicit `max_num_seqs=1024` over-reserves hybrid GDN state for a
+single-/few-user workload.
+
+### F4 — opencode per-model `options` semantics (OPEN RISK)
+
+Per opencode docs (`/docs/models`, `/docs/providers`), `provider.models.<id>.options`
+passes **AI-SDK provider options**, not arbitrary OpenAI request-body fields.
+For `@ai-sdk/openai-compatible`:
+- `temperature`, `topP` → standard AI-SDK call settings, forwarded reliably.
+- `top_k`, `min_p`, `presence_penalty`, `repetition_penalty` → **non-standard**
+  for the OpenAI chat schema; forwarding requires the AI-SDK extra-body
+  mechanism, and opencode's exact passthrough key is **unverified**.
+
+This is the one item requiring **empirical verification** during
+implementation (live `curl` to the running server + inspect what vLLM receives,
+or inspect request via vLLM debug logging).
+
+## Usage Profile (user-confirmed)
+
+**Profile (2): occasionally parallel agents/sessions, moderate concurrency,
+modest `max-model-len`.** Matches the engineer agent's sub-agent dispatch
+pattern (a handful of concurrent requests, not 1, not 1024).
+
+## Design
+
+### Component A — Restore cipher/sage distinction
+
+**A.1 (DONE in working tree):** `conf/vllm-server.yaml` now lists both aliases:
+```yaml
+served-model-name:
+  - jzaleski/cipher
+  - jzaleski/sage
+```
+Both names resolve to the one loaded checkpoint. `/v1/models` will list both.
+
+**A.2 (NEW):** Move per-alias sampling into the opencode client config
+(`home/.config/opencode/opencode.json`) for the two vLLM provider entries
+(`vLLM (server - jzaleski/cipher)`, `vLLM (server - jzaleski/sage)`). Add an
+`options` block per model carrying the sampling profile:
+
+- Shared: `temperature: 1.0`, `topP: 0.95`, `presencePenalty: 1.5`
+- cipher: `top_k: 40`, `min_p: 0.01`
+- sage:   `top_k: 20`, `min_p: 0.0`
+
+**A.3 (VERIFICATION GATE):** Before declaring A.2 done, empirically confirm
+which of these fields actually reach the vLLM server in the request body
+(`curl` test or server-side request logging). For any field that does NOT
+forward via opencode's `options` passthrough:
+- Use the AI-SDK extra-body mechanism if available, OR
+- Document the limitation explicitly in the config comment and `AGENTS.md`,
+  and keep only the fields that demonstrably work.
+
+The acceptance criterion is **truthful documentation of what works**, not
+forcing unsupported fields. We will not claim a differentiation that the
+runtime doesn't honor.
+
+### Component B — Right-size vLLM server config
+
+In `conf/vllm-server.yaml`:
+- Add `max-num-seqs: 16` — caps concurrency to a moderate level appropriate for
+  parallel sub-agent dispatch, freeing ~63GB of hybrid GDN reservation
+  (vs. 1024 default). 16 × 64.4MB ≈ 1.03GB hybrid state.
+- Set `max-model-len: 131072` — half the trained max; still a very large
+  coding context, roughly matching the llama.cpp local profile's generous
+  window while materially reducing KV pressure and improving decode locality.
+
+Both are **deliberate, justified** changes (AGENTS.md: "don't change tuned
+defaults without clear reason" — the reason is documented here and tied to the
+confirmed usage profile). Memory-fraction control (`VLLM_METAL_MEMORY_FRACTION`)
+is unchanged.
+
+### Component C — Documentation sync
+
+- `conf/vllm-server.yaml`: reinforce the prefix-caching comment with the vLLM
+  source citation (F1); document `max-num-seqs` / `max-model-len` rationale.
+- `AGENTS.md`: note that on vLLM, cipher/sage differ only via **client-side**
+  sampling (with whatever A.3 verification confirms), that prefix caching is
+  mandatorily off for the hybrid model, and the updated context/concurrency
+  defaults.
+- `README.md` if it documents these values (to be checked during planning).
+
+## Out of Scope (YAGNI)
+
+- Running two vLLM processes on two ports to get true per-model server-side
+  sampling — rejected; the single-checkpoint + client-sampling approach is
+  simpler and matches the actual (identical-weights) reality.
+- Any change to the llama.cpp INI presets — they are correct as-is.
+- Enabling prefix caching — impossible per F1.
+- Multimodal/VLM wiring — text-only is the intended path.
+
+## Testing & Verification
+
+1. Restart `bin/run-router --server --experimental`; confirm startup log
+   `non-default args` shows both `jzaleski/cipher` and `jzaleski/sage`, and
+   `max_num_seqs=16`, `max_model_len=131072`.
+2. `curl http://localhost:8080/v1/models` lists both aliases.
+3. A.3 verification: issue a request per alias and confirm (via server logging
+   or response behavior) which sampling fields are honored.
+4. Confirm memory breakdown in the log shows the reduced hybrid GDN reservation.
+5. `opencode.json` remains valid JSON (`jq . opencode.json`).
+
+## Files Touched
+
+- `conf/vllm-server.yaml` (A.1 done; B; C)
+- `home/.config/opencode/opencode.json` (A.2)
+- `AGENTS.md` (C)
+- `README.md` (C, if applicable)
