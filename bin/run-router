@@ -29,6 +29,10 @@ run_vllm_server() {
     echo "Error: vLLM venv not found at \"${VLLM_VENV}\" — run bin/configure-vllm" >&2;
     exit 1;
   fi
+  # vLLM can exhaust the file-descriptor limit under load; raise it best-effort
+  # (vLLM warns and may hit "Too many open files" when the soft limit is low).
+  ulimit -n "${VLLM_NOFILE:-"65536"}" 2> /dev/null \
+    || echo "Warning: could not raise open-file limit to ${VLLM_NOFILE:-"65536"} (current: $(ulimit -n))" >&2;
   # shellcheck disable=SC1091
   source "${VLLM_VENV}/bin/activate";
   exec vllm serve \
