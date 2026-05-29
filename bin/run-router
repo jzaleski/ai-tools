@@ -29,10 +29,17 @@ run_vllm_server() {
     echo "Error: vLLM venv not found at \"${VLLM_VENV}\" — run bin/configure-vllm" >&2;
     exit 1;
   fi
-  # vLLM can exhaust the file-descriptor limit under load; raise it best-effort
-  # (vLLM warns and may hit "Too many open files" when the soft limit is low).
-  ulimit -n "${VLLM_NOFILE:-"65536"}" 2> /dev/null \
-    || echo "Warning: could not raise open-file limit to ${VLLM_NOFILE:-"65536"} (current: $(ulimit -n))" >&2;
+  # vLLM raises the soft fd limit toward 65535 at startup; if the *hard* limit
+  # is lower (e.g. 2048 in some launch contexts) it fails with "Too many open
+  # files" risk. Best-effort: try soft alone, then raise hard-then-soft.
+  vllm_nofile="${VLLM_NOFILE:-"65536"}";
+  if ! ulimit -n "${vllm_nofile}" 2> /dev/null; then
+    ulimit -Hn "${vllm_nofile}" 2> /dev/null || true;
+    ulimit -Sn "${vllm_nofile}" 2> /dev/null || true;
+  fi
+  if [[ "$(ulimit -Sn)" -lt "${vllm_nofile}" ]]; then
+    echo "Warning: open-file limit is $(ulimit -Sn) (wanted ${vllm_nofile}); vLLM may warn about fd limits" >&2;
+  fi
   # shellcheck disable=SC1091
   source "${VLLM_VENV}/bin/activate";
   exec vllm serve \
