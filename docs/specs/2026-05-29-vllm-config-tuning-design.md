@@ -1,4 +1,4 @@
-# Design: vLLM Config Tuning & Unified Client-Side Sampling (vLLM + llama.cpp)
+# Design: vLLM Config Tuning & cipher/sage Client Sampling (+ server context lowering)
 
 **Date:** 2026-05-29
 **Branch:** `vllm-config-tuning`
@@ -68,7 +68,12 @@ This is the one item requiring **empirical verification** during
 implementation (live `curl` to the running server + inspect what vLLM receives,
 or inspect request via vLLM debug logging).
 
-### F5 — llama.cpp honors per-request sampling; INI router does two jobs
+### F5 — llama.cpp honors per-request sampling; INI router does two jobs (informational; llama.cpp sampling relocation DEFERRED)
+
+> **Scope note:** This finding documents the eventual cross-backend direction,
+> but moving llama.cpp sampling client-side is **deferred** and NOT part of this
+> effort. Retained here as recorded research. The only llama.cpp change in this
+> effort is the server `ctx-size` (B.2) and its matching client `limit.context`.
 
 The llama.cpp server README confirms `/v1/chat/completions` is OpenAI-compatible
 and accepts per-request sampling (`top_k`, `min_p`, `top_p`, `temperature`,
@@ -100,7 +105,7 @@ pattern (a handful of concurrent requests, not 1, not 1024).
 
 ## Design
 
-### Component A — Restore cipher/sage distinction via unified client-side sampling
+### Component A — Restore cipher/sage distinction (vLLM, client-side sampling)
 
 **A.1 (DONE in working tree):** `conf/vllm-server.yaml` now lists both aliases:
 ```yaml
@@ -110,11 +115,9 @@ served-model-name:
 ```
 Both names resolve to the one loaded checkpoint. `/v1/models` will list both.
 
-**A.2 (NEW — applies to BOTH backends):** Move per-alias sampling into the
-opencode client config (`home/.config/opencode/opencode.json`) for the relevant
-provider entries. Per F5, this is the consistent cross-backend model: sampling
-lives in the client, not in the server config. Add an `options` block per model
-carrying the sampling profile:
+**A.2 (NEW — vLLM only):** Move per-alias sampling into the opencode client
+config (`home/.config/opencode/opencode.json`) for the **two vLLM** provider
+entries. Add an `options` block per model carrying the sampling profile:
 
 - Shared: `temperature: 1.0`, `topP: 0.95`, `presencePenalty: 1.5`
 - cipher: `top_k: 40`, `min_p: 0.01`
@@ -122,29 +125,29 @@ carrying the sampling profile:
 
 Provider entries to update (sampling-bearing `options`):
 - `vLLM (server - jzaleski/cipher)`, `vLLM (server - jzaleski/sage)`
-- `llama.cpp (local - jzaleski/cipher)`, `llama.cpp (local - jzaleski/sage)`
-- `llama.cpp (server - jzaleski/cipher)`, `llama.cpp (server - jzaleski/sage)`
 
-Correspondingly, **remove the per-`[alias]` sampling keys** (`min-p`, `top-k`)
-and the shared sampling keys (`presence-penalty`, `repeat-penalty`, `temp`,
-`top-p`) from `conf/router-local.ini` and `conf/router-server.ini`. The INI
-retains only irreducibly server-side keys (weights, `ctx-size`, cache types,
-batch sizes) and the `[alias]` section headers needed for routing. The vLLM YAML
-sampling comments (lines 17-33) are likewise removed/repointed to the client.
+The vLLM YAML sampling comments (lines 17-33) are repointed to note that
+sampling now lives in the client.
+
+**Deferred (NOT in this effort):** moving sampling client-side for the llama.cpp
+provider entries, and removing the sampling keys from the INI files. The
+llama.cpp INIs keep their existing `[alias]` sampling sections unchanged (their
+only change in this effort is the server context size — see B.2). The
+cross-backend "unified sampling" model (F5) remains the eventual direction but
+is out of scope here.
 
 **A.3 (VERIFICATION GATE — blocks A.2 completion):** Before declaring A.2 done,
-empirically confirm which fields actually reach each server in the request body
-(`curl` test or server-side request logging, per backend). For any field that
-does NOT forward via opencode's `options` passthrough:
+empirically confirm which fields actually reach the vLLM server in the request
+body (`curl` test or server-side request logging). For any field that does NOT
+forward via opencode's `options` passthrough:
 - Use the AI-SDK extra-body mechanism if available, OR
 - Document the limitation explicitly and keep that field as a **server-side
-  default in BOTH configs** (INI `[alias]` section and vLLM) for consistency,
-  noting why in comments + `AGENTS.md`.
+  default** in `conf/vllm-server.yaml` (or accept the model's
+  `generation_config.json` default), noting why in comments + `AGENTS.md`.
 
 The acceptance criterion is **truthful documentation of what works**, not
-forcing unsupported fields. We will not claim a differentiation the runtime
-doesn't honor. Whatever the verification concludes is applied symmetrically to
-both backends so they stay consistent.
+forcing unsupported fields. We will not claim a differentiation the vLLM
+runtime doesn't honor.
 
 ### Component B — Right-size server context/concurrency
 
@@ -159,6 +162,8 @@ both backends so they stay consistent.
 - `ctx-size: 262144 → 131072`, for consistency with vLLM (user-confirmed).
 - **`conf/router-local.ini` is left UNCHANGED** at `ctx-size: 81920`
   (memory-constrained local profile — user-confirmed to leave as-is).
+- The INI `[alias]` sampling sections are **left unchanged** (sampling relocation
+  for llama.cpp is deferred).
 
 Both are **deliberate, justified** changes (AGENTS.md: "don't change tuned
 defaults without clear reason" — the reason is documented here and tied to the
@@ -169,21 +174,24 @@ is unchanged.
 
 - `conf/vllm-server.yaml`: reinforce the prefix-caching comment with the vLLM
   source citation (F1); document `max-num-seqs` / `max-model-len` rationale;
-  remove/repoint the per-alias sampling comments to the client.
-- `conf/router-server.ini` / `conf/router-local.ini`: document that sampling now
-  lives client-side; keep only routing + server-side keys (and any A.3 fallback
-  server-side defaults).
-- `AGENTS.md`: note that for BOTH backends, cipher/sage differ via **client-side**
+  repoint the per-alias sampling comments to note sampling now lives in the
+  client (vLLM only).
+- `conf/router-server.ini`: note the lowered `ctx-size` rationale. (Sampling
+  sections unchanged.)
+- `AGENTS.md`: note that on **vLLM**, cipher/sage differ via **client-side**
   sampling (with whatever A.3 verification confirms); that prefix caching is
-  mandatorily off for the hybrid vLLM model (F1); the updated context/concurrency
-  defaults; and the accepted bare-request tradeoff (F5).
+  mandatorily off for the hybrid vLLM model (F1); and the updated vLLM
+  concurrency + both-backend server context defaults. (llama.cpp sampling
+  remains server-side/INI for now.)
 - `README.md` if it documents these values (to be checked during planning).
 
-## Out of Scope (YAGNI)
+## Out of Scope (YAGNI / Deferred)
 
 - Running two vLLM processes on two ports to get true per-model server-side
   sampling — rejected; the single-checkpoint + client-sampling approach is
   simpler and matches the actual (identical-weights) reality.
+- **Moving llama.cpp sampling client-side / removing INI `[alias]` sampling keys**
+  — deferred to a later effort. INIs keep their sampling sections as-is.
 - Changing `conf/router-local.ini` context size — left at 81920 (user-confirmed).
 - Enabling prefix caching — impossible per F1.
 - Multimodal/VLM wiring — text-only is the intended path.
@@ -194,20 +202,22 @@ is unchanged.
    log `non-default args` shows both `jzaleski/cipher` and `jzaleski/sage`, and
    `max_num_seqs=16`, `max_model_len=131072`.
 2. `curl http://localhost:8080/v1/models` lists both aliases.
-3. **A.3 verification (both backends):** issue a request per alias and confirm
-   (via server logging or response behavior) which sampling fields are honored;
-   apply conclusions symmetrically.
+3. **A.3 verification (vLLM):** issue a request per alias and confirm (via server
+   logging or response behavior) which sampling fields are honored.
 4. Confirm vLLM memory breakdown in the log shows the reduced hybrid GDN reservation.
-5. **llama.cpp server:** `bash -x bin/run-router --server` starts; INI parses
-   with sampling removed; `ctx-size=131072` in effect; both aliases routable.
+5. **llama.cpp server:** `bash -x bin/run-router --server` starts; INI parses;
+   `ctx-size=131072` in effect; both aliases routable with sampling intact.
 6. `opencode.json` remains valid JSON (`jq . opencode.json`).
-7. INI files still parse (no orphaned/empty `[alias]` sections that break routing).
 
 ## Files Touched
 
 - `conf/vllm-server.yaml` (A.1 done; B.1; C)
-- `conf/router-server.ini` (A.2 sampling removal; B.2 ctx-size; C)
-- `conf/router-local.ini` (A.2 sampling removal; C — ctx-size UNCHANGED)
-- `home/.config/opencode/opencode.json` (A.2 — vLLM + llama.cpp local + server entries)
+- `conf/router-server.ini` (B.2 ctx-size only; C)
+- `home/.config/opencode/opencode.json` (A.2 — two vLLM entries gain sampling
+  `options`; two llama.cpp-server entries get `limit.context` 262144 → 131072 to
+  stay honest with the lowered server `ctx-size`)
 - `AGENTS.md` (C)
 - `README.md` (C, if applicable)
+
+> **Note:** `conf/router-local.ini` is intentionally NOT in this list — it is
+> fully unchanged. llama.cpp sampling relocation is deferred (see Out of Scope).
