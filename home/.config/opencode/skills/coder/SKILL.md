@@ -26,9 +26,21 @@ Once you're clear on requirements:
 1. Implement exactly what the task specifies (TDD if the plan requires it)
 2. Write tests — following TDD if the task has test steps
 3. Verify implementation works (run tests, smoke check)
-4. Self-review (see section below)
-5. Commit your work (follow the commit convention from the plan or AGENTS.md)
-6. Report back with structured status
+4. **Format all changed files** before committing (see Formatting section below)
+5. Self-review (see section below)
+6. Commit your work (follow the commit convention from the plan or AGENTS.md)
+7. Report back with structured status
+
+## Formatting
+
+**Always format changed files before committing.** Unformatted code will fail
+pre-commit hooks and CI.
+
+1. Check the project's `AGENTS.md` for the canonical format command — it is
+   always listed there.
+2. Run the formatter on every file you changed before staging the commit.
+3. If the pre-commit hook rejects the commit with a formatting error, run the
+   formatter again and re-commit. Do not bypass pre-commit hooks.
 
 ## Code Organization
 
@@ -74,6 +86,7 @@ Before reporting back, review your work:
 - Did I avoid overbuilding (YAGNI)?
 - Did I only build what was requested?
 - Did I follow existing patterns in the codebase?
+- Did I run the formatter on all changed files before committing?
 
 **Testing:**
 - Do tests actually verify behavior (not just mock behavior)?
