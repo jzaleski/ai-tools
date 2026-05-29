@@ -1,0 +1,34 @@
+# vLLM server config — native `vllm serve --config` format.
+# Keys are the long-form of `vllm serve` CLI flags (hyphenated). CLI flags
+# passed by bin/run-router (host, port) take precedence over this file.
+#
+# Backend: vllm-metal (MLX, Apple Silicon, text-only). Verified against the
+# FP8 Qwen3.6 checkpoint below. The Qwen3.6 hybrid model requires prefix
+# caching to be DISABLED on the Metal backend.
+
+model: Qwen/Qwen3.6-35B-A3B-FP8
+served-model-name: jzaleski/cipher
+max-model-len: 262144
+enable-prefix-caching: false
+
+# --- Per-request sampling profiles (NOT server config) ---
+# vLLM applies these per request; the client sends them at inference time.
+# Documented here for parity with the llama.cpp cipher/sage aliases.
+#
+# Shared defaults:
+#   temperature: 1.0
+#   top_p: 0.95
+#   presence_penalty: 1.5
+#   repetition_penalty: 1.0
+#
+# jzaleski/cipher:
+#   min_p: 0.01
+#   top_k: 40
+#
+# jzaleski/sage:
+#   min_p: 0.0
+#   top_k: 20
+#
+# --- Memory control (Metal) ---
+# Memory is controlled by the VLLM_METAL_MEMORY_FRACTION env var (default
+# "auto"), NOT --gpu-memory-utilization. Set it in the environment if needed.

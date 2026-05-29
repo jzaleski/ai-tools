@@ -3,6 +3,7 @@
 set -e;
 
 CONF_DIR="$(dirname "$0")/../conf";
+VLLM_VENV="${VLLM_VENV:-"${HOME}/.venvs/vllm"}";
 
 run_local() {
   exec llama-server \
@@ -18,7 +19,40 @@ run_server() {
     --models-preset "${CONF_DIR}/router-server.ini";
 }
 
-if [[ "${1:-}" == "--server" ]]; then
+run_vllm_local() {
+  echo "vLLM local mode not yet supported — use --server" >&2;
+  exit 1;
+}
+
+run_vllm_server() {
+  if [[ ! -f "${VLLM_VENV}/bin/activate" ]]; then
+    echo "Error: vLLM venv not found at \"${VLLM_VENV}\" — run bin/configure-vllm" >&2;
+    exit 1;
+  fi
+  # shellcheck disable=SC1091
+  source "${VLLM_VENV}/bin/activate";
+  exec vllm serve \
+    --config "${CONF_DIR}/vllm-server.yaml" \
+    --host "${HOST:-"0.0.0.0"}" \
+    --port "${PORT:-"8080"}";
+}
+
+server=false;
+experimental=false;
+for arg in "$@"; do
+  case "${arg}" in
+    --server)       server=true;;
+    --experimental) experimental=true;;
+  esac
+done
+
+if [[ "${experimental}" == "true" ]]; then
+  if [[ "${server}" == "true" ]]; then
+    run_vllm_server;
+  else
+    run_vllm_local;
+  fi
+elif [[ "${server}" == "true" ]]; then
   run_server;
 else
   run_local;

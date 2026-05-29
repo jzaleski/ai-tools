@@ -16,7 +16,6 @@ if [ -z "$git_cmd" ]; then
   exit 1;
 fi
 
-# Clone or update nodenv
 nodenv_dir="$HOME/.nodenv";
 if [ ! -e "$nodenv_dir" ]; then
   ${git_cmd} clone https://github.com/nodenv/nodenv.git "$nodenv_dir";
@@ -30,7 +29,6 @@ mkdir -p "$nodenv_plugins_dir";
 nodenv_versions_dir="$nodenv_dir/versions";
 mkdir -p "$nodenv_versions_dir";
 
-# Clone or update node-build plugin
 node_build_dir="$nodenv_plugins_dir/node-build";
 if [ ! -e "$node_build_dir" ]; then
   ${git_cmd} clone https://github.com/nodenv/node-build.git "$node_build_dir";
@@ -38,7 +36,6 @@ elif [ -e "$node_build_dir/.git" ]; then
   (cd "$node_build_dir" && ${git_cmd} pull);
 fi
 
-# Ensure nodenv bin and shims are on PATH for the remainder of this script
 nodenv_bin_dir="$nodenv_dir/bin";
 if [[ ! "$PATH" =~ "$nodenv_bin_dir" ]]; then
   export PATH="$nodenv_bin_dir:$PATH";

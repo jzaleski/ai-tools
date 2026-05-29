@@ -31,10 +31,12 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── install-dependencies               # Installs/upgrades Homebrew base packages
 │   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode                 # Installs opencode-ai and configures shell init
-│   └── run-router                         # Router server (all models via --models-preset)
-├── conf/                                  # llama-server INI preset files
+│   ├── configure-vllm                     # Installs vllm-metal; symlinks venv to ~/.venvs/vllm
+│   └── run-router                         # Router server (llama.cpp or vLLM via --experimental)
+├── conf/                                  # llama-server INI presets + vLLM YAML config
 │   ├── router-local.ini                   # Router preset: local profile
-│   └── router-server.ini                  # Router preset: server profile
+│   ├── router-server.ini                  # Router preset: server profile
+│   └── vllm-server.yaml                   # vLLM server config (vllm serve --config)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (analyze, engineer)
@@ -48,14 +50,18 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ## Build/Test Commands
 
-Scripts in `bin/` support **local** and **server** modes:
+Scripts in `bin/` support **local** and **server** modes, with an `--experimental` flag selecting the vLLM backend (drop-in replacement on port 8080 — run only one backend at a time):
 
 ```bash
-./bin/run-router                           # Local mode (all models via --models-preset)
-./bin/run-router --server                  # Server mode (all models via --models-preset)
+./bin/run-router                           # llama.cpp, local mode (8080)
+./bin/run-router --server                  # llama.cpp, server mode (8080)
+./bin/run-router --experimental            # vLLM local — STUB (exits non-zero: "vLLM local mode not yet supported — use --server")
+./bin/run-router --server --experimental   # vLLM server mode (8080); flags are order-independent
 ```
 
 Test with: `bash -x ./bin/run-router`
+
+Test the vLLM backend with: `bash -x ./bin/run-router --server --experimental`
 
 ---
 
@@ -94,6 +100,8 @@ Test with: `bash -x ./bin/run-router`
 |----------|-------------|-----------------|------------------|
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
 | `PORT` | Network port | `8080` | `8080` |
+| `VLLM_VENV` | vLLM venv path (`--experimental` backend) | `~/.venvs/vllm` | `~/.venvs/vllm` |
+| `VLLM_METAL_MEMORY_FRACTION` | vLLM Metal memory control | `auto` | `auto` |
 
 Model-specific parameters (quantization, context size, sampling settings, etc.) are configured in the INI preset files under `conf/`.
 
@@ -152,11 +160,13 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 └──────────────────┘
 ```
 
-The opencode configuration defines 4 provider endpoints:
+The opencode configuration defines 6 provider endpoints:
 - **llama.cpp (local - jzaleski/cipher)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
 - **llama.cpp (local - jzaleski/sage)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
 - **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8080`, 262K context
 - **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8080`, 262K context
+- **vLLM (server - jzaleski/cipher)**: `localhost:8080` — Qwen/Qwen3.6-35B-A3B-FP8, text-only
+- **vLLM (server - jzaleski/sage)**: `localhost:8080` — Qwen/Qwen3.6-35B-A3B-FP8, text-only
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
@@ -202,6 +212,7 @@ Bootstrap scripts are defined as an explicit ordered array in `bin/bootstrap` an
 | `bin/install-dependencies` | Installs Homebrew (if missing) and base packages (`ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh`) |
 | `bin/configure-node` | Clones/updates `nodenv` and the `node-build` plugin; installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) |
 | `bin/configure-opencode` | Installs `opencode-ai` (from `.default-opencode-version`); appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+| `bin/configure-vllm` | Installs vllm-metal via the official install script; symlinks venv to `~/.venvs/vllm` |
 
 To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
 ```bash
@@ -221,6 +232,8 @@ Pinned versions live in top-level dotfiles:
 | `.default-node-version` | Node.js (nodenv) |
 | `.default-npm-version` | npm |
 | `.default-opencode-version` | opencode-ai |
+| `.default-python-version` | Python (vllm-metal venv) |
+| `.default-vllm-metal-version` | vllm-metal |
 
 ---
 
@@ -243,4 +256,5 @@ Pinned versions live in top-level dotfiles:
 
 - Do not modify model defaults without clear reason — quantization levels and context sizes are tuned for specific hardware profiles
 - Do not change port allocations without updating all dependent configurations
+- Do not run llama.cpp and vLLM simultaneously on the same port — the vLLM backend is a drop-in replacement on port 8080; stop one before starting the other, or override `PORT`
 - Do not skip `set -e` error handling in shell scripts

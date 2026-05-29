@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+set -e;
+
+cd $(dirname $0)/..;
+
+cat_cmd=$(which cat 2> /dev/null || echo -n);
+if [ -z "$cat_cmd" ]; then
+  echo "Error: Could not locate the \"cat\" command" >&2;
+  exit 1;
+fi
+
+git_cmd=$(which git 2> /dev/null || echo -n);
+if [ -z "$git_cmd" ]; then
+  echo "Error: Could not locate the \"git\" command" >&2;
+  exit 1;
+fi
+
+pyenv_dir="$HOME/.pyenv";
+if [ ! -e "$pyenv_dir" ]; then
+  ${git_cmd} clone https://github.com/pyenv/pyenv.git ${pyenv_dir};
+elif [ -e "$pyenv_dir/.git" ]; then
+  (cd ${pyenv_dir} && ${git_cmd} pull);
+fi
+
+pyenv_plugins_dir="$pyenv_dir/plugins";
+mkdir -p ${pyenv_plugins_dir};
+
+pyenv_versions_dir="$pyenv_dir/versions";
+mkdir -p ${pyenv_versions_dir};
+
+pyenv_bin_dir="$pyenv_dir/bin";
+if [[ ! "$PATH" =~ "$pyenv_bin_dir" ]]; then
+  export PATH="$pyenv_bin_dir:$PATH";
+fi
+
+pyenv_shims_dir="$pyenv_dir/shims";
+if [[ ! "$PATH" =~ "$pyenv_shims_dir" ]]; then
+  export PATH="$pyenv_shims_dir:$PATH";
+fi
+
+pyenv_cmd=$(which pyenv 2> /dev/null || echo -n);
+if [ -z "$pyenv_cmd" ]; then
+  echo "❌ Could not locate the \"pyenv\" command" >&2;
+  exit 1;
+fi
+
+default_python_version=$(${cat_cmd} $(dirname $0)/../.default-python-version)
+python_versions=($default_python_version);
+
+for python_version in ${python_versions[@]}; do
+  ${pyenv_cmd} install -s ${python_version};
+done
+
+${pyenv_cmd} global ${default_python_version};
+${pyenv_cmd} rehash;

@@ -55,7 +55,9 @@ if [ -z "$BOOTSTRAP_SCRIPTS" ]; then
     install-dependencies \
     configure-git \
     configure-node \
+    configure-python \
     configure-opencode \
+    configure-vllm \
   );
 else
   IFS=',' read -ra bin_scripts <<< "$BOOTSTRAP_SCRIPTS";
