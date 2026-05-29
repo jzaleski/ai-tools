@@ -21,7 +21,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   └── run-router                  # Router server (llama.cpp or vLLM via --experimental)
 ├── conf/                           # llama-server INI presets + vLLM YAML config
 │   ├── router-local.ini            # Router preset: local profile (Q4, q4_0 KV, 81K ctx, 127.0.0.1)
-│   ├── router-server.ini           # Router preset: server profile (Q8, q8_0 KV, 262K ctx, 0.0.0.0)
+│   ├── router-server.ini           # Router preset: server profile (Q8, q8_0 KV, 131K ctx, 0.0.0.0)
 │   └── vllm-server.yaml            # vLLM server config (vllm serve --config)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
@@ -154,7 +154,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Port: 8080
 - Quantization: UD-Q8_K_XL (both models)
 - KV cache quantization: q8_0 (K and V)
-- Context size: 262144 tokens
+- Context size: 131072 tokens
 - Batch size: 4096 / Ubatch size: 1024
 
 **Environment Variables:**
@@ -245,7 +245,11 @@ to run vLLM.
   loads via mlx_lm, which needs MLX-format `model*.safetensors` weights). The
   8-bit build mirrors the llama.cpp Q8 server preset for comparison.
 - vllm-metal is **text-only** (no vision support).
-- Qwen3.6 runs with prefix caching **disabled** on Metal.
+- Qwen3.6 runs with prefix caching **disabled** on Metal — this is mandatory:
+  core vLLM disables prefix caching for hybrid (SDPA + GDN) models. The
+  full-prefill cost per request is inherent, not a misconfiguration.
+- `max-model-len` is 131072 and `max-num-seqs` is 16 (moderate concurrency for
+  occasional parallel sub-agent dispatch; avoids over-reserving hybrid GDN state).
 
 **Environment Variables:**
 - `VLLM_METAL_MEMORY_FRACTION` — Memory tuning for the Metal backend (default:
@@ -309,7 +313,7 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │  ┌────────────────┐  │ ┌────────────────┐
 │  │ Server Cipher  │  │ │ Server Sage    │
 │  │ remote:8080    │  │ │ remote:8080    │
-│  │ 262K context   │  │ │ 262K context   │
+│  │ 131K context   │  │ │ 131K context   │
 │  └────────────────┘  │ └────────────────┘
 └──────────────────────┘
 ```
@@ -322,10 +326,10 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 6 provid
 |----------|----------|-------|---------|-------|--------|------------|
 | llama.cpp (local - jzaleski/cipher) | `localhost:8080` | jzaleski/cipher | 81,920 | 73,728 | 8,192 | text+image in, text out |
 | llama.cpp (local - jzaleski/sage) | `localhost:8080` | jzaleski/sage | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8080` | jzaleski/cipher | 262,144 | 229,376 | 32,768 | text+image in, text out |
-| llama.cpp (server - jzaleski/sage) | `server-hostname-or-ip:8080` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text+image in, text out |
-| vLLM (server - jzaleski/cipher) | `localhost:8080` | jzaleski/cipher | 262,144 | 229,376 | 32,768 | text in, text out |
-| vLLM (server - jzaleski/sage) | `localhost:8080` | jzaleski/sage | 262,144 | 229,376 | 32,768 | text in, text out |
+| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8080` | jzaleski/cipher | 131,072 | 114,688 | 16,384 | text+image in, text out |
+| llama.cpp (server - jzaleski/sage) | `server-hostname-or-ip:8080` | jzaleski/sage | 131,072 | 114,688 | 16,384 | text+image in, text out |
+| vLLM (server - jzaleski/cipher) | `localhost:8080` | jzaleski/cipher | 131,072 | 114,688 | 16,384 | text in, text out |
+| vLLM (server - jzaleski/sage) | `localhost:8080` | jzaleski/sage | 131,072 | 114,688 | 16,384 | text in, text out |
 
 **Note:** The 4 llama.cpp providers support image input via the opencode provider configuration. The 2 vLLM providers are **text-only** (vllm-metal has no vision support) and point at `localhost:8080`.
 
@@ -401,7 +405,7 @@ opencode [options] [query]
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
 - KV cache is quantized to reduce memory footprint: q4_0 (local), q8_0 (server)
-- Context size: 81920 tokens (local), 262144 tokens (server)
+- Context size: 81920 tokens (local), 131072 tokens (server)
 
 ## Troubleshooting
 
