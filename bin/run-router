@@ -5,14 +5,14 @@ set -e;
 CONF_DIR="$(dirname "$0")/../conf";
 VLLM_VENV="${VLLM_VENV:-"${HOME}/.venvs/vllm"}";
 
-run_local() {
+run_llama_cpp_local() {
   exec llama-server \
     --host "${HOST:-"127.0.0.1"}" \
     --port "${PORT:-"8080"}" \
     --models-preset "${CONF_DIR}/router-local.ini";
 }
 
-run_server() {
+run_llama_cpp_server() {
   exec llama-server \
     --host "${HOST:-"0.0.0.0"}" \
     --port "${PORT:-"8080"}" \
@@ -56,8 +56,10 @@ if [[ "${experimental}" == "true" ]]; then
   else
     run_vllm_local;
   fi
-elif [[ "${server}" == "true" ]]; then
-  run_server;
 else
-  run_local;
+  if [[ "${server}" == "true" ]]; then
+    run_llama_cpp_server;
+  else
+    run_llama_cpp_local;
+  fi
 fi
