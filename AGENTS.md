@@ -165,8 +165,8 @@ The opencode configuration defines 6 provider endpoints:
 - **llama.cpp (local - jzaleski/sage)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
 - **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8080`, 262K context
 - **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8080`, 262K context
-- **vLLM (server - jzaleski/cipher)**: `localhost:8080` — Qwen/Qwen3.6-35B-A3B-FP8, text-only
-- **vLLM (server - jzaleski/sage)**: `localhost:8080` — Qwen/Qwen3.6-35B-A3B-FP8, text-only
+- **vLLM (server - jzaleski/cipher)**: `localhost:8080` — mlx-community/Qwen3.6-35B-A3B-8bit, text-only
+- **vLLM (server - jzaleski/sage)**: `localhost:8080` — mlx-community/Qwen3.6-35B-A3B-8bit, text-only
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 

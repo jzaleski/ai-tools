@@ -208,7 +208,7 @@ serving on port 8080.
 │   --models-preset        │      │   --config vllm-server   │
 │                          │      │                          │
 │  ┌────────┐ ┌────────┐   │      │  ┌────────────────────┐  │
-│  │cipher  │ │sage    │   │      │  │Qwen3.6-35B-A3B-FP8 │  │
+│  │cipher  │ │sage    │   │      │  │Qwen3.6-35B-A3B-8bit│  │
 │  │(Qwen)  │ │(Qwen)  │   │      │  │(single model)      │  │
 │  └────────┘ └────────┘   │      │  └────────────────────┘  │
 └────────────┬─────────────┘      └────────────┬─────────────┘
@@ -241,7 +241,9 @@ to run vLLM.
 - Config lives in `conf/vllm-server.yaml`, using the native `vllm serve --config`
   YAML format. Keys are the long-form CLI flags. The `host`/`port` values passed
   by `run-router` take precedence over anything in the YAML file.
-- Model: `Qwen/Qwen3.6-35B-A3B-FP8`.
+- Model: `mlx-community/Qwen3.6-35B-A3B-8bit` (MLX 8-bit checkpoint; vllm-metal
+  loads via mlx_lm, which needs MLX-format `model*.safetensors` weights). The
+  8-bit build mirrors the llama.cpp Q8 server preset for comparison.
 - vllm-metal is **text-only** (no vision support).
 - Qwen3.6 runs with prefix caching **disabled** on Metal.
 
