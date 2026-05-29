@@ -228,6 +228,7 @@ Pinned versions live in top-level dotfiles:
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
+- KV cache quantization: q4_0 (local), q8_0 (server)
 - Context size: 81920 tokens (local), 262144 tokens (server)
 
 ## Troubleshooting

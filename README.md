@@ -19,8 +19,8 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── configure-opencode          # Installs opencode-ai and configures shell init
 │   └── run-router                  # Router server — all models via --models-preset
 ├── conf/                           # llama-server INI preset files
-│   ├── router-local.ini            # Router preset: local profile (Q4, 81K ctx, 127.0.0.1)
-│   └── router-server.ini           # Router preset: server profile (Q8, 262K ctx, 0.0.0.0)
+│   ├── router-local.ini            # Router preset: local profile (Q4, q4_0 KV, 81K ctx, 127.0.0.1)
+│   └── router-server.ini           # Router preset: server profile (Q8, q8_0 KV, 262K ctx, 0.0.0.0)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -90,7 +90,7 @@ The project tracks specific versions of key development tools in version files:
 |------|-------------|---------|
 | `.default-node-version` | Node.js version for nodenv | 24.15.0 |
 | `.default-npm-version` | npm version | 11.12.1 |
-| `.default-opencode-version` | opencode-ai version | 1.15.7 |
+| `.default-opencode-version` | opencode-ai version | 1.15.12 |
 
 These versions are managed and installed via the bootstrap system.
 
@@ -133,6 +133,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Host: 127.0.0.1
 - Port: 8080
 - Quantization: UD-Q4_K_XL (both models)
+- KV cache quantization: q4_0 (K and V)
 - Context size: 81920 tokens
 - Batch size: 2048 / Ubatch size: 512
 
@@ -141,6 +142,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Host: 0.0.0.0
 - Port: 8080
 - Quantization: UD-Q8_K_XL (both models)
+- KV cache quantization: q8_0 (K and V)
 - Context size: 262144 tokens
 - Batch size: 4096 / Ubatch size: 1024
 
@@ -305,6 +307,7 @@ opencode [options] [query]
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
+- KV cache is quantized to reduce memory footprint: q4_0 (local), q8_0 (server)
 - Context size: 81920 tokens (local), 262144 tokens (server)
 
 ## Troubleshooting
