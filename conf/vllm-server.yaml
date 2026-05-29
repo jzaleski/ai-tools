@@ -11,6 +11,8 @@ model: mlx-community/Qwen3.6-35B-A3B-8bit
 served-model-name: jzaleski/cipher
 max-model-len: 262144
 enable-prefix-caching: false
+enable-auto-tool-choice: true
+tool-call-parser: hermes
 
 # --- Per-request sampling profiles (NOT server config) ---
 # vLLM applies these per request; the client sends them at inference time.

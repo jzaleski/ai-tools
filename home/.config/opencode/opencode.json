@@ -119,11 +119,11 @@
         }
       }
     },
-    "vllm (server - jzaleski/cipher)": {
+    "vLLM (server - jzaleski/cipher)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "vllm (server - jzaleski/cipher)",
+      "name": "vLLM (server - jzaleski/cipher)",
       "options": {
-        "baseURL": "http://localhost:8080/v1"
+        "baseURL": "http://server-hostname-or-ip:8080/v1"
       },
       "models": {
         "jzaleski/cipher": {
@@ -144,11 +144,11 @@
         }
       }
     },
-    "vllm (server - jzaleski/sage)": {
+    "vLLM (server - jzaleski/sage)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "vllm (server - jzaleski/sage)",
+      "name": "vLLM (server - jzaleski/sage)",
       "options": {
-        "baseURL": "http://localhost:8080/v1"
+        "baseURL": "http://server-hostname-or-ip:8080/v1"
       },
       "models": {
         "jzaleski/sage": {
