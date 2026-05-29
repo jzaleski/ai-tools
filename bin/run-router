@@ -29,17 +29,11 @@ run_vllm_server() {
     echo "Error: vLLM venv not found at \"${VLLM_VENV}\" — run bin/configure-vllm" >&2;
     exit 1;
   fi
-  # vLLM raises the soft fd limit toward 65535 at startup; if the *hard* limit
-  # is lower (e.g. 2048 in some launch contexts) it fails with "Too many open
-  # files" risk. Best-effort: try soft alone, then raise hard-then-soft.
-  vllm_nofile="${VLLM_NOFILE:-"65536"}";
-  if ! ulimit -n "${vllm_nofile}" 2> /dev/null; then
-    ulimit -Hn "${vllm_nofile}" 2> /dev/null || true;
-    ulimit -Sn "${vllm_nofile}" 2> /dev/null || true;
-  fi
-  if [[ "$(ulimit -Sn)" -lt "${vllm_nofile}" ]]; then
-    echo "Warning: open-file limit is $(ulimit -Sn) (wanted ${vllm_nofile}); vLLM may warn about fd limits" >&2;
-  fi
+  # Note: vllm-metal's plugin registration lowers RLIMIT_NOFILE to (2048, 4096)
+  # in native code at startup, so vLLM logs a benign "Found ulimit of 2048"
+  # warning. A shell `ulimit` raise here cannot override it (the plugin resets
+  # it after, in-process) — see README. The warning is cosmetic for this
+  # workload; raising it requires an upstream vllm-metal fix.
   # shellcheck disable=SC1091
   source "${VLLM_VENV}/bin/activate";
   exec vllm serve \

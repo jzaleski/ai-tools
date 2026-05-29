@@ -251,6 +251,16 @@ to run vLLM.
 - `VLLM_VENV` — Override the virtual environment path (default:
   `~/.venvs/vllm`).
 
+**Known Issues:**
+- At startup vLLM logs a benign warning:
+  `Found ulimit of 2048 and failed to automatically increase ... current limit
+  exceeds maximum limit`. This is a `vllm-metal` limitation: its plugin
+  registration lowers `RLIMIT_NOFILE` to `(2048, 4096)` in native code, *after*
+  any shell `ulimit` raise, so it cannot be fixed from `run-router` or the
+  launching shell. It is cosmetic for normal single-user / comparison workloads
+  (the actual "Too many open files" risk only arises under very high concurrent
+  connection counts). A real fix requires an upstream `vllm-metal` change.
+
 ### Sampling Profiles
 
 Under vLLM the server serves a single model; `jzaleski/cipher` and
