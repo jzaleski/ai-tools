@@ -77,9 +77,9 @@
         "jzaleski/cipher": {
           "name": "jzaleski/cipher",
           "limit": {
-            "context": 262144,
-            "input": 229376,
-            "output": 32768
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
           },
           "modalities": {
             "input": [
@@ -103,9 +103,9 @@
         "jzaleski/sage": {
           "name": "jzaleski/sage",
           "limit": {
-            "context": 262144,
-            "input": 229376,
-            "output": 32768
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
           },
           "modalities": {
             "input": [
@@ -129,9 +129,17 @@
         "jzaleski/cipher": {
           "name": "jzaleski/cipher",
           "limit": {
-            "context": 262144,
-            "input": 229376,
-            "output": 32768
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
+          },
+          "options": {
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "presence_penalty": 1.5,
+            "repetition_penalty": 1.0,
+            "top_k": 40,
+            "min_p": 0.01
           },
           "modalities": {
             "input": [
@@ -154,9 +162,17 @@
         "jzaleski/sage": {
           "name": "jzaleski/sage",
           "limit": {
-            "context": 262144,
-            "input": 229376,
-            "output": 32768
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
+          },
+          "options": {
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "presence_penalty": 1.5,
+            "repetition_penalty": 1.0,
+            "top_k": 20,
+            "min_p": 0.0
           },
           "modalities": {
             "input": [
