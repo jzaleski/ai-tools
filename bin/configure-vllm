@@ -18,9 +18,39 @@ fi
 
 # Python is provisioned by configure-python (pyenv, .default-python-version).
 # vllm-metal requires native arm64 Python 3.12.
+default_python_version=$(${cat_cmd} $(dirname $0)/../.default-python-version);
 default_vllm_metal_version=$(${cat_cmd} $(dirname $0)/../.default-vllm-metal-version);
 
-echo "Pinned (reference): vllm-metal ${default_vllm_metal_version}";
+echo "Pinned (reference): Python ${default_python_version}, vllm-metal ${default_vllm_metal_version}";
+
+# The official install script resolves "python" from PATH (via uv). Ensure the
+# pinned pyenv Python is used: put pyenv's bin/shims on PATH and point uv at the
+# pinned interpreter via UV_PYTHON, so the venv is built with the right version
+# regardless of the ambient PATH during bootstrap.
+pyenv_dir="$HOME/.pyenv";
+pyenv_bin_dir="$pyenv_dir/bin";
+if [[ ! "$PATH" =~ "$pyenv_bin_dir" ]]; then
+  export PATH="$pyenv_bin_dir:$PATH";
+fi
+
+pyenv_shims_dir="$pyenv_dir/shims";
+if [[ ! "$PATH" =~ "$pyenv_shims_dir" ]]; then
+  export PATH="$pyenv_shims_dir:$PATH";
+fi
+
+pyenv_cmd=$(which pyenv 2> /dev/null || echo -n);
+if [ -z "$pyenv_cmd" ]; then
+  echo "Error: Could not locate the \"pyenv\" command — run bin/configure-python first" >&2;
+  exit 1;
+fi
+
+# Resolve the absolute path to the pinned pyenv interpreter and hand it to uv.
+pinned_python="$pyenv_dir/versions/$default_python_version/bin/python";
+if [ ! -x "$pinned_python" ]; then
+  echo "Error: pinned Python ${default_python_version} not installed at \"$pinned_python\" — run bin/configure-python first" >&2;
+  exit 1;
+fi
+export UV_PYTHON="$pinned_python";
 
 # The official install script hardcodes ~/.venv-vllm-metal/ as its target and
 # bundles a compatible vLLM core alongside the vllm-metal plugin in a single
