@@ -163,8 +163,8 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 The opencode configuration defines 6 provider endpoints:
 - **llama.cpp (local - jzaleski/cipher)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
 - **llama.cpp (local - jzaleski/sage)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8080`, 262K context
-- **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8080`, 262K context
+- **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8080`, 131K context
+- **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8080`, 131K context
 - **vLLM (server - jzaleski/cipher)**: `localhost:8080` — mlx-community/Qwen3.6-35B-A3B-8bit, text-only
 - **vLLM (server - jzaleski/sage)**: `localhost:8080` — mlx-community/Qwen3.6-35B-A3B-8bit, text-only
 
@@ -242,7 +242,18 @@ Pinned versions live in top-level dotfiles:
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
 - KV cache quantization: q4_0 (local), q8_0 (server)
-- Context size: 81920 tokens (local), 262144 tokens (server)
+- vLLM `max-num-seqs` is capped at 16 (moderate concurrency); `enable-prefix-caching`
+  is mandatorily `false` (core vLLM disables prefix caching for hybrid Qwen3.6 —
+  see `vllm/config/model.py` `is_prefix_caching_supported`).
+- On vLLM, `jzaleski/cipher` and `jzaleski/sage` are ONE checkpoint differentiated
+  only by **client-side** per-request sampling set in `opencode.json` (`options`).
+  A non-opencode client (raw curl / web UI) hitting vLLM directly gets the model's
+  `generation_config.json` defaults, not the tuned cipher/sage values. (llama.cpp
+  still applies its per-alias sampling server-side via the INI presets.)
+- A.3 verification (vLLM): NOT verified in this environment (server not running).
+  The `options` keys are set per the OpenAI-style body schema; confirm at runtime
+  that vLLM receives them (inspect server request logs while using opencode).
+- Context size: 81920 tokens (local), 131072 tokens (server)
 
 ## Troubleshooting
 
