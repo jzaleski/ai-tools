@@ -71,7 +71,7 @@ Scripts run in the order defined in the `bin_scripts` array in `bin/bootstrap`:
 | `bin/install-dependencies` | Installs Homebrew (if missing) and installs/upgrades: `ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh` |
 | `bin/configure-node` | Clones/updates `nodenv` to `~/.nodenv` and the `node-build` plugin; installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) |
 | `bin/configure-opencode` | Installs `opencode-ai` version from `.default-opencode-version` via npm; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
-| `bin/configure-vllm` | Installs vllm-metal via the official install script (`~/.venv-vllm-metal/`) and symlinks it to `~/.venvs/vllm` (native arm64 Python 3.14.3) |
+| `bin/configure-vllm` | Installs vllm-metal via the official install script (`~/.venv-vllm-metal/`) and symlinks it to `~/.venvs/vllm` (native arm64 Python 3.12.x) |
 
 To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
 ```bash
@@ -96,7 +96,7 @@ The project tracks specific versions of key development tools in version files:
 | `.default-node-version` | Node.js version for nodenv | 24.15.0 |
 | `.default-npm-version` | npm version | 11.12.1 |
 | `.default-opencode-version` | opencode-ai version | 1.15.12 |
-| `.default-python-version` | Python version for the vllm-metal venv | 3.14.3 |
+| `.default-python-version` | Python version for the vllm-metal venv | 3.12.12 |
 | `.default-vllm-metal-version` | vllm-metal release tag (reference) | v0.2.0-20260528-103004 |
 
 These versions are managed and installed via the bootstrap system.
@@ -235,7 +235,7 @@ to run vLLM.
   `install.sh` script.
 - The installer creates a bundled venv at `~/.venv-vllm-metal/`; `configure-vllm`
   then exposes it under the canonical path `~/.venvs/vllm` via a symlink.
-- A native arm64 Python 3.14.3 is required.
+- A native arm64 Python 3.12.x is required.
 
 **Configuration:**
 - Config lives in `conf/vllm-server.yaml`, using the native `vllm serve --config`
