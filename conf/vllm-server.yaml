@@ -26,8 +26,8 @@ served-model-name:
 # context. See docs/specs/2026-05-29-vllm-config-tuning-design.md (B.1).
 max-model-len: 131072
 # Cap concurrency to a moderate level for occasional parallel sub-agent dispatch.
-# The implicit default (1024) over-reserves hybrid GDN state (~64.4MB/seq ≈ 66GB);
-# 16 seqs ≈ 1.03GB, freeing memory without hurting the expected workload (B.1).
+# The implicit default (1024) over-reserves hybrid GDN state (64.4MB/seq ≈ 64GB);
+# 16 seqs ≈ 1GB, freeing memory without hurting the expected workload (B.1).
 max-num-seqs: 16
 enable-prefix-caching: false
 enable-auto-tool-choice: true
