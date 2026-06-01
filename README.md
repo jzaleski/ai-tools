@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It includes support for coding assistance (Qwen3.6-35B-A3B local and server) and general advising (Qwen3.6-35B-A3B local and server).
+This repository provides scripts and configurations for running local AI models using llama-server. It includes support for coding assistance (Qwen3.6-35B-A3B local and server) and general advising (Qwen3.6-35B-A3B local and server). Experimental profiles swap in the Qwopus3.6-35B-A3B-v1 model with tuned sampling parameters.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -20,7 +20,9 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   └── run-router                  # Router server (llama.cpp, local and server modes)
 ├── conf/                           # llama-server INI presets
 │   ├── llama-cpp-local.ini         # Router preset: local profile (Q4, q4_0 KV, 81K ctx, 127.0.0.1)
-│   └── llama-cpp-server.ini        # Router preset: server profile (Q8, q8_0 KV, 131K ctx, 0.0.0.0)
+│   ├── llama-cpp-local-experimental.ini   # Router preset: local experimental profile (Q4_K_M, 81K ctx)
+│   ├── llama-cpp-server.ini        # Router preset: server profile (Q8, q8_0 KV, 131K ctx, 0.0.0.0)
+│   └── llama-cpp-server-experimental.ini  # Router preset: server experimental profile (Q8_0, 131K ctx)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -126,7 +128,7 @@ You can override default settings via environment variables. The same variables 
 ## Components
 
 ### run-router
-Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading all models defined in the appropriate INI preset file. Clients route to a specific model via `?model=jzaleski/cipher` or `?model=jzaleski/sage`. Supports both local and server modes via `--server` flag.
+Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading all models defined in the appropriate INI preset file. Clients route to a specific model via `?model=jzaleski/cipher` or `?model=jzaleski/sage`. Supports both local and server modes via `--server` flag, and an `--experimental` flag that swaps in the experimental preset (different model/quantization).
 
 **Local Mode Defaults:**
 - Preset: `conf/llama-cpp-local.ini`
@@ -137,11 +139,29 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Context size: 81920 tokens
 - Batch size: 2048 / Ubatch size: 512
 
+**Local Experimental Mode Defaults:**
+- Preset: `conf/llama-cpp-local-experimental.ini`
+- Host: 127.0.0.1
+- Port: 8080
+- Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q4_K_M`
+- KV cache quantization: q4_0 (K and V)
+- Context size: 81920 tokens
+- Batch size: 2048 / Ubatch size: 512
+
 **Server Mode Defaults:**
 - Preset: `conf/llama-cpp-server.ini`
 - Host: 0.0.0.0
 - Port: 8080
 - Quantization: UD-Q8_K_XL (both models)
+- KV cache quantization: q8_0 (K and V)
+- Context size: 131072 tokens
+- Batch size: 4096 / Ubatch size: 1024
+
+**Server Experimental Mode Defaults:**
+- Preset: `conf/llama-cpp-server-experimental.ini`
+- Host: 0.0.0.0
+- Port: 8080
+- Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q8_0`
 - KV cache quantization: q8_0 (K and V)
 - Context size: 131072 tokens
 - Batch size: 4096 / Ubatch size: 1024
@@ -158,6 +178,12 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 
 # Start router (llama.cpp, server mode — both models on 0.0.0.0:8080)
 ./bin/run-router --server
+
+# Start router (llama.cpp, local experimental mode — Qwopus model on localhost:8080)
+./bin/run-router --experimental
+
+# Start router (llama.cpp, server experimental mode — Qwopus model on 0.0.0.0:8080)
+./bin/run-router --server --experimental
 ```
 
 Clients select a model via the `model` query parameter or request body field:

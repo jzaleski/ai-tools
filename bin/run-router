@@ -11,6 +11,13 @@ run_local() {
     --models-preset "${CONF_DIR}/llama-cpp-local.ini";
 }
 
+run_local_experimental() {
+  exec llama-server \
+    --host "${HOST:-"127.0.0.1"}" \
+    --port "${PORT:-"8080"}" \
+    --models-preset "${CONF_DIR}/llama-cpp-local-experimental.ini";
+}
+
 run_server() {
   exec llama-server \
     --host "${HOST:-"0.0.0.0"}" \
@@ -18,14 +25,11 @@ run_server() {
     --models-preset "${CONF_DIR}/llama-cpp-server.ini";
 }
 
-run_experimental_local() {
-  echo "Experimental local mode not yet implemented" >&2;
-  exit 1;
-}
-
-run_experimental_server() {
-  echo "Experimental server mode not yet implemented" >&2;
-  exit 1;
+run_server_experimental() {
+  exec llama-server \
+    --host "${HOST:-"0.0.0.0"}" \
+    --port "${PORT:-"8080"}" \
+    --models-preset "${CONF_DIR}/llama-cpp-server-experimental.ini";
 }
 
 server=false;
@@ -39,9 +43,9 @@ done
 
 if [[ "${experimental}" == "true" ]]; then
   if [[ "${server}" == "true" ]]; then
-    run_experimental_server;
+    run_server_experimental;
   else
-    run_experimental_local;
+    run_local_experimental;
   fi
 else
   if [[ "${server}" == "true" ]]; then

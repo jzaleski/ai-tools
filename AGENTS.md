@@ -34,7 +34,9 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   └── run-router                         # Router server (llama.cpp, local and server modes)
 ├── conf/                                  # llama-server INI presets
 │   ├── llama-cpp-local.ini                # Router preset: local profile
-│   └── llama-cpp-server.ini               # Router preset: server profile
+│   ├── llama-cpp-local-experimental.ini   # Router preset: local experimental profile
+│   ├── llama-cpp-server.ini               # Router preset: server profile
+│   └── llama-cpp-server-experimental.ini  # Router preset: server experimental profile
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (analyze, engineer)
@@ -48,13 +50,13 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ## Build/Test Commands
 
-Scripts in `bin/` support **local** and **server** modes, with an `--experimental` flag reserved for future use:
+Scripts in `bin/` support **local** and **server** modes, each with an optional `--experimental` flag that loads the experimental INI preset (different model/quantization):
 
 ```bash
 ./bin/run-router                           # llama.cpp, local mode (8080)
 ./bin/run-router --server                  # llama.cpp, server mode (8080)
-./bin/run-router --experimental            # experimental local — STUB (exits non-zero: "not yet implemented")
-./bin/run-router --server --experimental   # experimental server — STUB (exits non-zero: "not yet implemented"); flags are order-independent
+./bin/run-router --experimental            # llama.cpp, local experimental mode (8080)
+./bin/run-router --server --experimental   # llama.cpp, server experimental mode (8080); flags are order-independent
 ```
 
 Test with: `bash -x ./bin/run-router`
@@ -66,8 +68,8 @@ Test with: `bash -x ./bin/run-router`
 ### Bash Scripts
 
 - **Shebang**: `#!/usr/bin/env bash`
-- **Functions**: Use `run_local()` and `run_server()`
-- **Mode Detection**: `if [[ "${1:-}" == "--server" ]]; then run_server; else run_local; fi`
+- **Functions**: Use `run_local()`, `run_local_experimental()`, `run_server()`, and `run_server_experimental()`
+- **Mode Detection**: Parse `--server` and `--experimental` flags with a `for arg in "$@"` loop; dispatch to the appropriate function
 - **Variable Quoting**: Always quote expansions `"${VAR:-default}"`
 - **Path Resolution**: Use `$(dirname $0)/..` for relative paths
 
