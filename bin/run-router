@@ -3,43 +3,29 @@
 set -e;
 
 CONF_DIR="$(dirname "$0")/../conf";
-VLLM_VENV="${VLLM_VENV:-"${HOME}/.venvs/vllm"}";
 
-run_llama_cpp_local() {
+run_local() {
   exec llama-server \
     --host "${HOST:-"127.0.0.1"}" \
     --port "${PORT:-"8080"}" \
     --models-preset "${CONF_DIR}/llama-cpp-local.ini";
 }
 
-run_llama_cpp_server() {
+run_server() {
   exec llama-server \
     --host "${HOST:-"0.0.0.0"}" \
     --port "${PORT:-"8080"}" \
     --models-preset "${CONF_DIR}/llama-cpp-server.ini";
 }
 
-run_vllm_local() {
-  echo "vLLM local mode not yet supported — use --server" >&2;
+run_experimental_local() {
+  echo "Experimental local mode not yet implemented" >&2;
   exit 1;
 }
 
-run_vllm_server() {
-  if [[ ! -f "${VLLM_VENV}/bin/activate" ]]; then
-    echo "Error: vLLM venv not found at \"${VLLM_VENV}\" — run bin/configure-vllm" >&2;
-    exit 1;
-  fi
-  # Note: vllm-metal's plugin registration lowers RLIMIT_NOFILE to (2048, 4096)
-  # in native code at startup, so vLLM logs a benign "Found ulimit of 2048"
-  # warning. A shell `ulimit` raise here cannot override it (the plugin resets
-  # it after, in-process) — see README. The warning is cosmetic for this
-  # workload; raising it requires an upstream vllm-metal fix.
-  # shellcheck disable=SC1091
-  source "${VLLM_VENV}/bin/activate";
-  exec vllm serve \
-    --config "${CONF_DIR}/vllm-server.yaml" \
-    --host "${HOST:-"0.0.0.0"}" \
-    --port "${PORT:-"8080"}";
+run_experimental_server() {
+  echo "Experimental server mode not yet implemented" >&2;
+  exit 1;
 }
 
 server=false;
@@ -53,14 +39,14 @@ done
 
 if [[ "${experimental}" == "true" ]]; then
   if [[ "${server}" == "true" ]]; then
-    run_vllm_server;
+    run_experimental_server;
   else
-    run_vllm_local;
+    run_experimental_local;
   fi
 else
   if [[ "${server}" == "true" ]]; then
-    run_llama_cpp_server;
+    run_server;
   else
-    run_llama_cpp_local;
+    run_local;
   fi
 fi
