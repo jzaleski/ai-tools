@@ -15,15 +15,15 @@
     "openai"
   ],
   "provider": {
-    "llama.cpp (local - jzaleski/cipher)": {
+    "llama.cpp (local)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (local - jzaleski/cipher)",
+      "name": "llama.cpp (local)",
       "options": {
         "baseURL": "http://localhost:8080/v1"
       },
       "models": {
-        "jzaleski/cipher": {
-          "name": "jzaleski/cipher",
+        "jzaleski/local": {
+          "name": "jzaleski/local",
           "limit": {
             "context": 81920,
             "input": 73728,
@@ -41,67 +41,15 @@
         }
       }
     },
-    "llama.cpp (local - jzaleski/sage)": {
+    "llama.cpp (server)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (local - jzaleski/sage)",
-      "options": {
-        "baseURL": "http://localhost:8080/v1"
-      },
-      "models": {
-        "jzaleski/sage": {
-          "name": "jzaleski/sage",
-          "limit": {
-            "context": 81920,
-            "input": 73728,
-            "output": 8192
-          },
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        }
-      }
-    },
-    "llama.cpp (server - jzaleski/cipher)": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (server - jzaleski/cipher)",
+      "name": "llama.cpp (server)",
       "options": {
         "baseURL": "http://server-hostname-or-ip:8080/v1"
       },
       "models": {
-        "jzaleski/cipher": {
-          "name": "jzaleski/cipher",
-          "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
-          },
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        }
-      }
-    },
-    "llama.cpp (server - jzaleski/sage)": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (server - jzaleski/sage)",
-      "options": {
-        "baseURL": "http://server-hostname-or-ip:8080/v1"
-      },
-      "models": {
-        "jzaleski/sage": {
-          "name": "jzaleski/sage",
+        "jzaleski/server": {
+          "name": "jzaleski/server",
           "limit": {
             "context": 131072,
             "input": 114688,

@@ -31,7 +31,9 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── install-dependencies               # Installs/upgrades Homebrew base packages
 │   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode                 # Installs opencode-ai and configures shell init
-│   └── run-router                         # Router server (llama.cpp, local and server modes)
+│   ├── run-local                          # Direct llama-server launcher (local mode, no router)
+│   ├── run-router                         # Router server (llama.cpp, local and server modes)
+│   └── run-server                         # Direct llama-server launcher (server mode, no router)
 ├── conf/                                  # llama-server INI presets
 │   ├── llama-cpp-local.ini                # Router preset: local profile
 │   ├── llama-cpp-local-experimental.ini   # Router preset: local experimental profile
@@ -57,9 +59,14 @@ Scripts in `bin/` support **local** and **server** modes, each with an optional 
 ./bin/run-router --server                  # llama.cpp, server mode (8080)
 ./bin/run-router --experimental            # llama.cpp, local experimental mode (8080)
 ./bin/run-router --server --experimental   # llama.cpp, server experimental mode (8080); flags are order-independent
+
+./bin/run-local                            # direct llama-server, local mode (127.0.0.1:8080)
+./bin/run-local --experimental             # direct llama-server, local experimental mode
+./bin/run-server                           # direct llama-server, server mode (0.0.0.0:8080)
+./bin/run-server --experimental            # direct llama-server, server experimental mode
 ```
 
-Test with: `bash -x ./bin/run-router`
+Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-local`
 
 ---
 
@@ -110,10 +117,10 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │         Router Server            │ (Port 8080)
 │        --models-preset           │
 │                                  │
-│  ┌─────────────┐ ┌─────────────┐ │
-│  │jzaleski/    │ │jzaleski/    │ │
-│  │cipher       │ │sage         │ │
-│  └─────────────┘ └─────────────┘ │
+│       ┌─────────────────┐        │
+│       │jzaleski/local   │        │
+│       │(or /server)     │        │
+│       └─────────────────┘        │
 └──────────────────────────────────┘
 ```
 
@@ -145,22 +152,15 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │    LLM Provider  │
 │                  │
 │ ┌──────────────┐ │ ┌───────────────┐
-│ │ Local Cipher │ │ │ Local Sage    │
-│ │ Port 8080    │ │ │ Port 8080     │
-│ └──────────────┘ │ └───────────────┘
-│                  │
-│ ┌──────────────┐ │ ┌───────────────┐
-│ │ Server Cipher│ │ │ Server Sage   │
-│ │ (remote)     │ │ │ (remote)      │
+│ │ Local        │ │ │ Server        │
+│ │ Port 8080    │ │ │ (remote)      │
 │ └──────────────┘ │ └───────────────┘
 └──────────────────┘
 ```
 
-The opencode configuration defines 4 provider endpoints:
-- **llama.cpp (local - jzaleski/cipher)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (local - jzaleski/sage)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (server - jzaleski/cipher)**: `server-hostname-or-ip:8080`, 131K context
-- **llama.cpp (server - jzaleski/sage)**: `server-hostname-or-ip:8080`, 131K context
+The opencode configuration defines 2 provider endpoints:
+- **llama.cpp (local - jzaleski/local)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
+- **llama.cpp (server - jzaleski/server)**: `server-hostname-or-ip:8080`, 131K context
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 

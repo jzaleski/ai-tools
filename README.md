@@ -17,7 +17,9 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── install-dependencies        # Installs/upgrades Homebrew base packages
 │   ├── configure-node              # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode          # Installs opencode-ai and configures shell init
-│   └── run-router                  # Router server (llama.cpp, local and server modes)
+│   ├── run-local                   # Direct llama-server launcher (local mode, no router)
+│   ├── run-router                  # Router server (llama.cpp, local and server modes)
+│   └── run-server                  # Direct llama-server launcher (server mode, no router)
 ├── conf/                           # llama-server INI presets
 │   ├── llama-cpp-local.ini         # Router preset: local profile (Q4, q4_0 KV, 81K ctx, 127.0.0.1)
 │   ├── llama-cpp-local-experimental.ini   # Router preset: local experimental profile (Q4_K_M, 81K ctx)
@@ -127,14 +129,58 @@ You can override default settings via environment variables. The same variables 
 
 ## Components
 
+### run-local
+Starts a single llama-server directly (no router mode) in local mode. Loads the Qwen3.6-35B-A3B model with local defaults. Supports an `--experimental` flag that swaps in the Qwopus model.
+
+**Local Mode Defaults:**
+- Host: 127.0.0.1
+- Port: 8080
+- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL`
+- KV cache quantization: q4_0 (K and V)
+- Context size: 81920 tokens
+- Batch size: 2048 / Ubatch size: 512
+
+**Local Experimental Mode Defaults:**
+- Host: 127.0.0.1
+- Port: 8080
+- Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q4_K_M`
+- KV cache quantization: q4_0 (K and V)
+- Context size: 81920 tokens
+- Batch size: 2048 / Ubatch size: 512
+
+**Environment Variables:**
+- `PORT`: Override listen port (default: 8080)
+
+### run-server
+Starts a single llama-server directly (no router mode) in server mode. Loads the Qwen3.6-35B-A3B model with server defaults. Supports an `--experimental` flag that swaps in the Qwopus model.
+
+**Server Mode Defaults:**
+- Host: 0.0.0.0
+- Port: 8080
+- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q8_K_XL`
+- KV cache quantization: q8_0 (K and V)
+- Context size: 131072 tokens
+- Batch size: 4096 / Ubatch size: 1024
+
+**Server Experimental Mode Defaults:**
+- Host: 0.0.0.0
+- Port: 8080
+- Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q8_0`
+- KV cache quantization: q8_0 (K and V)
+- Context size: 131072 tokens
+- Batch size: 4096 / Ubatch size: 1024
+
+**Environment Variables:**
+- `PORT`: Override listen port (default: 8080)
+
 ### run-router
-Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading all models defined in the appropriate INI preset file. Clients route to a specific model via `?model=jzaleski/cipher` or `?model=jzaleski/sage`. Supports both local and server modes via `--server` flag, and an `--experimental` flag that swaps in the experimental preset (different model/quantization).
+Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading the model defined in the appropriate INI preset file. Clients route to the model via `?model=jzaleski/local` (local mode) or `?model=jzaleski/server` (server mode). Supports both local and server modes via `--server` flag, and an `--experimental` flag that swaps in the experimental preset (different model/quantization).
 
 **Local Mode Defaults:**
 - Preset: `conf/llama-cpp-local.ini`
 - Host: 127.0.0.1
 - Port: 8080
-- Quantization: UD-Q4_K_XL (both models)
+- Quantization: UD-Q4_K_XL
 - KV cache quantization: q4_0 (K and V)
 - Context size: 81920 tokens
 - Batch size: 2048 / Ubatch size: 512
@@ -152,7 +198,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Preset: `conf/llama-cpp-server.ini`
 - Host: 0.0.0.0
 - Port: 8080
-- Quantization: UD-Q8_K_XL (both models)
+- Quantization: UD-Q8_K_XL
 - KV cache quantization: q8_0 (K and V)
 - Context size: 131072 tokens
 - Batch size: 4096 / Ubatch size: 1024
@@ -173,10 +219,22 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 ## Usage
 
 ```bash
-# Start router (llama.cpp, local mode — both models on localhost:8080)
+# Start local server directly (no router, localhost:8080)
+./bin/run-local
+
+# Start local server with experimental model
+./bin/run-local --experimental
+
+# Start server mode directly (no router, 0.0.0.0:8080)
+./bin/run-server
+
+# Start server mode with experimental model
+./bin/run-server --experimental
+
+# Start router (llama.cpp, local mode — jzaleski/local on localhost:8080)
 ./bin/run-router
 
-# Start router (llama.cpp, server mode — both models on 0.0.0.0:8080)
+# Start router (llama.cpp, server mode — jzaleski/server on 0.0.0.0:8080)
 ./bin/run-router --server
 
 # Start router (llama.cpp, local experimental mode — Qwopus model on localhost:8080)
@@ -189,29 +247,30 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 Clients select a model via the `model` query parameter or request body field:
 
 ```bash
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/cipher ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/sage   ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/local  ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/server ...
 ```
 
 ## Architecture
 
-The router listens on port 8080 and is selected at launch time via flags.
+The router listens on port 8080 and is selected at launch time via flags. Alternatively, `run-local` and `run-server` bypass the router and start llama-server directly.
 
 ```
-┌─────────────────────────┐
-│   ./bin/run-router       │
-└────────────┬────────────┘
-             │
-  ┌──────────┴──────────┐
-  │  llama.cpp (router) │
-  │  Port 8080          │
-  │  --models-preset    │
-  │                     │
-  │ ┌────────┐┌───────┐ │
-  │ │cipher  ││sage   │ │
-  │ │(Qwen)  ││(Qwen) │ │
-  │ └────────┘└───────┘ │
-  └─────────────────────┘
+┌──────────────────────────┐   ┌──────────────┐   ┌───────────────┐
+│   ./bin/run-router        │   │ ./bin/run-   │   │ ./bin/run-    │
+│   (router mode)           │   │ local        │   │ server        │
+└────────────┬──────────────┘   └──────┬───────┘   └───────┬───────┘
+             │                         │                   │
+   ┌──────────┴──────────┐    ┌────────┴────────┐  ┌───────┴────────┐
+   │  llama.cpp (router) │    │  llama.cpp      │  │  llama.cpp     │
+   │  Port 8080          │    │  127.0.0.1:8080 │  │  0.0.0.0:8080  │
+   │  --models-preset    │    │  (direct)       │  │  (direct)      │
+   │                     │    └─────────────────┘  └────────────────┘
+   │ ┌──────────────────┐ │
+   │ │jzaleski/local    │ │
+   │ │(or /server)      │ │
+   │ └──────────────────┘ │
+   └─────────────────────┘
 ```
 
 ## Opencode Agent Architecture
@@ -242,29 +301,21 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │    LLM Providers     │
 │                      │
 │  ┌────────────────┐  │ ┌────────────────┐
-│  │ Local Cipher   │  │ │ Local Sage     │
-│  │ localhost:8080 │  │ │ localhost:8080 │
-│  │ 81K context    │  │ │ 81K context    │
-│  └────────────────┘  │ └────────────────┘
-│                      │
-│  ┌────────────────┐  │ ┌────────────────┐
-│  │ Server Cipher  │  │ │ Server Sage    │
-│  │ remote:8080    │  │ │ remote:8080    │
-│  │ 131K context   │  │ │ 131K context   │
+│  │ Local          │  │ │ Server         │
+│  │ localhost:8080 │  │ │ remote:8080    │
+│  │ 81K context    │  │ │ 131K context   │
 │  └────────────────┘  │ └────────────────┘
 └──────────────────────┘
 ```
 
 ### Provider Configuration
 
-The opencode configuration (`~/.config/opencode/opencode.json`) defines 4 provider endpoints:
+The opencode configuration (`~/.config/opencode/opencode.json`) defines 2 provider endpoints:
 
 | Provider | Endpoint | Model | Context | Input | Output | Modalities |
 |----------|----------|-------|---------|-------|--------|------------|
-| llama.cpp (local - jzaleski/cipher) | `localhost:8080` | jzaleski/cipher | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| llama.cpp (local - jzaleski/sage) | `localhost:8080` | jzaleski/sage | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| llama.cpp (server - jzaleski/cipher) | `server-hostname-or-ip:8080` | jzaleski/cipher | 131,072 | 114,688 | 16,384 | text+image in, text out |
-| llama.cpp (server - jzaleski/sage) | `server-hostname-or-ip:8080` | jzaleski/sage | 131,072 | 114,688 | 16,384 | text+image in, text out |
+| llama.cpp (local) | `localhost:8080` | jzaleski/local | 81,920 | 73,728 | 8,192 | text+image in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/server | 131,072 | 114,688 | 16,384 | text+image in, text out |
 
 ### Agent Roles
 

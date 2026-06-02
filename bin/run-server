@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+set -e;
+
+run_server() {
+  exec llama-server \
+    -hf                unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q8_K_XL \
+    --host             0.0.0.0 \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       4096 \
+    --ubatch-size      1024 \
+    --ctx-size         131072 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q8_0 \
+    --presence-penalty 1.5 \
+    --repeat-penalty   1.0 \
+    --min-p            0.01 \
+    --temp             1.0 \
+    --top-k            20 \
+    --top-p            0.95;
+}
+
+run_server_experimental() {
+  exec llama-server \
+    -hf                Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q8_0 \
+    --host             0.0.0.0 \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       4096 \
+    --ubatch-size      1024 \
+    --ctx-size         131072 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q8_0 \
+    --presence-penalty 1.5 \
+    --repeat-penalty   1.0 \
+    --min-p            0.01 \
+    --temp             1.0 \
+    --top-k            20 \
+    --top-p            0.95;
+}
+
+experimental=false;
+for arg in "$@"; do
+  case "${arg}" in
+    --experimental) experimental=true;;
+  esac
+done
+
+if [[ "${experimental}" == "true" ]]; then
+  run_server_experimental;
+else
+  run_server;
+fi
