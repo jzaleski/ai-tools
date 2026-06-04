@@ -6,7 +6,18 @@ if [ $(uname) = "Darwin" ]; then
   brew_cmd=$(which brew 2> /dev/null || echo -n);
   if [ -z "$brew_cmd" ]; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)";
+    # After a fresh install, brew is not yet on PATH. Probe known locations:
+    #   /opt/homebrew/bin/brew  — Apple Silicon default
+    #   /usr/local/bin/brew     — Intel Mac default
     brew_cmd=$(which brew 2> /dev/null || echo -n);
+    if [ -z "$brew_cmd" ]; then
+      for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+        if [ -x "$candidate" ]; then
+          brew_cmd="$candidate";
+          break;
+        fi
+      done
+    fi
   fi
 
   if [ $(uname -p) = "arm" ]; then

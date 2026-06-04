@@ -62,9 +62,13 @@ done
 ${nodenv_cmd} global "$default_node_version";
 ${nodenv_cmd} rehash;
 
-npm_cmd=$(which npm 2> /dev/null || echo -n);
-if [ -z "$npm_cmd" ]; then
-  echo "Error: Could not locate the \"npm\" command" >&2;
+# Resolve npm from the nodenv shim directly rather than relying on PATH,
+# which may resolve a system npm (e.g. Homebrew's Node or /usr/local/bin/npm)
+# whose global prefix is root-owned. The nodenv shim delegates to the
+# user-owned nodenv-managed version and its prefix is entirely under ~/.nodenv.
+npm_cmd="$nodenv_shims_dir/npm";
+if [ ! -x "$npm_cmd" ]; then
+  echo "Error: Could not locate the nodenv-managed \"npm\" shim at $npm_cmd" >&2;
   exit 1;
 fi
 
