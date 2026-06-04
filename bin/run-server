@@ -6,17 +6,22 @@ MODELS_DIR="${HOME}/.cache/models";
 
 require_model() {
   local model_file="${1}";
+  local hf_repo="${2}";
   if [[ ! -f "${model_file}" ]]; then
-    echo "Error: model file not found: ${model_file}" >&2;
-    echo "Run 'bin/download-models' to download all models, or" >&2;
-    echo "     'bin/download-models --server' / '--server-experimental' for just this one." >&2;
-    exit 1;
+    local hf_filename;
+    hf_filename="$(basename "${model_file}")";
+    echo "Model not found: ${model_file}";
+    echo "Downloading ${hf_repo}/${hf_filename} ...";
+    "$(dirname "$0")/download-model" "${hf_repo}" "${hf_filename}" || {
+      echo "Error: download failed." >&2;
+      exit 1;
+    };
   fi
 }
 
 run_server() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
-  require_model "${model}";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/server \
@@ -40,7 +45,7 @@ run_server() {
 
 run_server_experimental() {
   local model="${MODELS_DIR}/Jackrong/Qwopus3.6-35B-A3B-v1-Q8_0.gguf";
-  require_model "${model}";
+  require_model "${model}" "Jackrong/Qwopus3.6-35B-A3B-v1-GGUF";
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/server \
