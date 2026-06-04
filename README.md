@@ -15,16 +15,18 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 ├── bin/                            # Main execution scripts
 │   ├── bootstrap                   # System setup and configuration bootstrap
 │   ├── install-dependencies        # Installs/upgrades Homebrew base packages
+│   ├── configure-git               # Configures global git settings (core.excludesfile)
 │   ├── configure-node              # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode          # Installs opencode-ai and configures shell init
+│   ├── download-model              # Downloads a single GGUF file from Hugging Face via curl
 │   ├── run-local                   # Direct llama-server launcher (local mode, no router)
 │   ├── run-router                  # Router server (llama.cpp, local and server modes)
 │   └── run-server                  # Direct llama-server launcher (server mode, no router)
 ├── conf/                           # llama-server INI presets
 │   ├── llama-cpp-local.ini         # Router preset: local profile (Q4, q4_0 KV, 81K ctx, 127.0.0.1)
 │   ├── llama-cpp-local-experimental.ini   # Router preset: local experimental profile (Q4_K_M, 81K ctx)
-│   ├── llama-cpp-server.ini        # Router preset: server profile (Q8, q8_0 KV, 131K ctx, 0.0.0.0)
-│   └── llama-cpp-server-experimental.ini  # Router preset: server experimental profile (Q8_0, 131K ctx)
+│   ├── llama-cpp-server.ini        # Router preset: server profile (Q8, q8_0 KV, 262K ctx, 0.0.0.0)
+│   └── llama-cpp-server-experimental.ini  # Router preset: server experimental profile (Q8_0, 262K ctx)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -69,6 +71,7 @@ Scripts run in the order defined in the `bin_scripts` array in `bin/bootstrap`:
 | Script | Purpose |
 |--------|---------|
 | `bin/install-dependencies` | Installs Homebrew (if missing) and installs/upgrades: `ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh` |
+| `bin/configure-git` | Configures global git settings — sets `core.excludesfile` to `~/.gitignore` if not already set |
 | `bin/configure-node` | Clones/updates `nodenv` to `~/.nodenv` and the `node-build` plugin; installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) |
 | `bin/configure-opencode` | Installs `opencode-ai` version from `.default-opencode-version` via npm; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
 
@@ -159,7 +162,7 @@ Starts a single llama-server directly (no router mode) in server mode. Loads the
 - Port: 8080
 - Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q8_K_XL`
 - KV cache quantization: q8_0 (K and V)
-- Context size: 131072 tokens
+- Context size: 262144 tokens
 - Batch size: 4096 / Ubatch size: 1024
 
 **Server Experimental Mode Defaults:**
@@ -167,7 +170,7 @@ Starts a single llama-server directly (no router mode) in server mode. Loads the
 - Port: 8080
 - Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q8_0`
 - KV cache quantization: q8_0 (K and V)
-- Context size: 131072 tokens
+- Context size: 262144 tokens
 - Batch size: 4096 / Ubatch size: 1024
 
 **Environment Variables:**
@@ -200,7 +203,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Port: 8080
 - Quantization: UD-Q8_K_XL
 - KV cache quantization: q8_0 (K and V)
-- Context size: 131072 tokens
+- Context size: 262144 tokens
 - Batch size: 4096 / Ubatch size: 1024
 
 **Server Experimental Mode Defaults:**
@@ -209,7 +212,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Port: 8080
 - Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q8_0`
 - KV cache quantization: q8_0 (K and V)
-- Context size: 131072 tokens
+- Context size: 262144 tokens
 - Batch size: 4096 / Ubatch size: 1024
 
 **Environment Variables:**
@@ -303,7 +306,7 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │  ┌────────────────┐  │ ┌────────────────┐
 │  │ Local          │  │ │ Server         │
 │  │ localhost:8080 │  │ │ remote:8080    │
-│  │ 81K context    │  │ │ 131K context   │
+│  │ 81K context    │  │ │ 262K context   │
 │  └────────────────┘  │ └────────────────┘
 └──────────────────────┘
 ```
@@ -315,7 +318,7 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 2 provid
 | Provider | Endpoint | Model | Context | Input | Output | Modalities |
 |----------|----------|-------|---------|-------|--------|------------|
 | llama.cpp (local) | `localhost:8080` | jzaleski/local | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/server | 131,072 | 114,688 | 16,384 | text+image in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/server | 262,144 | 245,760 | 16,384 | text+image in, text out |
 
 ### Agent Roles
 
@@ -389,7 +392,7 @@ opencode [options] [query]
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
 - KV cache is quantized to reduce memory footprint: q4_0 (local), q8_0 (server)
-- Context size: 81920 tokens (local), 131072 tokens (server)
+- Context size: 81920 tokens (local), 262144 tokens (server)
 
 ## Troubleshooting
 

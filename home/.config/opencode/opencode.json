@@ -51,8 +51,8 @@
         "jzaleski/server": {
           "name": "jzaleski/server",
           "limit": {
-            "context": 131072,
-            "input": 114688,
+            "context": 262144,
+            "input": 245760,
             "output": 16384
           },
           "modalities": {

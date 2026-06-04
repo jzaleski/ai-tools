@@ -29,8 +29,10 @@ Agent configurations are managed via the bootstrap system and integrate with the
 ├── bin/                                   # Main execution scripts
 │   ├── bootstrap                          # System setup and configuration bootstrap
 │   ├── install-dependencies               # Installs/upgrades Homebrew base packages
+│   ├── configure-git                      # Configures global git settings (core.excludesfile)
 │   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode                 # Installs opencode-ai and configures shell init
+│   ├── download-model                     # Downloads a single GGUF file from Hugging Face via curl
 │   ├── run-local                          # Direct llama-server launcher (local mode, no router)
 │   ├── run-router                         # Router server (llama.cpp, local and server modes)
 │   └── run-server                         # Direct llama-server launcher (server mode, no router)
@@ -160,7 +162,7 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 
 The opencode configuration defines 2 provider endpoints:
 - **llama.cpp (local - jzaleski/local)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (server - jzaleski/server)**: `server-hostname-or-ip:8080`, 131K context
+- **llama.cpp (server - jzaleski/server)**: `server-hostname-or-ip:8080`, 262K context
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
@@ -204,6 +206,7 @@ Bootstrap scripts are defined as an explicit ordered array in `bin/bootstrap` an
 | Script | Purpose |
 |--------|---------|
 | `bin/install-dependencies` | Installs Homebrew (if missing) and base packages (`ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `ollama`, `openssl`, `readline`, `sqlite`, `wget`, `zsh`) |
+| `bin/configure-git` | Configures global git settings — sets `core.excludesfile` to `~/.gitignore` if not already set |
 | `bin/configure-node` | Clones/updates `nodenv` and the `node-build` plugin; installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) |
 | `bin/configure-opencode` | Installs `opencode-ai` (from `.default-opencode-version`); appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
 
@@ -233,7 +236,7 @@ Pinned versions live in top-level dotfiles:
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
 - KV cache quantization: q4_0 (local), q8_0 (server)
-- Context size: 81920 tokens (local), 131072 tokens (server)
+- Context size: 81920 tokens (local), 262144 tokens (server)
 
 ## Troubleshooting
 

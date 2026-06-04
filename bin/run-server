@@ -32,7 +32,7 @@ run_server() {
     --n-gpu-layers     -1 \
     --batch-size       4096 \
     --ubatch-size      1024 \
-    --ctx-size         131072 \
+    --ctx-size         262144 \
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
     --presence-penalty 1.5 \
@@ -56,7 +56,7 @@ run_server_experimental() {
     --n-gpu-layers     -1 \
     --batch-size       4096 \
     --ubatch-size      1024 \
-    --ctx-size         131072 \
+    --ctx-size         262144 \
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
     --presence-penalty 1.5 \
