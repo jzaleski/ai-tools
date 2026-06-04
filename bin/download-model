@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+# download-model <hf-repo> <hf-filename> [--force]
+#
+# Downloads a single GGUF file from Hugging Face directly via curl.
+# Skips the download if the file already exists unless --force is passed, in
+# which case the existing file is deleted first.
+#
+# The provider (first component of hf-repo) is used as a subdirectory, so
+# e.g. unsloth/Qwen3.6-35B-A3B-GGUF downloads into <MODELS_DIR>/unsloth/.
+#
+# Arguments (positional, in order):
+#   hf-repo      e.g. unsloth/Qwen3.6-35B-A3B-GGUF
+#   hf-filename  e.g. Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+#
+# Flags:
+#   --force      delete the existing file and re-download
+#
+# Environment variables:
+#   MODELS_DIR   root directory for model storage (default: ~/.cache/models)
+
+set -e;
+
+usage() {
+  echo "Usage: $(basename "$0") <hf-repo> <hf-filename> [--force]" >&2;
+  exit 1;
+}
+
+if [[ $# -lt 2 ]]; then
+  usage;
+fi
+
+hf_repo="${1}";
+hf_filename="${2}";
+provider="${hf_repo%%/*}";
+dest_path="${MODELS_DIR:-"${HOME}/.cache/models"}/${provider}";
+force=false;
+
+for arg in "${@:3}"; do
+  case "${arg}" in
+    --force) force=true;;
+    *) echo "Unknown flag: ${arg}" >&2; usage;;
+  esac
+done
+
+dest_file="${dest_path}/${hf_filename}";
+
+if [[ "${force}" == "true" ]] && [[ -f "${dest_file}" ]]; then
+  echo "Removing existing file: ${dest_file}";
+  rm -f "${dest_file}";
+fi
+
+if [[ -f "${dest_file}" ]]; then
+  echo "Already exists, skipping: ${dest_file}";
+  exit 0;
+fi
+
+if ! command -v curl &>/dev/null; then
+  echo "Error: curl not found." >&2;
+  exit 1;
+fi
+
+mkdir -p "${dest_path}";
+
+url="https://huggingface.co/${hf_repo}/resolve/main/${hf_filename}";
+
+echo "Downloading ${url} -> ${dest_file}";
+curl -L --progress-bar -o "${dest_file}" "${url}";
+
+echo "Done: ${dest_file}";
