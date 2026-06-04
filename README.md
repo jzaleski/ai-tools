@@ -339,10 +339,11 @@ None. All workflow skills are vendored locally under `home/.config/opencode/skil
 
 The following MCP integrations are configured but **disabled by default**:
 
-| Integration | URL | Notes |
-|-------------|-----|-------|
-| Jira | `https://mcp.atlassian.com/v1/mcp` | Enable in `opencode.json` to use |
-| Vercel | `https://mcp.vercel.com/v1/mcp` | Enable in `opencode.json` to use |
+| Integration | Type | Command / URL | Notes |
+|-------------|------|---------------|-------|
+| Jira | remote | `https://mcp.atlassian.com/v1/mcp` | Enable in `opencode.json` to use |
+| Playwright | local | `npx @playwright/mcp@latest` | Enable in `opencode.json` to use |
+| Vercel | remote | `https://mcp.vercel.com/v1/mcp` | Enable in `opencode.json` to use |
 
 ### Usage
 

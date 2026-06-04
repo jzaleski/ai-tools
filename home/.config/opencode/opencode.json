@@ -76,6 +76,14 @@
       "enabled": false,
       "oauth": {}
     },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "npx",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": false
+    },
     "vercel": {
       "type": "remote",
       "url": "https://mcp.vercel.com/v1/mcp",

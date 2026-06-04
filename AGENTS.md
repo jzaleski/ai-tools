@@ -174,10 +174,11 @@ Each provider specifies model limits for context window, input tokens, and outpu
 
 MCP integrations are declared in `opencode.json` but **disabled by default**:
 
-| Integration | URL |
-|-------------|-----|
-| Jira | `https://mcp.atlassian.com/v1/mcp` |
-| Vercel | `https://mcp.vercel.com/v1/mcp` |
+| Integration | Type | Command / URL |
+|-------------|------|---------------|
+| Jira | remote | `https://mcp.atlassian.com/v1/mcp` |
+| Playwright | local | `npx @playwright/mcp@latest` |
+| Vercel | remote | `https://mcp.vercel.com/v1/mcp` |
 
 Toggle `enabled: true` in `opencode.json` to activate.
 
