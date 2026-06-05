@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It includes support for coding assistance (Qwen3.6-35B-A3B local and server) and general advising (Qwen3.6-35B-A3B local and server). Experimental profiles swap in the Qwopus3.6-35B-A3B-v1 model with tuned sampling parameters.
+This repository provides scripts and configurations for running local AI models using llama-server. It supports three model tiers — low (Gemma4-12B), medium (Qwen3.6-27B), and high (MiniMax-M2.7) — each available in local and server modes. Tiers are purpose-oriented and stable; the models behind them can rotate without changing client-facing aliases.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -22,11 +22,9 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── run-local                   # Direct llama-server launcher (local mode, no router)
 │   ├── run-router                  # Router server (llama.cpp, local and server modes)
 │   └── run-server                  # Direct llama-server launcher (server mode, no router)
-├── conf/                           # llama-server INI presets
-│   ├── llama-cpp-local.ini         # Router preset: local profile (Q4, q4_0 KV, 81K ctx, 127.0.0.1)
-│   ├── llama-cpp-local-experimental.ini   # Router preset: local experimental profile (Q4_K_M, 81K ctx)
-│   ├── llama-cpp-server.ini        # Router preset: server profile (Q8, q8_0 KV, 262K ctx, 0.0.0.0)
-│   └── llama-cpp-server-experimental.ini  # Router preset: server experimental profile (Q8_0, 262K ctx)
+├── templates/                      # llama-server INI preset templates
+│   ├── llama-cpp-local.ini.template   # Router preset: local profile (low/medium/high, Q4, 128K ctx)
+│   └── llama-cpp-server.ini.template  # Router preset: server profile (low/medium/high, Q8, 256K ctx)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -133,84 +131,60 @@ You can override default settings via environment variables. The same variables 
 ## Components
 
 ### run-local
-Starts a single llama-server directly (no router mode) in local mode. Loads the Qwen3.6-35B-A3B model with local defaults. Supports an `--experimental` flag that swaps in the Qwopus model.
+Starts a single llama-server directly (no router mode) in local mode. Accepts `--tier low|medium|high` (default: `medium`). Downloads the model automatically if not present.
 
-**Local Mode Defaults:**
+**Defaults (all tiers):**
 - Host: 127.0.0.1
 - Port: 8080
-- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q4_K_XL`
 - KV cache quantization: q4_0 (K and V)
-- Context size: 81920 tokens
+- Context size: 131072 tokens
 - Batch size: 2048 / Ubatch size: 512
 
-**Local Experimental Mode Defaults:**
-- Host: 127.0.0.1
-- Port: 8080
-- Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q4_K_M`
-- KV cache quantization: q4_0 (K and V)
-- Context size: 81920 tokens
-- Batch size: 2048 / Ubatch size: 512
+| Tier | Model | Quant |
+|---|---|---|
+| low | `unsloth/gemma-4-12b-it-GGUF` | `UD-Q4_K_XL` |
+| medium | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q4_K_XL` |
+| high | `unsloth/MiniMax-M2.7-GGUF` | `UD-Q4_K_XL` |
 
 **Environment Variables:**
 - `PORT`: Override listen port (default: 8080)
+- `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
 
 ### run-server
-Starts a single llama-server directly (no router mode) in server mode. Loads the Qwen3.6-35B-A3B model with server defaults. Supports an `--experimental` flag that swaps in the Qwopus model.
+Starts a single llama-server directly (no router mode) in server mode. Accepts `--tier low|medium|high` (default: `medium`). Downloads the model automatically if not present.
 
-**Server Mode Defaults:**
+**Defaults (all tiers):**
 - Host: 0.0.0.0
 - Port: 8080
-- Model: `unsloth/Qwen3.6-35B-A3B-GGUF:UD-Q8_K_XL`
 - KV cache quantization: q8_0 (K and V)
 - Context size: 262144 tokens
 - Batch size: 4096 / Ubatch size: 1024
 
-**Server Experimental Mode Defaults:**
-- Host: 0.0.0.0
-- Port: 8080
-- Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q8_0`
-- KV cache quantization: q8_0 (K and V)
-- Context size: 262144 tokens
-- Batch size: 4096 / Ubatch size: 1024
+| Tier | Model | Quant |
+|---|---|---|
+| low | `unsloth/gemma-4-12b-it-GGUF` | `UD-Q8_K_XL` |
+| medium | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q8_K_XL` |
+| high | `unsloth/MiniMax-M2.7-GGUF` | `UD-Q8_K_XL` |
 
 **Environment Variables:**
 - `PORT`: Override listen port (default: 8080)
+- `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
 
 ### run-router
-Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading the model defined in the appropriate INI preset file. Clients route to the model via `?model=jzaleski/local` (local mode) or `?model=jzaleski/server` (server mode). Supports both local and server modes via `--server` flag, and an `--experimental` flag that swaps in the experimental preset (different model/quantization).
+Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading all three tiers from the rendered INI preset. Supports `--server` flag for server mode (default: local). Clients select a tier via the `model` parameter.
 
 **Local Mode Defaults:**
-- Preset: `conf/llama-cpp-local.ini`
+- Preset: `templates/llama-cpp-local.ini.template` → rendered to `tmp/llama-cpp-local.ini`
 - Host: 127.0.0.1
 - Port: 8080
-- Quantization: UD-Q4_K_XL
 - KV cache quantization: q4_0 (K and V)
-- Context size: 81920 tokens
-- Batch size: 2048 / Ubatch size: 512
-
-**Local Experimental Mode Defaults:**
-- Preset: `conf/llama-cpp-local-experimental.ini`
-- Host: 127.0.0.1
-- Port: 8080
-- Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q4_K_M`
-- KV cache quantization: q4_0 (K and V)
-- Context size: 81920 tokens
+- Context size: 131072 tokens
 - Batch size: 2048 / Ubatch size: 512
 
 **Server Mode Defaults:**
-- Preset: `conf/llama-cpp-server.ini`
+- Preset: `templates/llama-cpp-server.ini.template` → rendered to `tmp/llama-cpp-server.ini`
 - Host: 0.0.0.0
 - Port: 8080
-- Quantization: UD-Q8_K_XL
-- KV cache quantization: q8_0 (K and V)
-- Context size: 262144 tokens
-- Batch size: 4096 / Ubatch size: 1024
-
-**Server Experimental Mode Defaults:**
-- Preset: `conf/llama-cpp-server-experimental.ini`
-- Host: 0.0.0.0
-- Port: 8080
-- Model: `Jackrong/Qwopus3.6-35B-A3B-v1-GGUF:Q8_0`
 - KV cache quantization: q8_0 (K and V)
 - Context size: 262144 tokens
 - Batch size: 4096 / Ubatch size: 1024
@@ -218,40 +192,38 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 **Environment Variables:**
 - `HOST`: Override bind address
 - `PORT`: Override listen port (default: 8080)
+- `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
 
 ## Usage
 
 ```bash
-# Start local server directly (no router, localhost:8080)
+# Start local server directly — medium tier (default)
 ./bin/run-local
 
-# Start local server with experimental model
-./bin/run-local --experimental
+# Start local server — specific tier
+./bin/run-local --tier low
+./bin/run-local --tier high
 
-# Start server mode directly (no router, 0.0.0.0:8080)
+# Start server mode directly — medium tier (default)
 ./bin/run-server
 
-# Start server mode with experimental model
-./bin/run-server --experimental
+# Start server mode — specific tier
+./bin/run-server --tier low
+./bin/run-server --tier high
 
-# Start router (llama.cpp, local mode — jzaleski/local on localhost:8080)
+# Start router (local mode — all three tiers available on localhost:8080)
 ./bin/run-router
 
-# Start router (llama.cpp, server mode — jzaleski/server on 0.0.0.0:8080)
+# Start router (server mode — all three tiers available on 0.0.0.0:8080)
 ./bin/run-router --server
-
-# Start router (llama.cpp, local experimental mode — Qwopus model on localhost:8080)
-./bin/run-router --experimental
-
-# Start router (llama.cpp, server experimental mode — Qwopus model on 0.0.0.0:8080)
-./bin/run-router --server --experimental
 ```
 
 Clients select a model via the `model` query parameter or request body field:
 
 ```bash
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/local  ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/server ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/low    ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/medium ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/high   ...
 ```
 
 ## Architecture
@@ -270,8 +242,9 @@ The router listens on port 8080 and is selected at launch time via flags. Altern
    │  --models-preset    │    │  (direct)       │  │  (direct)      │
    │                     │    └─────────────────┘  └────────────────┘
    │ ┌──────────────────┐ │
-   │ │jzaleski/local    │ │
-   │ │(or /server)      │ │
+   │ │jzaleski/low      │ │
+   │ │jzaleski/medium   │ │
+   │ │jzaleski/high     │ │
    │ └──────────────────┘ │
    └─────────────────────┘
 ```
@@ -306,7 +279,7 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │  ┌────────────────┐  │ ┌────────────────┐
 │  │ Local          │  │ │ Server         │
 │  │ localhost:8080 │  │ │ remote:8080    │
-│  │ 81K context    │  │ │ 262K context   │
+│  │ 131K context   │  │ │ 262K context   │
 │  └────────────────┘  │ └────────────────┘
 └──────────────────────┘
 ```
@@ -317,8 +290,8 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 2 provid
 
 | Provider | Endpoint | Model | Context | Input | Output | Modalities |
 |----------|----------|-------|---------|-------|--------|------------|
-| llama.cpp (local) | `localhost:8080` | jzaleski/local | 81,920 | 73,728 | 8,192 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/server | 262,144 | 245,760 | 16,384 | text+image in, text out |
+| llama.cpp (local) | `localhost:8080` | jzaleski/low, jzaleski/medium, jzaleski/high | 131,072 | 122,880 | 8,192 | text+image in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/low, jzaleski/medium, jzaleski/high | 262,144 | 245,760 | 16,384 | text+image in, text out |
 
 ### Agent Roles
 
@@ -393,7 +366,7 @@ opencode [options] [query]
 - GPU acceleration enabled with flash attention by default
 - Use Q4 quantization for memory-constrained environments
 - KV cache is quantized to reduce memory footprint: q4_0 (local), q8_0 (server)
-- Context size: 81920 tokens (local), 262144 tokens (server)
+- Context size: 131072 tokens (local), 262144 tokens (server)
 
 ## Troubleshooting
 

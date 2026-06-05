@@ -18,15 +18,8 @@ render_preset() {
 }
 
 run_local() {
-  local preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-local.ini.template")";
-  exec llama-server \
-    --host "${HOST:-"127.0.0.1"}" \
-    --port "${PORT:-"8080"}" \
-    --models-preset "${preset}";
-}
-
-run_local_experimental() {
-  local preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-local-experimental.ini.template")";
+  local preset;
+  preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-local.ini.template")";
   exec llama-server \
     --host "${HOST:-"127.0.0.1"}" \
     --port "${PORT:-"8080"}" \
@@ -34,15 +27,8 @@ run_local_experimental() {
 }
 
 run_server() {
-  local preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-server.ini.template")";
-  exec llama-server \
-    --host "${HOST:-"0.0.0.0"}" \
-    --port "${PORT:-"8080"}" \
-    --models-preset "${preset}";
-}
-
-run_server_experimental() {
-  local preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-server-experimental.ini.template")";
+  local preset;
+  preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-server.ini.template")";
   exec llama-server \
     --host "${HOST:-"0.0.0.0"}" \
     --port "${PORT:-"8080"}" \
@@ -50,24 +36,14 @@ run_server_experimental() {
 }
 
 server=false;
-experimental=false;
 for arg in "$@"; do
   case "${arg}" in
-    --server)       server=true;;
-    --experimental) experimental=true;;
+    --server) server=true;;
   esac
 done
 
-if [[ "${experimental}" == "true" ]]; then
-  if [[ "${server}" == "true" ]]; then
-    run_server_experimental;
-  else
-    run_local_experimental;
-  fi
+if [[ "${server}" == "true" ]]; then
+  run_server;
 else
-  if [[ "${server}" == "true" ]]; then
-    run_server;
-  else
-    run_local;
-  fi
+  run_local;
 fi

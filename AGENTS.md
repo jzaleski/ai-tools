@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports coding assistance (Qwen3.6-35B-A3B local and server) and general advising (Qwen3.6-35B-A3B local and server).
+Supports three model tiers — low (Gemma4-12B), medium (Qwen3.6-27B), high (MiniMax-M2.7) — each available in local and server modes.
 
 **No code repositories** - utilities/config only.
 
@@ -36,11 +36,9 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── run-local                          # Direct llama-server launcher (local mode, no router)
 │   ├── run-router                         # Router server (llama.cpp, local and server modes)
 │   └── run-server                         # Direct llama-server launcher (server mode, no router)
-├── conf/                                  # llama-server INI presets
-│   ├── llama-cpp-local.ini                # Router preset: local profile
-│   ├── llama-cpp-local-experimental.ini   # Router preset: local experimental profile
-│   ├── llama-cpp-server.ini               # Router preset: server profile
-│   └── llama-cpp-server-experimental.ini  # Router preset: server experimental profile
+├── templates/                             # llama-server INI preset templates
+│   ├── llama-cpp-local.ini.template       # Router preset: local profile (low/medium/high, 128K ctx)
+│   └── llama-cpp-server.ini.template      # Router preset: server profile (low/medium/high, 256K ctx)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (analyze, engineer)
@@ -54,18 +52,19 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ## Build/Test Commands
 
-Scripts in `bin/` support **local** and **server** modes, each with an optional `--experimental` flag that loads the experimental INI preset (different model/quantization):
+Scripts in `bin/` support **local** and **server** modes, each with an optional `--tier` flag that selects the model tier (low/medium/high):
 
 ```bash
 ./bin/run-router                           # llama.cpp, local mode (8080)
 ./bin/run-router --server                  # llama.cpp, server mode (8080)
-./bin/run-router --experimental            # llama.cpp, local experimental mode (8080)
-./bin/run-router --server --experimental   # llama.cpp, server experimental mode (8080); flags are order-independent
+# Clients select tier via: ?model=jzaleski/low  ?model=jzaleski/medium  ?model=jzaleski/high
 
-./bin/run-local                            # direct llama-server, local mode (127.0.0.1:8080)
-./bin/run-local --experimental             # direct llama-server, local experimental mode
-./bin/run-server                           # direct llama-server, server mode (0.0.0.0:8080)
-./bin/run-server --experimental            # direct llama-server, server experimental mode
+./bin/run-local                            # direct llama-server, local mode, medium tier (127.0.0.1:8080)
+./bin/run-local --tier low                 # direct llama-server, local mode, low tier
+./bin/run-local --tier high                # direct llama-server, local mode, high tier
+./bin/run-server                           # direct llama-server, server mode, medium tier (0.0.0.0:8080)
+./bin/run-server --tier low                # direct llama-server, server mode, low tier
+./bin/run-server --tier high               # direct llama-server, server mode, high tier
 ```
 
 Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-local`
@@ -77,8 +76,8 @@ Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-local`
 ### Bash Scripts
 
 - **Shebang**: `#!/usr/bin/env bash`
-- **Functions**: Use `run_local()`, `run_local_experimental()`, `run_server()`, and `run_server_experimental()`
-- **Mode Detection**: Parse `--server` and `--experimental` flags with a `for arg in "$@"` loop; dispatch to the appropriate function
+- **Functions**: Use `run_local()`, `run_server()`, and tier-dispatch helpers as needed
+- **Mode Detection**: Parse `--server` and `--tier` flags with a `for arg in "$@"` loop; dispatch to the appropriate function
 - **Variable Quoting**: Always quote expansions `"${VAR:-default}"`
 - **Path Resolution**: Use `$(dirname $0)/..` for relative paths
 
@@ -108,7 +107,7 @@ Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-local`
 | `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
 | `PORT` | Network port | `8080` | `8080` |
 
-Model-specific parameters (quantization, context size, sampling settings, etc.) are configured in the INI preset files under `conf/`.
+Model-specific parameters (quantization, context size, sampling settings, etc.) are configured in the INI preset files under `templates/`.
 
 ---
 
@@ -120,8 +119,8 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │        --models-preset           │
 │                                  │
 │       ┌─────────────────┐        │
-│       │jzaleski/local   │        │
-│       │(or /server)     │        │
+│       │jzaleski/low/   │        │
+│       │medium/high     │        │
 │       └─────────────────┘        │
 └──────────────────────────────────┘
 ```
@@ -161,8 +160,8 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 ```
 
 The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local - jzaleski/local)**: `localhost:8080` — Qwen3.6-35B-A3B, 81K context
-- **llama.cpp (server - jzaleski/server)**: `server-hostname-or-ip:8080`, 262K context
+- **llama.cpp (local)**: `localhost:8080` — 128K context; models: `jzaleski/low` (Gemma4-12B), `jzaleski/medium` (Qwen3.6-27B), `jzaleski/high` (MiniMax-M2.7)
+- **llama.cpp (server)**: `server-hostname-or-ip:8080` — 256K context; same three aliases
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
@@ -237,7 +236,7 @@ Pinned versions live in top-level dotfiles:
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
 - KV cache quantization: q4_0 (local), q8_0 (server)
-- Context size: 81920 tokens (local), 262144 tokens (server)
+- Context size: 131072 tokens (local), 262144 tokens (server)
 
 ## Troubleshooting
 

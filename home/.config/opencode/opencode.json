@@ -22,21 +22,40 @@
         "baseURL": "http://localhost:8080/v1"
       },
       "models": {
-        "jzaleski/local": {
-          "name": "jzaleski/local",
+        "jzaleski/low": {
+          "name": "jzaleski/low",
           "limit": {
-            "context": 81920,
-            "input": 73728,
+            "context": 131072,
+            "input": 122880,
             "output": 8192
           },
           "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/medium": {
+          "name": "jzaleski/medium",
+          "limit": {
+            "context": 131072,
+            "input": 122880,
+            "output": 8192
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/high": {
+          "name": "jzaleski/high",
+          "limit": {
+            "context": 131072,
+            "input": 122880,
+            "output": 8192
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
           }
         }
       }
@@ -48,21 +67,40 @@
         "baseURL": "http://server-hostname-or-ip:8080/v1"
       },
       "models": {
-        "jzaleski/server": {
-          "name": "jzaleski/server",
+        "jzaleski/low": {
+          "name": "jzaleski/low",
           "limit": {
             "context": 262144,
             "input": 245760,
             "output": 16384
           },
           "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
+            "input": ["text", "image"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/medium": {
+          "name": "jzaleski/medium",
+          "limit": {
+            "context": 262144,
+            "input": 245760,
+            "output": 16384
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/high": {
+          "name": "jzaleski/high",
+          "limit": {
+            "context": 262144,
+            "input": 245760,
+            "output": 16384
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
           }
         }
       }
@@ -78,10 +116,7 @@
     },
     "playwright": {
       "type": "local",
-      "command": [
-        "npx",
-        "@playwright/mcp@latest"
-      ],
+      "command": ["npx", "@playwright/mcp@latest"],
       "enabled": false
     },
     "vercel": {

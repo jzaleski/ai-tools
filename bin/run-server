@@ -2,7 +2,7 @@
 
 set -e;
 
-MODELS_DIR="${HOME}/.cache/models";
+MODELS_DIR="${MODELS_DIR:-"$HOME/.cache/models"}";
 
 require_model() {
   local model_file="${1}";
@@ -19,12 +19,12 @@ require_model() {
   fi
 }
 
-run_server() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+run_low() {
+  local model="${MODELS_DIR}/unsloth/gemma-4-12b-it-UD-Q8_K_XL.gguf";
+  require_model "${model}" "unsloth/gemma-4-12b-it-GGUF";
   exec llama-server \
     --model            "${model}" \
-    --alias            jzaleski/server \
+    --alias            jzaleski/low \
     --host             0.0.0.0 \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -42,12 +42,12 @@ run_server() {
     --top-p            0.95;
 }
 
-run_server_experimental() {
-  local model="${MODELS_DIR}/Jackrong/Qwopus3.6-35B-A3B-v1-Q8_0.gguf";
-  require_model "${model}" "Jackrong/Qwopus3.6-35B-A3B-v1-GGUF";
+run_medium() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-27B-GGUF";
   exec llama-server \
     --model            "${model}" \
-    --alias            jzaleski/server \
+    --alias            jzaleski/medium \
     --host             0.0.0.0 \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -65,15 +65,47 @@ run_server_experimental() {
     --top-p            0.95;
 }
 
-experimental=false;
+run_high() {
+  local model="${MODELS_DIR}/unsloth/MiniMax-M2.7-UD-Q8_K_XL.gguf";
+  require_model "${model}" "unsloth/MiniMax-M2.7-GGUF";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/high \
+    --host             0.0.0.0 \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       4096 \
+    --ubatch-size      1024 \
+    --ctx-size         262144 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q8_0 \
+    --presence-penalty 1.5 \
+    --repeat-penalty   1.0 \
+    --min-p            0.01 \
+    --temp             1.0 \
+    --top-k            20 \
+    --top-p            0.95;
+}
+
+tier="medium";
 for arg in "$@"; do
   case "${arg}" in
-    --experimental) experimental=true;;
+    --tier) ;;
+    *)
+      case "${prev_arg}" in
+        --tier) tier="${arg}";;
+      esac
+      ;;
   esac
+  prev_arg="${arg}";
 done
 
-if [[ "${experimental}" == "true" ]]; then
-  run_server_experimental;
-else
-  run_server;
-fi
+case "${tier}" in
+  low)    run_low;;
+  medium) run_medium;;
+  high)   run_high;;
+  *)
+    echo "Error: unknown tier '${tier}'. Use: low, medium, high" >&2;
+    exit 1;;
+esac

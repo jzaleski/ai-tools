@@ -2,7 +2,7 @@
 
 set -e;
 
-MODELS_DIR="${HOME}/.cache/models";
+MODELS_DIR="${MODELS_DIR:-"$HOME/.cache/models"}";
 
 require_model() {
   local model_file="${1}";
@@ -19,19 +19,19 @@ require_model() {
   fi
 }
 
-run_local() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+run_low() {
+  local model="${MODELS_DIR}/unsloth/gemma-4-12b-it-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/gemma-4-12b-it-GGUF";
   exec llama-server \
     --model            "${model}" \
-    --alias            jzaleski/local \
+    --alias            jzaleski/low \
     --host             127.0.0.1 \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
     --n-gpu-layers     -1 \
     --batch-size       2048 \
     --ubatch-size      512 \
-    --ctx-size         81920 \
+    --ctx-size         131072 \
     --cache-type-k     q4_0 \
     --cache-type-v     q4_0 \
     --presence-penalty 1.5 \
@@ -42,19 +42,19 @@ run_local() {
     --top-p            0.95;
 }
 
-run_local_experimental() {
-  local model="${MODELS_DIR}/Jackrong/Qwopus3.6-35B-A3B-v1-Q4_K_M.gguf";
-  require_model "${model}" "Jackrong/Qwopus3.6-35B-A3B-v1-GGUF";
+run_medium() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-27B-GGUF";
   exec llama-server \
     --model            "${model}" \
-    --alias            jzaleski/local \
+    --alias            jzaleski/medium \
     --host             127.0.0.1 \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
     --n-gpu-layers     -1 \
     --batch-size       2048 \
     --ubatch-size      512 \
-    --ctx-size         81920 \
+    --ctx-size         131072 \
     --cache-type-k     q4_0 \
     --cache-type-v     q4_0 \
     --presence-penalty 1.5 \
@@ -65,15 +65,47 @@ run_local_experimental() {
     --top-p            0.95;
 }
 
-experimental=false;
+run_high() {
+  local model="${MODELS_DIR}/unsloth/MiniMax-M2.7-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/MiniMax-M2.7-GGUF";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/high \
+    --host             127.0.0.1 \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       2048 \
+    --ubatch-size      512 \
+    --ctx-size         131072 \
+    --cache-type-k     q4_0 \
+    --cache-type-v     q4_0 \
+    --presence-penalty 1.5 \
+    --repeat-penalty   1.0 \
+    --min-p            0.01 \
+    --temp             1.0 \
+    --top-k            20 \
+    --top-p            0.95;
+}
+
+tier="medium";
 for arg in "$@"; do
   case "${arg}" in
-    --experimental) experimental=true;;
+    --tier) ;;
+    *)
+      case "${prev_arg}" in
+        --tier) tier="${arg}";;
+      esac
+      ;;
   esac
+  prev_arg="${arg}";
 done
 
-if [[ "${experimental}" == "true" ]]; then
-  run_local_experimental;
-else
-  run_local;
-fi
+case "${tier}" in
+  low)    run_low;;
+  medium) run_medium;;
+  high)   run_high;;
+  *)
+    echo "Error: unknown tier '${tier}'. Use: low, medium, high" >&2;
+    exit 1;;
+esac
