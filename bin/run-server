@@ -67,12 +67,12 @@ run_medium() {
 }
 
 run_high() {
-  local shard_dir="${MODELS_DIR}/unsloth/UD-Q8_K_XL";
+  local shard_dir="${MODELS_DIR}/unsloth/MiniMax-M2.7-UD-Q8_K_XL.gguf";
   local model="${shard_dir}/MiniMax-M2.7-UD-Q8_K_XL-00001-of-00006.gguf";
   local hf_repo="unsloth/MiniMax-M2.7-GGUF";
   for i in 00001 00002 00003 00004 00005 00006; do
     require_model "${shard_dir}/MiniMax-M2.7-UD-Q8_K_XL-${i}-of-00006.gguf" "${hf_repo}" \
-      "UD-Q8_K_XL/MiniMax-M2.7-UD-Q8_K_XL-${i}-of-00006.gguf";
+      "MiniMax-M2.7-UD-Q8_K_XL.gguf/MiniMax-M2.7-UD-Q8_K_XL-${i}-of-00006.gguf";
   done
   exec llama-server \
     --model            "${model}" \

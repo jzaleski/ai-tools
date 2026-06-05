@@ -25,4 +25,4 @@ model             = MODELS_DIR/unsloth/gemma-4-12b-it-UD-Q8_K_XL.gguf
 model             = MODELS_DIR/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf
 
 [jzaleski/high]
-model             = MODELS_DIR/unsloth/UD-Q8_K_XL/MiniMax-M2.7-UD-Q8_K_XL-00001-of-00006.gguf
+model             = MODELS_DIR/unsloth/MiniMax-M2.7-UD-Q8_K_XL.gguf/MiniMax-M2.7-UD-Q8_K_XL-00001-of-00006.gguf
