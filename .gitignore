@@ -2,4 +2,7 @@
 
 docs
 
+tmp/*
+!tmp/.keep
+
 .bootstrapignore

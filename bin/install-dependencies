@@ -34,7 +34,6 @@ if [ $(uname) = "Darwin" ]; then
       htop \
       llama.cpp \
       nvtop \
-      ollama \
       openssl \
       readline \
       sqlite \

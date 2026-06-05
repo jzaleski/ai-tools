@@ -65,9 +65,6 @@ run_local_experimental() {
     --top-p            0.95;
 }
 
-# Prevent inherited environment from accidentally enabling router mode.
-unset LLAMA_ARG_MODELS_DIR LLAMA_ARG_MODELS_PRESET;
-
 experimental=false;
 for arg in "$@"; do
   case "${arg}" in

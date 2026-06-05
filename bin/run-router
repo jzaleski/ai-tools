@@ -2,34 +2,51 @@
 
 set -e;
 
-CONF_DIR="$(dirname "$0")/../conf";
+TEMPLATES_DIR="$(dirname "$0")/../templates";
+TMP_DIR="$(dirname "$0")/../tmp";
+MODELS_DIR="${MODELS_DIR:-"$HOME/.cache/models"}";
+
+# Expand template tokens in a preset INI file and write the rendered result to
+# the sibling tmp/ directory, deriving the output filename by stripping the
+# .template suffix from the template basename.  Prints the output path to stdout.
+render_preset() {
+  local template="$1";
+  local out="${TMP_DIR}/$(basename "${template%.template}")";
+  mkdir -p "${TMP_DIR}";
+  sed "s|MODELS_DIR|${MODELS_DIR}|g" "${template}" > "${out}";
+  echo "${out}";
+}
 
 run_local() {
+  local preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-local.ini.template")";
   exec llama-server \
     --host "${HOST:-"127.0.0.1"}" \
     --port "${PORT:-"8080"}" \
-    --models-preset "${CONF_DIR}/llama-cpp-local.ini";
+    --models-preset "${preset}";
 }
 
 run_local_experimental() {
+  local preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-local-experimental.ini.template")";
   exec llama-server \
     --host "${HOST:-"127.0.0.1"}" \
     --port "${PORT:-"8080"}" \
-    --models-preset "${CONF_DIR}/llama-cpp-local-experimental.ini";
+    --models-preset "${preset}";
 }
 
 run_server() {
+  local preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-server.ini.template")";
   exec llama-server \
     --host "${HOST:-"0.0.0.0"}" \
     --port "${PORT:-"8080"}" \
-    --models-preset "${CONF_DIR}/llama-cpp-server.ini";
+    --models-preset "${preset}";
 }
 
 run_server_experimental() {
+  local preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-server-experimental.ini.template")";
   exec llama-server \
     --host "${HOST:-"0.0.0.0"}" \
     --port "${PORT:-"8080"}" \
-    --models-preset "${CONF_DIR}/llama-cpp-server-experimental.ini";
+    --models-preset "${preset}";
 }
 
 server=false;
