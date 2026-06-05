@@ -7,9 +7,10 @@ MODELS_DIR="${MODELS_DIR:-"$HOME/.cache/models"}";
 require_model() {
   local model_file="${1}";
   local hf_repo="${2}";
+  # Optional third arg: HF path relative to repo root (e.g. subdir/file.gguf).
+  # Falls back to basename of model_file for flat (non-split) models.
+  local hf_filename="${3:-"$(basename "${model_file}")"}";
   if [[ ! -f "${model_file}" ]]; then
-    local hf_filename;
-    hf_filename="$(basename "${model_file}")";
     echo "Model not found: ${model_file}";
     echo "Downloading ${hf_repo}/${hf_filename} ...";
     "$(dirname "$0")/download-model" "${hf_repo}" "${hf_filename}" || {
@@ -66,8 +67,13 @@ run_medium() {
 }
 
 run_high() {
-  local model="${MODELS_DIR}/unsloth/MiniMax-M2.7-UD-Q4_K_XL.gguf";
-  require_model "${model}" "unsloth/MiniMax-M2.7-GGUF";
+  local shard_dir="${MODELS_DIR}/unsloth/UD-Q8_K_XL";
+  local model="${shard_dir}/MiniMax-M2.7-UD-Q8_K_XL-00001-of-00006.gguf";
+  local hf_repo="unsloth/MiniMax-M2.7-GGUF";
+  for i in 00001 00002 00003 00004 00005 00006; do
+    require_model "${shard_dir}/MiniMax-M2.7-UD-Q8_K_XL-${i}-of-00006.gguf" "${hf_repo}" \
+      "UD-Q8_K_XL/MiniMax-M2.7-UD-Q8_K_XL-${i}-of-00006.gguf";
+  done
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/high \

@@ -160,7 +160,7 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 ```
 
 The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local)**: `localhost:8080` — 128K context; models: `jzaleski/low` (Gemma4-12B), `jzaleski/medium` (Qwen3.6-27B), `jzaleski/high` (MiniMax-M2.7)
+- **llama.cpp (local)**: `localhost:8080` — 128K context; models: `jzaleski/low` (Gemma4-12B), `jzaleski/medium` (Qwen3.6-27B), `jzaleski/high` (MiniMax-M2.7, 6-shard split GGUF)
 - **llama.cpp (server)**: `server-hostname-or-ip:8080` — 256K context; same three aliases
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.

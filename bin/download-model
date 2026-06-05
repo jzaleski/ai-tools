@@ -17,6 +17,7 @@
 #   --force      delete the existing file and re-download
 #
 # Environment variables:
+#   HF_TOKEN     Hugging Face API token for gated/private models (optional)
 #   MODELS_DIR   root directory for model storage (default: ~/.cache/models)
 
 set -e;
@@ -34,6 +35,8 @@ hf_repo="${1}";
 hf_filename="${2}";
 provider="${hf_repo%%/*}";
 dest_path="${MODELS_DIR:-"${HOME}/.cache/models"}/${provider}";
+# hf_filename may include a subdirectory (e.g. "UD-Q8_K_XL/file-00001-of-00006.gguf");
+# preserve that structure under dest_path.
 force=false;
 
 for arg in "${@:3}"; do
@@ -60,11 +63,20 @@ if ! command -v curl &>/dev/null; then
   exit 1;
 fi
 
-mkdir -p "${dest_path}";
+mkdir -p "$(dirname "${dest_file}")";
 
 url="https://huggingface.co/${hf_repo}/resolve/main/${hf_filename}";
 
+curl_args=(-L --fail --progress-bar -o "${dest_file}");
+if [[ -n "${HF_TOKEN:-}" ]]; then
+  curl_args+=(-H "Authorization: Bearer ${HF_TOKEN}");
+fi
+
 echo "Downloading ${url} -> ${dest_file}";
-curl -L --progress-bar -o "${dest_file}" "${url}";
+if ! curl "${curl_args[@]}" "${url}"; then
+  echo "Error: download failed (HTTP error or network issue). Removing partial file." >&2;
+  rm -f "${dest_file}";
+  exit 1;
+fi
 
 echo "Done: ${dest_file}";
