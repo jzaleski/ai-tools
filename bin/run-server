@@ -27,7 +27,6 @@ run_server() {
     --alias            jzaleski/server \
     --host             0.0.0.0 \
     --port             "${PORT:-"8080"}" \
-    --log-file         - \
     --flash-attn       on \
     --n-gpu-layers     -1 \
     --batch-size       4096 \
@@ -51,7 +50,6 @@ run_server_experimental() {
     --alias            jzaleski/server \
     --host             0.0.0.0 \
     --port             "${PORT:-"8080"}" \
-    --log-file         - \
     --flash-attn       on \
     --n-gpu-layers     -1 \
     --batch-size       4096 \
