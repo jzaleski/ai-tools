@@ -24,7 +24,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   └── run-server                  # Direct llama-server launcher (server mode, no router)
 ├── templates/                      # llama-server INI preset templates
 │   ├── llama-cpp-local.ini.template   # Router preset: local profile (low: 32K, medium: 64K, high: 128K ctx)
-│   └── llama-cpp-server.ini.template  # Router preset: server profile (low: 64K, medium: 128K, high: 256K ctx)
+│   └── llama-cpp-server.ini.template  # Router preset: server profile (low: 256K, medium: 256K, high: 192K ctx)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -160,9 +160,9 @@ Starts a single llama-server directly (no router mode) in server mode. Accepts `
 
 | Tier | Model | Quant | KV Cache | Context |
 |---|---|---|---|---|
-| low | `unsloth/gemma-4-12b-it-GGUF` | `UD-Q4_K_XL` | q4_0 | 65,536 |
-| medium | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q6_K_XL` | q8_0 | 131,072 |
-| high | `unsloth/MiniMax-M2.7-GGUF` | `UD-Q8_K_XL` | q8_0 | 262,144 |
+| low | `unsloth/gemma-4-12b-it-GGUF` | `UD-Q4_K_XL` | q4_0 | 262,144 |
+| medium | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q6_K_XL` | q8_0 | 262,144 |
+| high | `unsloth/MiniMax-M2.7-GGUF` | `UD-Q8_K_XL` | q8_0 | 196,608 |
 
 **Environment Variables:**
 - `PORT`: Override listen port (default: 8080)
@@ -185,7 +185,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Port: 8080
 - Batch size: 4096 / Ubatch size: 1024
 - Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
-- Context size and KV cache: per-tier (low: 64K/q4_0, medium: 128K/q8_0, high: 256K/q8_0)
+- Context size and KV cache: per-tier (low: 256K/q4_0, medium: 256K/q8_0, high: 192K/q8_0)
 
 **Environment Variables:**
 - `HOST`: Override bind address
@@ -291,9 +291,9 @@ The opencode configuration (`~/.config/opencode/opencode.json`) defines 2 provid
 | llama.cpp (local) | `localhost:8080` | jzaleski/low | 32,768 | 28,672 | 4,096 | text in, text out |
 | llama.cpp (local) | `localhost:8080` | jzaleski/medium | 65,536 | 57,344 | 8,192 | text in, text out |
 | llama.cpp (local) | `localhost:8080` | jzaleski/high | 131,072 | 114,688 | 16,384 | text in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/low | 65,536 | 57,344 | 8,192 | text in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/medium | 131,072 | 114,688 | 16,384 | text in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high | 262,144 | 229,376 | 32,768 | text in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/low | 262,144 | 253,952 | 8,192 | text in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/medium | 262,144 | 245,760 | 16,384 | text in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high | 196,608 | 163,840 | 32,768 | text in, text out |
 
 ### Agent Roles
 
@@ -367,7 +367,7 @@ opencode [options] [query]
 
 - GPU acceleration enabled with flash attention by default
 - KV cache quantization is tier-specific: low=q4_0, medium=q8_0, high=q8_0
-- Context size is tier-specific — local: low=32K, medium=64K, high=128K; server: low=64K, medium=128K, high=256K
+- Context size is tier-specific — local: low=32K, medium=64K, high=128K; server: low=256K, medium=256K, high=192K
 - Sampling defaults are tuned for coding and tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
 
 ## Troubleshooting

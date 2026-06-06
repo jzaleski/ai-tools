@@ -70,8 +70,8 @@
         "jzaleski/low": {
           "name": "jzaleski/low",
           "limit": {
-            "context": 65536,
-            "input": 57344,
+            "context": 262144,
+            "input": 253952,
             "output": 8192
           },
           "modalities": {
@@ -82,8 +82,8 @@
         "jzaleski/medium": {
           "name": "jzaleski/medium",
           "limit": {
-            "context": 131072,
-            "input": 114688,
+            "context": 262144,
+            "input": 245760,
             "output": 16384
           },
           "modalities": {
@@ -94,8 +94,8 @@
         "jzaleski/high": {
           "name": "jzaleski/high",
           "limit": {
-            "context": 262144,
-            "input": 229376,
+            "context": 196608,
+            "input": 163840,
             "output": 32768
           },
           "modalities": {
