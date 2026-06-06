@@ -235,8 +235,9 @@ Pinned versions live in top-level dotfiles:
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- KV cache quantization is tier-specific: low=q4_0, medium=q6_1, high=q8_0
+- KV cache quantization is tier-specific: low=q4_0, medium=q8_0, high=q8_0
 - Context size is tier-specific — local: low=32K, medium=64K, high=128K; server: low=64K, medium=128K, high=256K
+- Sampling defaults are tuned for coding and tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
 
 ## Troubleshooting
 

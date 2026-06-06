@@ -137,11 +137,12 @@ Starts a single llama-server directly (no router mode) in local mode. Accepts `-
 - Host: 127.0.0.1
 - Port: 8080
 - Batch size: 2048 / Ubatch size: 512
+- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
 
 | Tier | Model | Quant | KV Cache | Context |
 |---|---|---|---|---|
 | low | `unsloth/gemma-4-12b-it-GGUF` | `UD-Q4_K_XL` | q4_0 | 32,768 |
-| medium | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q6_K_XL` | q6_1 | 65,536 |
+| medium | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q6_K_XL` | q8_0 | 65,536 |
 | high | `unsloth/MiniMax-M2.7-GGUF` | `UD-Q8_K_XL` | q8_0 | 131,072 |
 
 **Environment Variables:**
@@ -155,11 +156,12 @@ Starts a single llama-server directly (no router mode) in server mode. Accepts `
 - Host: 0.0.0.0
 - Port: 8080
 - Batch size: 4096 / Ubatch size: 1024
+- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
 
 | Tier | Model | Quant | KV Cache | Context |
 |---|---|---|---|---|
 | low | `unsloth/gemma-4-12b-it-GGUF` | `UD-Q4_K_XL` | q4_0 | 65,536 |
-| medium | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q6_K_XL` | q6_1 | 131,072 |
+| medium | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q6_K_XL` | q8_0 | 131,072 |
 | high | `unsloth/MiniMax-M2.7-GGUF` | `UD-Q8_K_XL` | q8_0 | 262,144 |
 
 **Environment Variables:**
@@ -174,14 +176,16 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Host: 127.0.0.1
 - Port: 8080
 - Batch size: 2048 / Ubatch size: 512
-- Context size and KV cache: per-tier (low: 32K/q4_0, medium: 64K/q6_1, high: 128K/q8_0)
+- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
+- Context size and KV cache: per-tier (low: 32K/q4_0, medium: 64K/q8_0, high: 128K/q8_0)
 
 **Server Mode Defaults:**
 - Preset: `templates/llama-cpp-server.ini.template` → rendered to `tmp/llama-cpp-server.ini`
 - Host: 0.0.0.0
 - Port: 8080
 - Batch size: 4096 / Ubatch size: 1024
-- Context size and KV cache: per-tier (low: 64K/q4_0, medium: 128K/q6_1, high: 256K/q8_0)
+- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
+- Context size and KV cache: per-tier (low: 64K/q4_0, medium: 128K/q8_0, high: 256K/q8_0)
 
 **Environment Variables:**
 - `HOST`: Override bind address
@@ -362,8 +366,9 @@ opencode [options] [query]
 ## Performance Tips
 
 - GPU acceleration enabled with flash attention by default
-- KV cache quantization is tier-specific: low=q4_0, medium=q6_1, high=q8_0
+- KV cache quantization is tier-specific: low=q4_0, medium=q8_0, high=q8_0
 - Context size is tier-specific — local: low=32K, medium=64K, high=128K; server: low=64K, medium=128K, high=256K
+- Sampling defaults are tuned for coding and tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
 
 ## Troubleshooting
 
@@ -380,8 +385,9 @@ opencode [options] [query]
 - Adjust quantization level
 
 **Quality issues:**
-- Adjust `MIN_P` and `TOP_K` values based on desired response style (0 or 0.0 disables these sampling methods)
-- For more creative responses, increase `TEMP` and `TOP_P`
+- Sampling defaults are tuned for coding/tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
+- For more creative/diverse responses, increase `temp` and `top-p`, or raise `presence-penalty`
+- For more deterministic output, lower `temp` (e.g. `0.4–0.6`)
 
 **Memory issues:**
 - Reduce `CTX_SIZE` for smaller context windows

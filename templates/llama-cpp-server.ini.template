@@ -8,11 +8,11 @@ flash-attn        = on
 n-gpu-layers      = -1
 batch-size        = 4096
 ubatch-size       = 1024
-presence-penalty  = 1.5
+presence-penalty  = 0.2
 repeat-penalty    = 1.0
-min-p             = 0.01
-temp              = 1.0
-top-k             = 20
+min-p             = 0.02
+temp              = 0.7
+top-k             = 0
 top-p             = 0.95
 
 [jzaleski/low]
@@ -24,8 +24,8 @@ cache-type-v      = q4_0
 [jzaleski/medium]
 model             = MODELS_DIR/unsloth/Qwen3.6-27B-UD-Q6_K_XL.gguf
 ctx-size          = 131072
-cache-type-k      = q6_1
-cache-type-v      = q6_1
+cache-type-k      = q8_0
+cache-type-v      = q8_0
 
 [jzaleski/high]
 model             = MODELS_DIR/unsloth/MiniMax-M2.7-UD-Q8_K_XL.gguf/MiniMax-M2.7-UD-Q8_K_XL-00001-of-00006.gguf

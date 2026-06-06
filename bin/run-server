@@ -35,11 +35,11 @@ run_low() {
     --ctx-size         65536 \
     --cache-type-k     q4_0 \
     --cache-type-v     q4_0 \
-    --presence-penalty 1.5 \
+    --presence-penalty 0.2 \
     --repeat-penalty   1.0 \
-    --min-p            0.01 \
-    --temp             1.0 \
-    --top-k            20 \
+    --min-p            0.02 \
+    --temp             0.7 \
+    --top-k            0 \
     --top-p            0.95;
 }
 
@@ -56,13 +56,13 @@ run_medium() {
     --batch-size       4096 \
     --ubatch-size      1024 \
     --ctx-size         131072 \
-    --cache-type-k     q6_1 \
-    --cache-type-v     q6_1 \
-    --presence-penalty 1.5 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q8_0 \
+    --presence-penalty 0.2 \
     --repeat-penalty   1.0 \
-    --min-p            0.01 \
-    --temp             1.0 \
-    --top-k            20 \
+    --min-p            0.02 \
+    --temp             0.7 \
+    --top-k            0 \
     --top-p            0.95;
 }
 
@@ -86,11 +86,11 @@ run_high() {
     --ctx-size         262144 \
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
-    --presence-penalty 1.5 \
+    --presence-penalty 0.2 \
     --repeat-penalty   1.0 \
-    --min-p            0.01 \
-    --temp             1.0 \
-    --top-k            20 \
+    --min-p            0.02 \
+    --temp             0.7 \
+    --top-k            0 \
     --top-p            0.95;
 }
 
