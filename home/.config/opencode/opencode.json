@@ -25,12 +25,12 @@
         "jzaleski/low": {
           "name": "jzaleski/low",
           "limit": {
-            "context": 32768,
-            "input": 28672,
-            "output": 4096
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
           },
           "modalities": {
-            "input": ["text"],
+            "input": ["text", "image"],
             "output": ["text"]
           }
         },
@@ -42,16 +42,16 @@
             "output": 8192
           },
           "modalities": {
-            "input": ["text"],
+            "input": ["text", "image"],
             "output": ["text"]
           }
         },
         "jzaleski/high": {
           "name": "jzaleski/high",
           "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
           },
           "modalities": {
             "input": ["text"],
@@ -75,7 +75,7 @@
             "output": 8192
           },
           "modalities": {
-            "input": ["text"],
+            "input": ["text", "image"],
             "output": ["text"]
           }
         },
@@ -87,15 +87,15 @@
             "output": 16384
           },
           "modalities": {
-            "input": ["text"],
+            "input": ["text", "image"],
             "output": ["text"]
           }
         },
         "jzaleski/high": {
           "name": "jzaleski/high",
           "limit": {
-            "context": 196608,
-            "input": 163840,
+            "context": 262144,
+            "input": 229376,
             "output": 32768
           },
           "modalities": {

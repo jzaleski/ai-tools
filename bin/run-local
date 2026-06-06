@@ -21,8 +21,8 @@ require_model() {
 }
 
 run_low() {
-  local model="${MODELS_DIR}/unsloth/gemma-4-12b-it-UD-Q4_K_XL.gguf";
-  require_model "${model}" "unsloth/gemma-4-12b-it-GGUF";
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/low \
@@ -32,7 +32,7 @@ run_low() {
     --n-gpu-layers     -1 \
     --batch-size       2048 \
     --ubatch-size      512 \
-    --ctx-size         32768 \
+    --ctx-size         65536 \
     --cache-type-k     q4_0 \
     --cache-type-v     q4_0 \
     --presence-penalty 0.2 \
@@ -44,8 +44,8 @@ run_low() {
 }
 
 run_medium() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q6_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.6-27B-GGUF";
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/medium \
@@ -56,8 +56,8 @@ run_medium() {
     --batch-size       2048 \
     --ubatch-size      512 \
     --ctx-size         65536 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
+    --cache-type-k     q4_0 \
+    --cache-type-v     q4_0 \
     --presence-penalty 0.2 \
     --repeat-penalty   1.0 \
     --min-p            0.02 \
@@ -67,13 +67,8 @@ run_medium() {
 }
 
 run_high() {
-  local shard_dir="${MODELS_DIR}/unsloth/MiniMax-M2.7-UD-Q8_K_XL.gguf";
-  local model="${shard_dir}/MiniMax-M2.7-UD-Q8_K_XL-00001-of-00006.gguf";
-  local hf_repo="unsloth/MiniMax-M2.7-GGUF";
-  for i in 00001 00002 00003 00004 00005 00006; do
-    require_model "${shard_dir}/MiniMax-M2.7-UD-Q8_K_XL-${i}-of-00006.gguf" "${hf_repo}" \
-      "MiniMax-M2.7-UD-Q8_K_XL.gguf/MiniMax-M2.7-UD-Q8_K_XL-${i}-of-00006.gguf";
-  done
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-27B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/high \
@@ -83,9 +78,9 @@ run_high() {
     --n-gpu-layers     -1 \
     --batch-size       2048 \
     --ubatch-size      512 \
-    --ctx-size         131072 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
+    --ctx-size         65536 \
+    --cache-type-k     q4_0 \
+    --cache-type-v     q4_0 \
     --presence-penalty 0.2 \
     --repeat-penalty   1.0 \
     --min-p            0.02 \

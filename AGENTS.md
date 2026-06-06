@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports three model tiers — low (Gemma4-12B), medium (Qwen3.6-27B), high (MiniMax-M2.7) — each available in local and server modes.
+Supports three model tiers — low (Qwen3.6-35B-A3B Q4_K_XL), medium (Qwen3.6-35B-A3B Q6_K_XL), high (Qwen3.6-27B Q8_K_XL) — each available in local and server modes.
 
 **No code repositories** - utilities/config only.
 
@@ -160,8 +160,8 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 ```
 
 The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 32K, medium: 64K, high: 128K); models: `jzaleski/low` (Gemma4-12B Q4_K_XL), `jzaleski/medium` (Qwen3.6-27B Q6_K_XL), `jzaleski/high` (MiniMax-M2.7 Q8_K_XL, 6-shard split GGUF)
-- **llama.cpp (server)**: `server-hostname-or-ip:8080` — per-tier context (low: 256K, medium: 256K, high: 192K); same three aliases
+- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 64K, medium: 64K, high: 64K); models: `jzaleski/low` (Qwen3.6-35B-A3B Q4_K_XL), `jzaleski/medium` (Qwen3.6-35B-A3B Q6_K_XL), `jzaleski/high` (Qwen3.6-27B Q8_K_XL)
+- **llama.cpp (server)**: `server-hostname-or-ip:8080` — per-tier context (low: 256K, medium: 256K, high: 256K); same three aliases
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
@@ -235,8 +235,8 @@ Pinned versions live in top-level dotfiles:
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- KV cache quantization is tier-specific: low=q4_0, medium=q8_0, high=q8_0
-- Context size is tier-specific — local: low=32K, medium=64K, high=128K; server: low=256K, medium=256K, high=192K
+- KV cache quantization is tier-specific: local: all tiers=q4_0; server: low=q4_0, medium=q4_0, high=q8_0
+- Context size is tier-specific — local: low=64K, medium=64K, high=64K; server: low=256K, medium=256K, high=256K
 - Sampling defaults are tuned for coding and tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
 
 ## Troubleshooting
