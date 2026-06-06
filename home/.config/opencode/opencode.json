@@ -25,20 +25,20 @@
         "jzaleski/low": {
           "name": "jzaleski/low",
           "limit": {
-            "context": 131072,
-            "input": 122880,
-            "output": 8192
+            "context": 32768,
+            "input": 28672,
+            "output": 4096
           },
           "modalities": {
-            "input": ["text", "image"],
+            "input": ["text"],
             "output": ["text"]
           }
         },
         "jzaleski/medium": {
           "name": "jzaleski/medium",
           "limit": {
-            "context": 131072,
-            "input": 122880,
+            "context": 65536,
+            "input": 57344,
             "output": 8192
           },
           "modalities": {
@@ -50,8 +50,8 @@
           "name": "jzaleski/high",
           "limit": {
             "context": 131072,
-            "input": 122880,
-            "output": 8192
+            "input": 114688,
+            "output": 16384
           },
           "modalities": {
             "input": ["text"],
@@ -70,20 +70,20 @@
         "jzaleski/low": {
           "name": "jzaleski/low",
           "limit": {
-            "context": 262144,
-            "input": 245760,
-            "output": 16384
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
           },
           "modalities": {
-            "input": ["text", "image"],
+            "input": ["text"],
             "output": ["text"]
           }
         },
         "jzaleski/medium": {
           "name": "jzaleski/medium",
           "limit": {
-            "context": 262144,
-            "input": 245760,
+            "context": 131072,
+            "input": 114688,
             "output": 16384
           },
           "modalities": {
@@ -95,8 +95,8 @@
           "name": "jzaleski/high",
           "limit": {
             "context": 262144,
-            "input": 245760,
-            "output": 16384
+            "input": 229376,
+            "output": 32768
           },
           "modalities": {
             "input": ["text"],

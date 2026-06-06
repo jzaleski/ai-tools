@@ -8,9 +8,6 @@ flash-attn        = on
 n-gpu-layers      = -1
 batch-size        = 2048
 ubatch-size       = 512
-ctx-size          = 131072
-cache-type-k      = q4_0
-cache-type-v      = q4_0
 presence-penalty  = 1.5
 repeat-penalty    = 1.0
 min-p             = 0.01
@@ -20,9 +17,18 @@ top-p             = 0.95
 
 [jzaleski/low]
 model             = MODELS_DIR/unsloth/gemma-4-12b-it-UD-Q4_K_XL.gguf
+ctx-size          = 32768
+cache-type-k      = q4_0
+cache-type-v      = q4_0
 
 [jzaleski/medium]
-model             = MODELS_DIR/unsloth/Qwen3.6-27B-UD-Q4_K_XL.gguf
+model             = MODELS_DIR/unsloth/Qwen3.6-27B-UD-Q6_K_XL.gguf
+ctx-size          = 65536
+cache-type-k      = q6_1
+cache-type-v      = q6_1
 
 [jzaleski/high]
 model             = MODELS_DIR/unsloth/MiniMax-M2.7-UD-Q8_K_XL.gguf/MiniMax-M2.7-UD-Q8_K_XL-00001-of-00006.gguf
+ctx-size          = 131072
+cache-type-k      = q8_0
+cache-type-v      = q8_0

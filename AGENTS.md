@@ -37,8 +37,8 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── run-router                         # Router server (llama.cpp, local and server modes)
 │   └── run-server                         # Direct llama-server launcher (server mode, no router)
 ├── templates/                             # llama-server INI preset templates
-│   ├── llama-cpp-local.ini.template       # Router preset: local profile (low/medium/high, 128K ctx)
-│   └── llama-cpp-server.ini.template      # Router preset: server profile (low/medium/high, 256K ctx)
+│   ├── llama-cpp-local.ini.template       # Router preset: local profile (low: 32K, medium: 64K, high: 128K ctx)
+│   └── llama-cpp-server.ini.template      # Router preset: server profile (low: 64K, medium: 128K, high: 256K ctx)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (analyze, engineer)
@@ -160,8 +160,8 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 ```
 
 The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local)**: `localhost:8080` — 128K context; models: `jzaleski/low` (Gemma4-12B), `jzaleski/medium` (Qwen3.6-27B), `jzaleski/high` (MiniMax-M2.7, 6-shard split GGUF)
-- **llama.cpp (server)**: `server-hostname-or-ip:8080` — 256K context; same three aliases
+- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 32K, medium: 64K, high: 128K); models: `jzaleski/low` (Gemma4-12B Q4_K_XL), `jzaleski/medium` (Qwen3.6-27B Q6_K_XL), `jzaleski/high` (MiniMax-M2.7 Q8_K_XL, 6-shard split GGUF)
+- **llama.cpp (server)**: `server-hostname-or-ip:8080` — per-tier context (low: 64K, medium: 128K, high: 256K); same three aliases
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
@@ -235,8 +235,8 @@ Pinned versions live in top-level dotfiles:
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- KV cache quantization: q4_0 (local), q8_0 (server)
-- Context size: 131072 tokens (local), 262144 tokens (server)
+- KV cache quantization is tier-specific: low=q4_0, medium=q6_1, high=q8_0
+- Context size is tier-specific — local: low=32K, medium=64K, high=128K; server: low=64K, medium=128K, high=256K
 
 ## Troubleshooting
 

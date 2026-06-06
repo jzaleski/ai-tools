@@ -21,7 +21,7 @@ require_model() {
 }
 
 run_low() {
-  local model="${MODELS_DIR}/unsloth/gemma-4-12b-it-UD-Q8_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/gemma-4-12b-it-UD-Q4_K_XL.gguf";
   require_model "${model}" "unsloth/gemma-4-12b-it-GGUF";
   exec llama-server \
     --model            "${model}" \
@@ -32,9 +32,9 @@ run_low() {
     --n-gpu-layers     -1 \
     --batch-size       4096 \
     --ubatch-size      1024 \
-    --ctx-size         262144 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
+    --ctx-size         65536 \
+    --cache-type-k     q4_0 \
+    --cache-type-v     q4_0 \
     --presence-penalty 1.5 \
     --repeat-penalty   1.0 \
     --min-p            0.01 \
@@ -44,7 +44,7 @@ run_low() {
 }
 
 run_medium() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q6_K_XL.gguf";
   require_model "${model}" "unsloth/Qwen3.6-27B-GGUF";
   exec llama-server \
     --model            "${model}" \
@@ -55,9 +55,9 @@ run_medium() {
     --n-gpu-layers     -1 \
     --batch-size       4096 \
     --ubatch-size      1024 \
-    --ctx-size         262144 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
+    --ctx-size         131072 \
+    --cache-type-k     q6_1 \
+    --cache-type-v     q6_1 \
     --presence-penalty 1.5 \
     --repeat-penalty   1.0 \
     --min-p            0.01 \
