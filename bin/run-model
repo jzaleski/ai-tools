@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+
+set -e;
+
+MODELS_DIR="${MODELS_DIR:-"$HOME/.cache/models"}";
+
+require_model() {
+  local model_file="${1}";
+  local hf_repo="${2}";
+  # Optional third arg: HF path relative to repo root (e.g. subdir/file.gguf).
+  # Falls back to basename of model_file for flat (non-split) models.
+  local hf_filename="${3:-"$(basename "${model_file}")"}";
+  if [[ ! -f "${model_file}" ]]; then
+    echo "Model not found: ${model_file}";
+    echo "Downloading ${hf_repo}/${hf_filename} ...";
+    "$(dirname "$0")/download-model" "${hf_repo}" "${hf_filename}" || {
+      echo "Error: download failed." >&2;
+      exit 1;
+    };
+  fi
+}
+
+run_low() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/low \
+    --host             "${HOST:-"127.0.0.1"}" \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       2048 \
+    --ubatch-size      512 \
+    --ctx-size         32768 \
+    --cache-type-k     q4_0 \
+    --cache-type-v     q4_0 \
+    --presence-penalty 0.2 \
+    --repeat-penalty   1.0 \
+    --min-p            0.02 \
+    --temp             0.7 \
+    --top-k            0 \
+    --top-p            0.95;
+}
+
+run_medium() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/medium \
+    --host             "${HOST:-"127.0.0.1"}" \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       2048 \
+    --ubatch-size      512 \
+    --ctx-size         65536 \
+    --cache-type-k     q4_0 \
+    --cache-type-v     q4_0 \
+    --presence-penalty 0.2 \
+    --repeat-penalty   1.0 \
+    --min-p            0.02 \
+    --temp             0.7 \
+    --top-k            0 \
+    --top-p            0.95;
+}
+
+run_high() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-27B-GGUF";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/high \
+    --host             "${HOST:-"127.0.0.1"}" \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       1024 \
+    --ubatch-size      256 \
+    --ctx-size         131072 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q8_0 \
+    --presence-penalty 0.2 \
+    --repeat-penalty   1.0 \
+    --min-p            0.02 \
+    --temp             0.7 \
+    --top-k            0 \
+    --top-p            0.95;
+}
+
+run_long() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/long \
+    --host             "${HOST:-"127.0.0.1"}" \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       1024 \
+    --ubatch-size      256 \
+    --ctx-size         262144 \
+    --cache-type-k     q4_0 \
+    --cache-type-v     q4_0 \
+    --presence-penalty 0.2 \
+    --repeat-penalty   1.0 \
+    --min-p            0.02 \
+    --temp             0.7 \
+    --top-k            0 \
+    --top-p            0.95;
+}
+
+tier="medium";
+for arg in "$@"; do
+  case "${arg}" in
+    --tier) ;;
+    *)
+      case "${prev_arg}" in
+        --tier) tier="${arg}";;
+      esac
+      ;;
+  esac
+  prev_arg="${arg}";
+done
+
+case "${tier}" in
+  low)    run_low;;
+  medium) run_medium;;
+  high)   run_high;;
+  long)   run_long;;
+  *)
+    echo "Error: unknown tier '${tier}'. Use: low, medium, high, long" >&2;
+    exit 1;;
+esac
