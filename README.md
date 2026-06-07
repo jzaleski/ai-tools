@@ -256,14 +256,20 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 
 The opencode configuration (`~/.config/opencode/opencode.json`) defines 2 provider endpoints:
 
+Both providers expose the same four tiers with identical per-tier limits; they
+differ only in endpoint (the server provider is the same models reached by
+launching with `HOST=0.0.0.0`).
+
 | Provider | Endpoint | Model | Context | Input | Output | Modalities |
 |----------|----------|-------|---------|-------|--------|------------|
-| llama.cpp (local) | `localhost:8080` | jzaleski/low | 65,536 | 57,344 | 8,192 | text+image in, text out |
+| llama.cpp (local) | `localhost:8080` | jzaleski/low | 32,768 | 28,672 | 4,096 | text+image in, text out |
 | llama.cpp (local) | `localhost:8080` | jzaleski/medium | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| llama.cpp (local) | `localhost:8080` | jzaleski/high | 65,536 | 57,344 | 8,192 | text in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/low | 262,144 | 253,952 | 8,192 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/medium | 262,144 | 245,760 | 16,384 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high | 262,144 | 229,376 | 32,768 | text in, text out |
+| llama.cpp (local) | `localhost:8080` | jzaleski/high | 131,072 | 114,688 | 16,384 | text in, text out |
+| llama.cpp (local) | `localhost:8080` | jzaleski/long | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/low | 32,768 | 28,672 | 4,096 | text+image in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/medium | 65,536 | 57,344 | 8,192 | text+image in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high | 131,072 | 114,688 | 16,384 | text in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/long | 262,144 | 229,376 | 32,768 | text+image in, text out |
 
 ### Agent Roles
 
