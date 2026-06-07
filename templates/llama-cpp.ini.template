@@ -1,13 +1,13 @@
-# Router preset config — server mode
+# Router preset config
 # Keys use llama-server long-form flag names (no leading dashes).
 # The [*] section supplies defaults inherited by every model section.
 # Each named section becomes a routable model alias.
+# Bind address is supplied by the launcher via --host (HOST env var); it is
+# intentionally not set here.
 
 [*]
 flash-attn        = on
 n-gpu-layers      = -1
-batch-size        = 4096
-ubatch-size       = 1024
 presence-penalty  = 0.2
 repeat-penalty    = 1.0
 min-p             = 0.02
@@ -17,18 +17,32 @@ top-p             = 0.95
 
 [jzaleski/low]
 model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
-ctx-size          = 262144
+ctx-size          = 32768
+batch-size        = 2048
+ubatch-size       = 512
 cache-type-k      = q4_0
 cache-type-v      = q4_0
 
 [jzaleski/medium]
 model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf
-ctx-size          = 262144
+ctx-size          = 65536
+batch-size        = 2048
+ubatch-size       = 512
 cache-type-k      = q4_0
 cache-type-v      = q4_0
 
 [jzaleski/high]
 model             = MODELS_DIR/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf
-ctx-size          = 262144
+ctx-size          = 131072
+batch-size        = 1024
+ubatch-size       = 256
 cache-type-k      = q8_0
 cache-type-v      = q8_0
+
+[jzaleski/long]
+model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+ctx-size          = 262144
+batch-size        = 1024
+ubatch-size       = 256
+cache-type-k      = q4_0
+cache-type-v      = q4_0
