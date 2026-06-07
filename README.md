@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It supports three model tiers — low (Qwen3.6-35B-A3B Q4_K_XL), medium (Qwen3.6-35B-A3B Q6_K_XL), and high (Qwen3.6-27B Q8_K_XL) — each available in local and server modes. Tiers are purpose-oriented and stable; the models behind them can rotate without changing client-facing aliases.
+This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-27B Q8_K_XL, 128K ctx), and long (Qwen3.6-35B-A3B Q4_K_XL, 256K ctx for long agent sessions). The tier axis runs from speed (low) to quality (high) within the Qwen3.6 family; `long` is a large-context sibling of `low`. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -19,12 +19,10 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── configure-node              # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode          # Installs opencode-ai and configures shell init
 │   ├── download-model              # Downloads a single GGUF file from Hugging Face via curl
-│   ├── run-local                   # Direct llama-server launcher (local mode, no router)
-│   ├── run-router                  # Router server (llama.cpp, local and server modes)
-│   └── run-server                  # Direct llama-server launcher (server mode, no router)
+│   ├── run-model                   # Direct llama-server launcher (single model, --tier low|medium|high|long)
+│   └── run-router                  # Router server (llama.cpp, multi-model; HOST env toggles bind)
 ├── templates/                      # llama-server INI preset templates
-│   ├── llama-cpp-local.ini.template   # Router preset: local profile (low: 32K, medium: 64K, high: 128K ctx)
-│   └── llama-cpp-server.ini.template  # Router preset: server profile (low: 256K, medium: 256K, high: 192K ctx)
+│   └── llama-cpp.ini.template      # Router preset (low: 32K, medium: 64K, high: 128K, long: 256K ctx)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -122,98 +120,68 @@ Workflow skills are vendored locally under `home/.config/opencode/skills/` — n
 
 ## Environment Variables
 
-You can override default settings via environment variables. The same variables apply to both local and server modes.
+You can override default settings via environment variables.
 
 **Common Variables:**
-- `HOST`: Network interface address to bind the server to (default: 127.0.0.1 for local, 0.0.0.0 for server)
+- `HOST`: Network interface address to bind the server to (default: `127.0.0.1`; set `0.0.0.0` to expose on the LAN)
 - `PORT`: Network port for the server to listen on (default: 8080)
 
 ## Components
 
-### run-local
-Starts a single llama-server directly (no router mode) in local mode. Accepts `--tier low|medium|high` (default: `medium`). Downloads the model automatically if not present.
+### run-model
+Starts a single llama-server directly (no router). Accepts `--tier low|medium|high|long` (default: `medium`). Downloads the model automatically if not present. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set.
 
-**Defaults (all tiers):**
-- Host: 127.0.0.1
+**Shared defaults (all tiers):**
+- Host: `127.0.0.1` (override with `HOST`)
 - Port: 8080
-- Batch size: 2048 / Ubatch size: 512
-- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
+- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`, `repeat-penalty=1.0`
+- GPU: `n-gpu-layers=-1` (all), flash-attn on
 
-| Tier | Model | Quant | KV Cache | Context |
-|---|---|---|---|---|
-| low | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 65,536 |
-| medium | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 65,536 |
-| high | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q4_K_XL` | q4_0 | 65,536 |
+| Tier | Model | Quant | KV Cache | Context | Batch/Ubatch |
+|---|---|---|---|---|---|
+| low | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 32,768 | 2048 / 512 |
+| medium | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q4_0 | 65,536 | 2048 / 512 |
+| high | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q8_K_XL` | q8_0 | 131,072 | 1024 / 256 |
+| long | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 262,144 | 1024 / 256 |
 
 **Environment Variables:**
-- `PORT`: Override listen port (default: 8080)
-- `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
-
-### run-server
-Starts a single llama-server directly (no router mode) in server mode. Accepts `--tier low|medium|high` (default: `medium`). Downloads the model automatically if not present.
-
-**Defaults (all tiers):**
-- Host: 0.0.0.0
-- Port: 8080
-- Batch size: 4096 / Ubatch size: 1024
-- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
-
-| Tier | Model | Quant | KV Cache | Context |
-|---|---|---|---|---|
-| low | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 262,144 |
-| medium | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q4_0 | 262,144 |
-| high | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q8_K_XL` | q8_0 | 262,144 |
-
-**Environment Variables:**
+- `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)
 - `PORT`: Override listen port (default: 8080)
 - `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
 
 ### run-router
-Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading all three tiers from the rendered INI preset. Supports `--server` flag for server mode (default: local). Clients select a tier via the `model` parameter.
+Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading all four tiers from the rendered INI preset (`templates/llama-cpp.ini.template` → `tmp/llama-cpp.ini`). Clients select a tier via the `model` parameter. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set.
 
-**Local Mode Defaults:**
-- Preset: `templates/llama-cpp-local.ini.template` → rendered to `tmp/llama-cpp-local.ini`
-- Host: 127.0.0.1
+**Defaults:**
+- Host: `127.0.0.1` (override with `HOST`)
 - Port: 8080
-- Batch size: 2048 / Ubatch size: 512
-- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
-- Context size and KV cache: per-tier (low: 64K/q4_0, medium: 64K/q4_0, high: 64K/q4_0)
-
-**Server Mode Defaults:**
-- Preset: `templates/llama-cpp-server.ini.template` → rendered to `tmp/llama-cpp-server.ini`
-- Host: 0.0.0.0
-- Port: 8080
-- Batch size: 4096 / Ubatch size: 1024
-- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
-- Context size and KV cache: per-tier (low: 256K/q4_0, medium: 256K/q4_0, high: 256K/q8_0)
+- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`, `repeat-penalty=1.0`
+- Per-tier context/KV/batch as in the run-model table above (low: 32K/q4_0/2048-512, medium: 64K/q4_0/2048-512, high: 128K/q8_0/1024-256, long: 256K/q4_0/1024-256)
 
 **Environment Variables:**
-- `HOST`: Override bind address
+- `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)
 - `PORT`: Override listen port (default: 8080)
 - `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
 
 ## Usage
 
 ```bash
-# Start local server directly — medium tier (default)
-./bin/run-local
+# Start single model directly — medium tier (default), localhost
+./bin/run-model
 
-# Start local server — specific tier
-./bin/run-local --tier low
-./bin/run-local --tier high
+# Start single model — specific tier
+./bin/run-model --tier low
+./bin/run-model --tier high
+./bin/run-model --tier long
 
-# Start server mode directly — medium tier (default)
-./bin/run-server
+# Expose a single model on the LAN
+HOST=0.0.0.0 ./bin/run-model --tier high
 
-# Start server mode — specific tier
-./bin/run-server --tier low
-./bin/run-server --tier high
-
-# Start router (local mode — all three tiers available on localhost:8080)
+# Start router (all four tiers on localhost:8080)
 ./bin/run-router
 
-# Start router (server mode — all three tiers available on 0.0.0.0:8080)
-./bin/run-router --server
+# Start router exposed on the LAN (all four tiers on 0.0.0.0:8080)
+HOST=0.0.0.0 ./bin/run-router
 ```
 
 Clients select a model via the `model` query parameter or request body field:
@@ -222,27 +190,29 @@ Clients select a model via the `model` query parameter or request body field:
 curl http://localhost:8080/v1/chat/completions?model=jzaleski/low    ...
 curl http://localhost:8080/v1/chat/completions?model=jzaleski/medium ...
 curl http://localhost:8080/v1/chat/completions?model=jzaleski/high   ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/long   ...
 ```
 
 ## Architecture
 
-The router listens on port 8080 and is selected at launch time via flags. Alternatively, `run-local` and `run-server` bypass the router and start llama-server directly.
+The router listens on port 8080 and serves all four tiers. Alternatively, `run-model` bypasses the router and starts a single llama-server directly. Both bind to `127.0.0.1` unless `HOST=0.0.0.0` is set.
 
 ```
-┌──────────────────────────┐   ┌──────────────┐   ┌───────────────┐
-│   ./bin/run-router        │   │ ./bin/run-   │   │ ./bin/run-    │
-│   (router mode)           │   │ local        │   │ server        │
-└────────────┬──────────────┘   └──────┬───────┘   └───────┬───────┘
-             │                         │                   │
-   ┌──────────┴──────────┐    ┌────────┴────────┐  ┌───────┴────────┐
-   │  llama.cpp (router) │    │  llama.cpp      │  │  llama.cpp     │
-   │  Port 8080          │    │  127.0.0.1:8080 │  │  0.0.0.0:8080  │
-   │  --models-preset    │    │  (direct)       │  │  (direct)      │
-   │                     │    └─────────────────┘  └────────────────┘
+┌──────────────────────────┐   ┌──────────────────────────┐
+│   ./bin/run-router        │   │   ./bin/run-model         │
+│   (multi-model router)    │   │   (single model)          │
+└────────────┬──────────────┘   └────────────┬─────────────┘
+             │                               │
+   ┌──────────┴──────────┐          ┌─────────┴──────────┐
+   │  llama.cpp (router) │          │  llama.cpp         │
+   │  HOST:8080          │          │  HOST:8080         │
+   │  --models-preset    │          │  (direct, --tier)  │
+   │                     │          └────────────────────┘
    │ ┌──────────────────┐ │
-   │ │jzaleski/low      │ │
-   │ │jzaleski/medium   │ │
-   │ │jzaleski/high     │ │
+   │ │jzaleski/low      │ │  HOST defaults to 127.0.0.1;
+   │ │jzaleski/medium   │ │  set HOST=0.0.0.0 to expose
+   │ │jzaleski/high     │ │  on the LAN.
+   │ │jzaleski/long     │ │
    │ └──────────────────┘ │
    └─────────────────────┘
 ```
@@ -366,8 +336,9 @@ opencode [options] [query]
 ## Performance Tips
 
 - GPU acceleration enabled with flash attention by default
-- KV cache quantization is tier-specific: local: all tiers=q4_0; server: low=q4_0, medium=q4_0, high=q8_0
-- Context size is tier-specific — local: low=64K, medium=64K, high=64K; server: low=256K, medium=256K, high=256K
+- KV cache quantization is tier-specific: low=q4_0, medium=q4_0, high=q8_0, long=q4_0
+- Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
+- Batch/ubatch scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256
 - Sampling defaults are tuned for coding and tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
 
 ## Troubleshooting
