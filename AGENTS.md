@@ -73,8 +73,8 @@ Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-model`
 ### Bash Scripts
 
 - **Shebang**: `#!/usr/bin/env bash`
-- **Functions**: Use `run_local()`, `run_server()`, and tier-dispatch helpers as needed
-- **Mode Detection**: Parse the `--tier` flag with a `for arg in "$@"` loop; dispatch to the appropriate function
+- **Functions**: Use `run_<tier>()` helpers (e.g. `run_low()`, `run_high()`) plus a `main()` for the router, as needed
+- **Tier Detection**: Parse the `--tier` flag with a `for arg in "$@"` loop; dispatch to the appropriate function
 - **Variable Quoting**: Always quote expansions `"${VAR:-default}"`
 - **Path Resolution**: Use `$(dirname $0)/..` for relative paths
 
