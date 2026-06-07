@@ -17,33 +17,13 @@ render_preset() {
   echo "${out}";
 }
 
-run_local() {
+main() {
   local preset;
-  preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-local.ini.template")";
+  preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp.ini.template")";
   exec llama-server \
     --host "${HOST:-"127.0.0.1"}" \
     --port "${PORT:-"8080"}" \
     --models-preset "${preset}";
 }
 
-run_server() {
-  local preset;
-  preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp-server.ini.template")";
-  exec llama-server \
-    --host "${HOST:-"0.0.0.0"}" \
-    --port "${PORT:-"8080"}" \
-    --models-preset "${preset}";
-}
-
-server=false;
-for arg in "$@"; do
-  case "${arg}" in
-    --server) server=true;;
-  esac
-done
-
-if [[ "${server}" == "true" ]]; then
-  run_server;
-else
-  run_local;
-fi
+main;

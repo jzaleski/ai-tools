@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports three model tiers — low (Qwen3.6-35B-A3B Q4_K_XL), medium (Qwen3.6-35B-A3B Q6_K_XL), high (Qwen3.6-27B Q8_K_XL) — each available in local and server modes.
+Supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-27B Q8_K_XL, 128K ctx), long (Qwen3.6-35B-A3B Q4_K_XL, 256K ctx). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -33,12 +33,10 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode                 # Installs opencode-ai and configures shell init
 │   ├── download-model                     # Downloads a single GGUF file from Hugging Face via curl
-│   ├── run-local                          # Direct llama-server launcher (local mode, no router)
-│   ├── run-router                         # Router server (llama.cpp, local and server modes)
-│   └── run-server                         # Direct llama-server launcher (server mode, no router)
+│   ├── run-model                          # Direct llama-server launcher (single model, --tier low|medium|high|long)
+│   └── run-router                         # Router server (llama.cpp, multi-model; HOST env toggles bind)
 ├── templates/                             # llama-server INI preset templates
-│   ├── llama-cpp-local.ini.template       # Router preset: local profile (low: 32K, medium: 64K, high: 128K ctx)
-│   └── llama-cpp-server.ini.template      # Router preset: server profile (low: 64K, medium: 128K, high: 256K ctx)
+│   └── llama-cpp.ini.template             # Router preset (low: 32K, medium: 64K, high: 128K, long: 256K ctx)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (analyze, engineer)
@@ -52,22 +50,21 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ## Build/Test Commands
 
-Scripts in `bin/` support **local** and **server** modes, each with an optional `--tier` flag that selects the model tier (low/medium/high):
+Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose on the LAN. `run-model` takes an optional `--tier` flag (low/medium/high/long, default medium):
 
 ```bash
-./bin/run-router                           # llama.cpp, local mode (8080)
-./bin/run-router --server                  # llama.cpp, server mode (8080)
-# Clients select tier via: ?model=jzaleski/low  ?model=jzaleski/medium  ?model=jzaleski/high
+./bin/run-router                           # multi-model router, localhost (8080)
+HOST=0.0.0.0 ./bin/run-router              # multi-model router, exposed on LAN
+# Clients select tier via: ?model=jzaleski/low  jzaleski/medium  jzaleski/high  jzaleski/long
 
-./bin/run-local                            # direct llama-server, local mode, medium tier (127.0.0.1:8080)
-./bin/run-local --tier low                 # direct llama-server, local mode, low tier
-./bin/run-local --tier high                # direct llama-server, local mode, high tier
-./bin/run-server                           # direct llama-server, server mode, medium tier (0.0.0.0:8080)
-./bin/run-server --tier low                # direct llama-server, server mode, low tier
-./bin/run-server --tier high               # direct llama-server, server mode, high tier
+./bin/run-model                            # single model, medium tier, localhost (127.0.0.1:8080)
+./bin/run-model --tier low                 # single model, low tier
+./bin/run-model --tier high                # single model, high tier
+./bin/run-model --tier long                # single model, long-context tier
+HOST=0.0.0.0 ./bin/run-model --tier high   # single model, high tier, exposed on LAN
 ```
 
-Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-local`
+Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-model`
 
 ---
 
@@ -76,8 +73,8 @@ Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-local`
 ### Bash Scripts
 
 - **Shebang**: `#!/usr/bin/env bash`
-- **Functions**: Use `run_local()`, `run_server()`, and tier-dispatch helpers as needed
-- **Mode Detection**: Parse `--server` and `--tier` flags with a `for arg in "$@"` loop; dispatch to the appropriate function
+- **Functions**: Use `run_<tier>()` helpers (e.g. `run_low()`, `run_high()`) plus a `main()` for the router, as needed
+- **Tier Detection**: Parse the `--tier` flag with a `for arg in "$@"` loop; dispatch to the appropriate function
 - **Variable Quoting**: Always quote expansions `"${VAR:-default}"`
 - **Path Resolution**: Use `$(dirname $0)/..` for relative paths
 
@@ -93,10 +90,10 @@ Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-local`
 
 ### Naming Conventions
 
-- Scripts: `run-{component}.sh`
-- Modes: `local` / `server`
+- Scripts: `run-{component}`
+- Bind toggle: `HOST` env var (`127.0.0.1` default / `0.0.0.0` for LAN)
 - Ports: 8080 (all scripts)
-- Aliases: `jzaleski/{component}`
+- Aliases: `jzaleski/{tier}`
 
 ---
 
@@ -160,8 +157,8 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 ```
 
 The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 64K, medium: 64K, high: 64K); models: `jzaleski/low` (Qwen3.6-35B-A3B Q4_K_XL), `jzaleski/medium` (Qwen3.6-35B-A3B Q6_K_XL), `jzaleski/high` (Qwen3.6-27B Q8_K_XL)
-- **llama.cpp (server)**: `server-hostname-or-ip:8080` — per-tier context (low: 256K, medium: 256K, high: 256K); same three aliases
+- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 32K, medium: 64K, high: 128K, long: 256K); models: `jzaleski/low` (Qwen3.6-35B-A3B Q4_K_XL), `jzaleski/medium` (Qwen3.6-35B-A3B Q6_K_XL), `jzaleski/high` (Qwen3.6-27B Q8_K_XL), `jzaleski/long` (Qwen3.6-35B-A3B Q4_K_XL)
+- **llama.cpp (server)**: `server-hostname-or-ip:8080` — same four aliases and contexts; reach this endpoint by launching with `HOST=0.0.0.0`
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
@@ -235,8 +232,9 @@ Pinned versions live in top-level dotfiles:
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- KV cache quantization is tier-specific: local: all tiers=q4_0; server: low=q4_0, medium=q4_0, high=q8_0
-- Context size is tier-specific — local: low=64K, medium=64K, high=64K; server: low=256K, medium=256K, high=256K
+- KV cache quantization is tier-specific: low=q4_0, medium=q4_0, high=q8_0, long=q4_0
+- Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
+- Batch/ubatch is tier-specific and scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256
 - Sampling defaults are tuned for coding and tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
 
 ## Troubleshooting
