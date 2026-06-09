@@ -26,12 +26,15 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
-│   │   │   ├── analyze.md          # Data analyst agent
+│   │   │   ├── analyst.md          # Data pipeline orchestrator
 │   │   │   └── engineer.md         # Adaptive software engineer (default)
 │   │   ├── skills/                 # Vendored workflow skills (no external plugins)
+│   │   │   ├── analyze/            # Find patterns / answer questions (pipeline stage 2)
 │   │   │   ├── coder/              # Sub-agent implementer (TDD, self-review)
 │   │   │   ├── finisher/           # Verify, merge/PR, cleanup
+│   │   │   ├── ingest/             # Extract + clean + normalize raw files (pipeline stage 1)
 │   │   │   ├── planner/            # Task decomposition + independence analysis
+│   │   │   ├── report/             # Deliver findings in one+ formats (pipeline stage 3)
 │   │   │   ├── researcher/         # Design & discovery (approval-gated)
 │   │   │   └── reviewer/           # Spec compliance + code quality review
 │   │   └── opencode.json           # Opencode provider and agent configuration
@@ -101,14 +104,16 @@ These versions are managed and installed via the bootstrap system.
 
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
-- **analyze.md**: Data pipeline orchestrator — coordinates composable ingest workers for parallel multi-format data extraction, normalization, analysis, and reporting
+- **analyst.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
 - **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `engineer`.
 
 ### Local Skills
 
-Workflow skills are vendored locally under `home/.config/opencode/skills/` — no external plugin dependencies:
+Workflow skills are vendored locally under `home/.config/opencode/skills/` — no external plugin dependencies.
+
+**Engineering lifecycle** (orchestrated by `engineer`):
 
 | Skill | Purpose |
 |-------|---------|
@@ -117,6 +122,14 @@ Workflow skills are vendored locally under `home/.config/opencode/skills/` — n
 | `coder` | Sub-agent implementer — TDD, self-review, structured status reporting |
 | `reviewer` | Dual-mode review — spec compliance (did they build what was asked?) then code quality |
 | `finisher` | Verify tests, detect workspace state, present merge/PR options, execute with cleanup |
+
+**Data pipeline** (orchestrated by `analyst`):
+
+| Skill | Purpose |
+|-------|---------|
+| `ingest` | Extract data from raw files (PDF, XLSX, CSV, JSON, HTML, Markdown, text), clean each, converge into one normalized dataset; parallelizes per-file via an escalation ladder |
+| `analyze` | Single-pass findings on the clean dataset — aggregations, comparisons, trends, outliers, distributions, joins |
+| `report` | Deliver findings in one or more formats (Markdown, CSV, XLSX, JSON, text, inline) with a mandatory Artifacts & Scripts section |
 
 ## Environment Variables
 
@@ -235,8 +248,11 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │  └────────────────┘  │
 │                      │
 │  ┌────────────────┐  │
-│  │ Analyze        │  │
-│  │ [data/report]  │  │
+│  │ Analyst        │  │
+│  │ [pipeline:     │  │
+│  │  ingest →      │  │
+│  │  analyze →     │  │
+│  │  report]       │  │
 │  └────────────────┘  │
 └──────────┬───────────┘
            │
@@ -276,7 +292,7 @@ launching with `HOST=0.0.0.0`).
 | Agent | Mode | Capabilities | Output Style |
 |-------|------|--------------|--------------|
 | engineer | primary (default) | Adaptive scope triage — handles trivial changes directly (Path A), dispatches parallel coders for multi-file work (Path B), or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger/ambiguous features (Path C) | Path A/B: working tree (may commit if clearly safe on Path A); Path C: feature branch with commits/PR |
-| analyze | primary | Data pipeline orchestration — parallel ingestion of multi-format inputs, normalization, analysis, report generation | Report in user-specified format |
+| analyst | primary | Data pipeline orchestration — parallel ingestion of multi-format inputs, normalization, analysis, report generation | Report in user-specified format |
 
 ### Disabled Built-in Agents
 
@@ -304,7 +320,7 @@ opencode "your question or task"
 
 # Specify a different agent
 opencode --agent engineer "implement this feature"
-opencode --agent analyze "analyze this data file"
+opencode --agent analyst "analyze this data file"
 ```
 
 ### Opencode Wrapper Script
