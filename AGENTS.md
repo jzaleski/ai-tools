@@ -116,8 +116,10 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │        --models-preset           │
 │                                  │
 │       ┌─────────────────┐        │
-│       │jzaleski/low/   │        │
-│       │medium/high     │        │
+│       │ jzaleski/low    │        │
+│       │ jzaleski/medium │        │
+│       │ jzaleski/high   │        │
+│       │ jzaleski/long   │        │
 │       └─────────────────┘        │
 └──────────────────────────────────┘
 ```
