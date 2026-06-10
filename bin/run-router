@@ -6,6 +6,44 @@ TEMPLATES_DIR="$(dirname "$0")/../templates";
 TMP_DIR="$(dirname "$0")/../tmp";
 MODELS_DIR="${MODELS_DIR:-"$HOME/.cache/models"}";
 
+# Download a required file via download-model if it is not already present.
+# Args: <local-path> <hf-repo> [hf-filename]
+# hf-filename defaults to the basename of <local-path>.
+require_model() {
+  local model_file="${1}";
+  local hf_repo="${2}";
+  local hf_filename="${3:-"$(basename "${model_file}")"}";
+  if [[ ! -f "${model_file}" ]]; then
+    echo "Model not found: ${model_file}";
+    echo "Downloading ${hf_repo}/${hf_filename} ...";
+    "$(dirname "$0")/download-model" "${hf_repo}" "${hf_filename}" || {
+      echo "Error: download failed." >&2;
+      exit 1;
+    };
+    # download-model stores under the remote basename; rename to the desired
+    # local name if they differ (e.g. a shared mmproj-F16.gguf kept per-family).
+    local downloaded="$(dirname "${model_file}")/$(basename "${hf_filename}")";
+    if [[ "${downloaded}" != "${model_file}" ]] && [[ -f "${downloaded}" ]]; then
+      mv "${downloaded}" "${model_file}";
+    fi
+  fi
+}
+
+# Ensure every model and mmproj file referenced by the router preset exists,
+# downloading any that are missing.  Mirrors the per-tier definitions in
+# bin/run-model and the sections in templates/llama-cpp.ini.template.
+require_models() {
+  # 35B-A3B tiers (low/long share Q4_K_XL, medium uses Q6_K_XL); the multimodal
+  # projector is the same F16 file, stored per-model alongside each .gguf.
+  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"     "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj"   "unsloth/Qwen3.6-35B-A3B-GGUF" "mmproj-F16.gguf";
+  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf"     "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.mmproj"   "unsloth/Qwen3.6-35B-A3B-GGUF" "mmproj-F16.gguf";
+  # high tier + its multimodal projector
+  require_model "${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf"         "unsloth/Qwen3.6-27B-GGUF";
+  require_model "${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.mmproj"       "unsloth/Qwen3.6-27B-GGUF" "mmproj-F16.gguf";
+}
+
 # Expand template tokens in a preset INI file and write the rendered result to
 # the sibling tmp/ directory, deriving the output filename by stripping the
 # .template suffix from the template basename.  Prints the output path to stdout.
@@ -19,6 +57,7 @@ render_preset() {
 
 main() {
   local preset;
+  require_models;
   preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp.ini.template")";
   exec llama-server \
     --host "${HOST:-"127.0.0.1"}" \

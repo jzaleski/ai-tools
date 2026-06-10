@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-27B Q8_K_XL, 128K ctx), long (Qwen3.6-35B-A3B Q4_K_XL, 256K ctx). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+Supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-27B Q8_K_XL, 128K ctx), long (Qwen3.6-35B-A3B Q4_K_XL, 256K ctx). Every tier loads an F16 multimodal projector (`--mmproj`, auto-downloaded) so image input works on all tiers. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -33,10 +33,10 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode                 # Installs opencode-ai and configures shell init
 │   ├── download-model                     # Downloads a single GGUF file from Hugging Face via curl
-│   ├── run-model                          # Direct llama-server launcher (single model, --tier low|medium|high|long)
-│   └── run-router                         # Router server (llama.cpp, multi-model; HOST env toggles bind)
+│   ├── run-model                          # Direct llama-server launcher (single model + mmproj, --tier low|medium|high|long)
+│   └── run-router                         # Router server (llama.cpp, multi-model + mmproj; HOST env toggles bind)
 ├── templates/                             # llama-server INI preset templates
-│   └── llama-cpp.ini.template             # Router preset (low: 32K, medium: 64K, high: 128K, long: 256K ctx)
+│   └── llama-cpp.ini.template             # Router preset (low: 32K, medium: 64K, high: 128K, long: 256K ctx; per-tier mmproj for vision)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (analyst, engineer)

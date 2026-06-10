@@ -17,14 +17,23 @@ require_model() {
       echo "Error: download failed." >&2;
       exit 1;
     };
+    # download-model stores under the remote basename; rename to the desired
+    # local name if they differ (e.g. a shared mmproj-F16.gguf kept per-family).
+    local downloaded="$(dirname "${model_file}")/$(basename "${hf_filename}")";
+    if [[ "${downloaded}" != "${model_file}" ]] && [[ -f "${downloaded}" ]]; then
+      mv "${downloaded}" "${model_file}";
+    fi
   fi
 }
 
 run_low() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  local mmproj="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_model "${mmproj}" "unsloth/Qwen3.6-35B-A3B-GGUF" "mmproj-F16.gguf";
   exec llama-server \
     --model            "${model}" \
+    --mmproj           "${mmproj}" \
     --alias            jzaleski/low \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
@@ -45,9 +54,12 @@ run_low() {
 
 run_medium() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
+  local mmproj="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_model "${mmproj}" "unsloth/Qwen3.6-35B-A3B-GGUF" "mmproj-F16.gguf";
   exec llama-server \
     --model            "${model}" \
+    --mmproj           "${mmproj}" \
     --alias            jzaleski/medium \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
@@ -68,9 +80,12 @@ run_medium() {
 
 run_high() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf";
+  local mmproj="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-27B-GGUF";
+  require_model "${mmproj}" "unsloth/Qwen3.6-27B-GGUF" "mmproj-F16.gguf";
   exec llama-server \
     --model            "${model}" \
+    --mmproj           "${mmproj}" \
     --alias            jzaleski/high \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
@@ -91,9 +106,12 @@ run_high() {
 
 run_long() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  local mmproj="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_model "${mmproj}" "unsloth/Qwen3.6-35B-A3B-GGUF" "mmproj-F16.gguf";
   exec llama-server \
     --model            "${model}" \
+    --mmproj           "${mmproj}" \
     --alias            jzaleski/long \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \

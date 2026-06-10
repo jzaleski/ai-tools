@@ -142,7 +142,7 @@ You can override default settings via environment variables.
 ## Components
 
 ### run-model
-Starts a single llama-server directly (no router). Accepts `--tier low|medium|high|long` (default: `medium`). Downloads the model automatically if not present. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set.
+Starts a single llama-server directly (no router). Accepts `--tier low|medium|high|long` (default: `medium`). Downloads the model **and its multimodal projector (mmproj)** automatically if not present. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set.
 
 **Shared defaults (all tiers):**
 - Host: `127.0.0.1` (override with `HOST`)
@@ -156,6 +156,8 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 | medium | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q4_0 | 65,536 | 2048 / 512 |
 | high | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q8_K_XL` | q8_0 | 131,072 | 1024 / 256 |
 | long | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 262,144 | 1024 / 256 |
+
+**Vision (multimodal):** Every tier loads a multimodal projector (`--mmproj`) so image input works out of the box. The `F16` projector is downloaded from the same Hugging Face repo as the model (remote filename `mmproj-F16.gguf`) and stored alongside each model with a matching name — the model's filename with a `.mmproj` extension instead of `.gguf` (e.g. `Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf` → `Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj`).
 
 **Environment Variables:**
 - `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)
@@ -280,11 +282,11 @@ launching with `HOST=0.0.0.0`).
 |----------|----------|-------|---------|-------|--------|------------|
 | llama.cpp (local) | `localhost:8080` | jzaleski/low | 32,768 | 28,672 | 4,096 | text+image in, text out |
 | llama.cpp (local) | `localhost:8080` | jzaleski/medium | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| llama.cpp (local) | `localhost:8080` | jzaleski/high | 131,072 | 114,688 | 16,384 | text in, text out |
+| llama.cpp (local) | `localhost:8080` | jzaleski/high | 131,072 | 114,688 | 16,384 | text+image in, text out |
 | llama.cpp (local) | `localhost:8080` | jzaleski/long | 262,144 | 229,376 | 32,768 | text+image in, text out |
 | llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/low | 32,768 | 28,672 | 4,096 | text+image in, text out |
 | llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/medium | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high | 131,072 | 114,688 | 16,384 | text in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high | 131,072 | 114,688 | 16,384 | text+image in, text out |
 | llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/long | 262,144 | 229,376 | 32,768 | text+image in, text out |
 
 ### Agent Roles

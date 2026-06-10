@@ -17,6 +17,7 @@ top-p             = 0.95
 
 [jzaleski/low]
 model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj
 ctx-size          = 32768
 batch-size        = 2048
 ubatch-size       = 512
@@ -25,6 +26,7 @@ cache-type-v      = q4_0
 
 [jzaleski/medium]
 model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf
+mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.mmproj
 ctx-size          = 65536
 batch-size        = 2048
 ubatch-size       = 512
@@ -33,6 +35,7 @@ cache-type-v      = q4_0
 
 [jzaleski/high]
 model             = MODELS_DIR/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf
+mmproj            = MODELS_DIR/unsloth/Qwen3.6-27B-UD-Q8_K_XL.mmproj
 ctx-size          = 131072
 batch-size        = 1024
 ubatch-size       = 256
@@ -41,6 +44,7 @@ cache-type-v      = q8_0
 
 [jzaleski/long]
 model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj
 ctx-size          = 262144
 batch-size        = 1024
 ubatch-size       = 256
