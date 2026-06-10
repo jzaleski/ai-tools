@@ -26,11 +26,22 @@ require_model() {
   fi
 }
 
+# Ensure the F16 multimodal projector for a model exists, downloading it if
+# missing.  Derives the local mmproj path from the model file (same name with a
+# .mmproj extension instead of .gguf) and pulls the repo's shared mmproj-F16.gguf.
+# Args: <model-file> <hf-repo>
+require_mmproj() {
+  local model_file="${1}";
+  local hf_repo="${2}";
+  local mmproj_file="${model_file%.gguf}.mmproj";
+  require_model "${mmproj_file}" "${hf_repo}" "mmproj-F16.gguf";
+}
+
 run_low() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
-  local mmproj="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj";
+  local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
-  require_model "${mmproj}" "unsloth/Qwen3.6-35B-A3B-GGUF" "mmproj-F16.gguf";
+  require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
@@ -54,9 +65,9 @@ run_low() {
 
 run_medium() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
-  local mmproj="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.mmproj";
+  local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
-  require_model "${mmproj}" "unsloth/Qwen3.6-35B-A3B-GGUF" "mmproj-F16.gguf";
+  require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
@@ -80,9 +91,9 @@ run_medium() {
 
 run_high() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf";
-  local mmproj="${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.mmproj";
+  local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-27B-GGUF";
-  require_model "${mmproj}" "unsloth/Qwen3.6-27B-GGUF" "mmproj-F16.gguf";
+  require_mmproj "${model}" "unsloth/Qwen3.6-27B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
@@ -106,9 +117,9 @@ run_high() {
 
 run_long() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
-  local mmproj="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj";
+  local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
-  require_model "${mmproj}" "unsloth/Qwen3.6-35B-A3B-GGUF" "mmproj-F16.gguf";
+  require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
