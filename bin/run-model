@@ -116,7 +116,7 @@ run_high() {
 }
 
 run_long() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";

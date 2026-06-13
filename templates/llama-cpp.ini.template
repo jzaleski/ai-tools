@@ -43,8 +43,8 @@ cache-type-k      = q8_0
 cache-type-v      = q8_0
 
 [jzaleski/long]
-model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
-mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj
+model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf
+mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.mmproj
 ctx-size          = 262144
 batch-size        = 1024
 ubatch-size       = 256

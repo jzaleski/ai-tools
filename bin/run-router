@@ -46,7 +46,7 @@ require_mmproj() {
 require_models() {
   local repo_35b="unsloth/Qwen3.6-35B-A3B-GGUF";
   local repo_27b="unsloth/Qwen3.6-27B-GGUF";
-  # 35B-A3B tiers (low/long share Q4_K_XL, medium uses Q6_K_XL); the multimodal
+  # 35B-A3B tiers (low uses Q4_K_XL, medium/long use Q6_K_XL); the multimodal
   # projector is the same F16 file, stored per-model alongside each .gguf.
   require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_35b}";
   require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_35b}";
