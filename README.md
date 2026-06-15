@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-27B Q8_K_XL, 128K ctx), and long (Qwen3.6-35B-A3B Q4_K_XL, 256K ctx for long agent sessions). The tier axis runs from speed (low) to quality (high) within the Qwen3.6 family; `long` is a large-context sibling of `low`. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
+This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-27B Q8_K_XL, 128K ctx), and long (Qwen3.6-35B-A3B Q6_K_XL, 256K ctx for long agent sessions). The tier axis runs from speed (low) to quality (high) within the Qwen3.6 family; `long` is a large-context sibling of `medium`. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -166,7 +166,7 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 | low | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 32,768 | 2048 / 512 |
 | medium | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q4_0 | 65,536 | 2048 / 512 |
 | high | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q8_K_XL` | q8_0 | 131,072 | 1024 / 256 |
-| long | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 262,144 | 1024 / 256 |
+| long | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q4_0 | 262,144 | 1024 / 256 |
 
 **Vision (multimodal):** Every tier loads a multimodal projector (`--mmproj`) so image input works out of the box. The `F16` projector is downloaded from the same Hugging Face repo as the model (remote filename `mmproj-F16.gguf`) and stored alongside each model with a matching name — the model's filename with a `.mmproj` extension instead of `.gguf` (e.g. `Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf` → `Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj`).
 
