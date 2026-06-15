@@ -28,11 +28,12 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   │   ├── agents/
 │   │   │   ├── data.md             # Data pipeline orchestrator
 │   │   │   ├── engineer.md         # Adaptive software engineer (default)
-│   │   │   └── product.md          # Work-shaping persona (scope → refine)
+│   │   │   └── product.md          # Work-shaping persona (scope → refine → handoff)
 │   │   ├── skills/                 # Vendored workflow skills (no external plugins)
 │   │   │   ├── analyze/            # Find patterns / answer questions (pipeline stage 2)
 │   │   │   ├── coder/              # Sub-agent implementer (TDD, self-review)
 │   │   │   ├── finisher/           # Verify, merge/PR, cleanup
+│   │   │   ├── handoff/             # Package a refined brief into a liftable eng hand-off (product stage 3)
 │   │   │   ├── ingest/             # Extract + clean + normalize raw files (pipeline stage 1)
 │   │   │   ├── planner/            # Task decomposition + independence analysis
 │   │   │   ├── refine/             # Mature a scope into a ticket-ready brief (product stage 2)
@@ -109,7 +110,7 @@ The project includes `opencode-ai` agent configurations in `home/.config/opencod
 
 - **data.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
 - **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
-- **product.md**: Work-shaping persona — runs the scope skill to capture a stakeholder's requirements as a right-sized artifact, then the refine skill to mature it (with engineering) into a ticket-ready brief
+- **product.md**: Work-shaping persona — runs the scope skill to capture a stakeholder's requirements as a right-sized artifact, the refine skill to mature it (with engineering) into a ticket-ready brief, and the handoff skill to package it into a liftable engineering hand-off
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `engineer`.
 
@@ -141,6 +142,7 @@ Workflow skills are vendored locally under `home/.config/opencode/skills/` — n
 |-------|---------|
 | `scope` | Stakeholder requirements intake — adaptive (capped questions when thin, draft-and-trim when bloated), produces a right-sized, refinable scope artifact; honest about what a non-technical stakeholder cannot know |
 | `refine` | Technical-PM maturation — augments the same scope document with system considerations, authoritative scope, complexity, resolved open questions, and a ticket breakdown |
+| `handoff` | Engineering hand-off packaging — turns the refined brief into a self-contained, liftable hand-off artifact (written to `docs/handoffs/`) that seeds the engineer agent's design phase |
 
 ## Environment Variables
 
@@ -272,7 +274,8 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │  │ Product        │  │
 │  │ [funnel:       │  │
 │  │  scope →       │  │
-│  │  refine]       │  │
+│  │  refine →      │  │
+│  │  handoff]      │  │
 │  └────────────────┘  │
 └──────────┬───────────┘
            │
@@ -313,7 +316,7 @@ launching with `HOST=0.0.0.0`).
 |-------|------|--------------|--------------|
 | engineer | primary (default) | Adaptive scope triage — handles trivial changes directly (Path A), dispatches parallel coders for multi-file work (Path B), or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger/ambiguous features (Path C) | Path A/B: working tree (may commit if clearly safe on Path A); Path C: feature branch with commits/PR |
 | data | primary | Data pipeline orchestration — parallel ingestion of multi-format inputs, normalization, analysis, report generation | Report in user-specified format |
-| product | primary | Work-shaping funnel — scope (stakeholder intake) then refine (technical-PM maturation into a ticket-ready brief) | Right-sized scope artifact (rendered inline; evolves in place in-repo) |
+| product | primary | Work-shaping funnel — scope (stakeholder intake) → refine (technical-PM maturation) → handoff (liftable engineering package) | Scope artifact (evolves in place) + separate hand-off artifact, both rendered inline |
 
 ### Disabled Built-in Agents
 
