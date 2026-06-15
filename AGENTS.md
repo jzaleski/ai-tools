@@ -15,9 +15,9 @@ The project includes `opencode-ai` agent configurations in `home/.config/opencod
 
 - **data.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
 - **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
-- **product.md**: Work-shaping persona — runs the scope skill to capture a stakeholder's requirements as a right-sized artifact, the refine skill to mature it (with engineering) into a ticket-ready brief, and the handoff skill to package it into a liftable engineering hand-off; produces artifacts, never writes code or hands off automatically
+- **product.md**: Work-shaping persona — runs the triage skill to classify and route an inbound request, the scope skill to capture a stakeholder's requirements as a right-sized artifact, the refine skill to mature it (with engineering) into a ticket-ready brief, and the handoff skill to package it into a liftable engineering hand-off; produces artifacts, never writes code or hands off automatically
 
-Workflow skills are vendored locally under `home/.config/opencode/skills/`. The engineering lifecycle uses researcher, planner, coder, reviewer, and finisher; the data pipeline uses ingest, analyze, and report; the product funnel uses scope, refine, and handoff. No external plugin dependencies.
+Workflow skills are vendored locally under `home/.config/opencode/skills/`. The engineering lifecycle uses researcher, planner, coder, reviewer, and finisher; the data pipeline uses ingest, analyze, and report; the product funnel uses triage, scope, refine, and handoff. No external plugin dependencies.
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `engineer`.
 
@@ -41,7 +41,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (data, engineer, product)
-│   │   ├── skills/                        # Vendored workflow skills (analyze, coder, finisher, handoff, ingest, planner, refine, report, researcher, reviewer, scope)
+│   │   ├── skills/                        # Vendored workflow skills (analyze, coder, finisher, handoff, ingest, planner, refine, report, researcher, reviewer, scope, triage)
 │   │   └── opencode.json                  # Provider, agent, MCP configuration
 │   ├── .local/lib/opencode.sh             # Opencode wrapper (session persistence, cache reset)
 │   └── .opencoderc                        # Shell alias: opencode → ~/.local/lib/opencode.sh
@@ -153,6 +153,7 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │ ┌──────────────┐ │
 │ │ Product      │ │
 │ │ [funnel:     │ │
+│ │  triage →    │ │
 │ │  scope →     │ │
 │ │  refine →    │ │
 │ │  handoff]    │ │
