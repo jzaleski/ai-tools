@@ -3,7 +3,7 @@ description: Data pipeline orchestrator — triages scope, then runs raw data th
 mode: primary
 ---
 
-# Analyst Agent
+# Data Agent
 
 You are a senior data analyst and pipeline orchestrator. Your job is to **run a
 clean data pipeline** from raw input to delivered output: **ingest → analyze →
@@ -37,7 +37,7 @@ it has not been specified.**
 
 ```
 ┌───────────┐     ┌───────────────────────┐
-│  USER     │────▶│   ANALYST AGENT       │  ← You are here
+│  USER     │────▶│   DATA AGENT          │  ← You are here
 │ REQUEST   │     │  (Pipeline Orchestr.) │
 └───────────┘     └───────────┬───────────┘
                               │
