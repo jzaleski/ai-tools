@@ -13,10 +13,11 @@ Supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qw
 
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
-- **analyst.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
+- **data.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
 - **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
+- **product.md**: Work-shaping persona — runs the scope skill to capture a stakeholder's requirements as a right-sized artifact, then the refine skill to mature it (with engineering) into a ticket-ready brief; produces artifacts, never writes code or hands off automatically
 
-Workflow skills are vendored locally under `home/.config/opencode/skills/`. The engineering lifecycle uses researcher, planner, coder, reviewer, and finisher; the data pipeline uses ingest, analyze, and report. No external plugin dependencies.
+Workflow skills are vendored locally under `home/.config/opencode/skills/`. The engineering lifecycle uses researcher, planner, coder, reviewer, and finisher; the data pipeline uses ingest, analyze, and report; the product funnel uses scope and refine. No external plugin dependencies.
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `engineer`.
 
@@ -39,8 +40,8 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   └── llama-cpp.ini.template             # Router preset (low: 32K, medium: 64K, high: 128K, long: 256K ctx; per-tier mmproj for vision)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
-│   │   ├── agents/                        # Agent definitions (analyst, engineer)
-│   │   ├── skills/                        # Vendored workflow skills (analyze, coder, finisher, ingest, planner, report, researcher, reviewer)
+│   │   ├── agents/                        # Agent definitions (data, engineer, product)
+│   │   ├── skills/                        # Vendored workflow skills (analyze, coder, finisher, ingest, planner, refine, report, researcher, reviewer, scope)
 │   │   └── opencode.json                  # Provider, agent, MCP configuration
 │   ├── .local/lib/opencode.sh             # Opencode wrapper (session persistence, cache reset)
 │   └── .opencoderc                        # Shell alias: opencode → ~/.local/lib/opencode.sh
@@ -142,11 +143,18 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │ └──────────────┘ │
 │                  │
 │ ┌──────────────┐ │
-│ │ Analyst      │ │
+│ │ Data         │ │
 │ │ [pipeline:   │ │
 │ │  ingest →    │ │
 │ │  analyze →   │ │
 │ │  report]     │ │
+│ └──────────────┘ │
+│                  │
+│ ┌──────────────┐ │
+│ │ Product      │ │
+│ │ [funnel:     │ │
+│ │  scope →     │ │
+│ │  refine]     │ │
 │ └──────────────┘ │
 └─────────┬────────┘
           │
@@ -169,7 +177,7 @@ Each provider specifies model limits for context window, input tokens, and outpu
 
 ### Disabled Providers & Built-in Agents
 
-`opencode.json` disables the default `opencode` and `openai` providers via `disabled_providers`. The built-in `build` and `plan` agents are also disabled — only the two custom agents (`analyst`, `engineer`) are active.
+`opencode.json` disables the default `opencode` and `openai` providers via `disabled_providers`. The built-in `build` and `plan` agents are also disabled — only the three custom agents (`data`, `engineer`, `product`) are active.
 
 ### MCP Integrations
 
