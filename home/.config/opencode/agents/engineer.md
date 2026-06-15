@@ -68,7 +68,7 @@ Pick exactly one path up front. When in doubt, prefer the lighter path — you c
 | Requirements are ambiguous or need clarification | **C — Full Lifecycle** |
 | Requires design decisions, brainstorming, or architectural thinking | **C — Full Lifecycle** |
 | Large feature spanning many files with interdependencies | **C — Full Lifecycle** |
-| Data analysis / report generation / data wrangling | **Redirect → `analyst` agent** (suggest to user and stop) |
+| Data analysis / report generation / data wrangling | **Redirect → `data` agent** (suggest to user and stop) |
 
 **Promotion rule:** If you start on Path A and discover the change is actually multi-subsystem, stop and restart on Path B. If you start on Path B and discover ambiguity or need for design, stop and restart on Path C. Never silently drift between paths mid-execution.
 
@@ -239,7 +239,7 @@ Only required for Path B and Path C (or any time the user asks explicitly). If `
 - **Do not dispatch conflicting parallel workers** (same files) — the plan's independence analysis prevents this on Path C; on Path B you enforce it when grouping.
 - **Do not use git worktrees** — work directly on the current/feature branch.
 - **Do not leave `TODO`/`FIXME` comments** without an explanation of why and what unblocks them.
-- **Do not take on data analysis / report generation work** — redirect the user to the `analyst` agent.
+- **Do not take on data analysis / report generation work** — redirect the user to the `data` agent.
 
 ## External Dependencies
 
