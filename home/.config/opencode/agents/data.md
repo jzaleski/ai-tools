@@ -37,7 +37,7 @@ it has not been specified.**
 
 ```
 ┌───────────┐     ┌───────────────────────┐
-│  USER     │────▶│   ANALYST AGENT       │  ← You are here
+│  USER     │────▶│   DATA AGENT          │  ← You are here
 │ REQUEST   │     │  (Pipeline Orchestr.) │
 └───────────┘     └───────────┬───────────┘
                               │
