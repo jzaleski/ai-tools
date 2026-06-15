@@ -68,7 +68,7 @@ Then, **only if a repository working directory is available**:
 
 Always end the matured document with this pointer (a pointer, not a handoff — this skill never invokes another agent):
 
-> *Ready for engineering — hand to the `engineer` agent to begin design/planning.*
+> *Next step: package for engineering (see the `handoff` skill) to produce a liftable hand-off artifact.*
 
 ## Key Principles
 
