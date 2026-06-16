@@ -52,6 +52,27 @@ Match the technique to the question — don't run every analysis reflexively.
 5. Save intermediate analysis outputs to `.pipeline-cache/analysis/` if they're
    worth keeping for the report stage (e.g. a summary table, an aggregated CSV).
 
+## Persistence (Environment-Adaptive)
+
+**Findings are the canonical output in every environment** — always render them
+inline (the *Report Format* block below). The findings, not a file, are the
+deliverable of this stage.
+
+Intermediate analysis artifacts and scripts are the *persistence layer*, and the
+mechanism adapts to the environment:
+
+- **When a durable working directory is available** (e.g., opencode): write
+  intermediate tables to `.pipeline-cache/analysis/` and analysis code to
+  `scripts/`, and reference them by path.
+- **When no durable filesystem is available** (e.g., a Claude organizational
+  skill): code execution still works — run the analysis and produce the same
+  intermediate artifacts in the working sandbox, but do not assume a stable path
+  persists. Surface any table the report stage needs inline (and as
+  downloadable/copyable output if supported) rather than pointing at a path.
+
+Either way the analysis is reproducible code, not ad-hoc mental math; only where
+(and whether) the intermediate artifacts land on disk changes.
+
 ## Tooling & Reuse
 
 - **Python is the natural default.** Prefer `pandas`, `numpy` and the standard library. Avoid exotic dependencies; call it out when one is genuinely necessary.

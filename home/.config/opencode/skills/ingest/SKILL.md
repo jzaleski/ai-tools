@@ -20,6 +20,29 @@ together into a single aligned shape that the next stage can analyze.
 - One (or a small number of) normalized, analysis-ready artifact(s) in `.pipeline-cache/normalized/`
 - A short manifest of what came in, what came out, and any warnings
 
+## Persistence (Environment-Adaptive)
+
+**The manifest is the canonical output in every environment** — always render it
+inline (the *Report Format* block below) so whoever invoked the skill sees what
+came in, what came out, and any warnings.
+
+The pipeline-cache artifacts are the *persistence layer*, and the mechanism adapts
+to the environment:
+
+- **When a durable working directory is available** (e.g., opencode): write the
+  extracted and normalized artifacts to the `.pipeline-cache/` paths above and
+  reference them by path. Subsequent stages read them from there.
+- **When no durable filesystem is available** (e.g., a Claude organizational
+  skill): code execution still works — produce the same artifacts in the working
+  sandbox and carry them forward to the analyze stage within the session, but do
+  not assume a stable path like `.pipeline-cache/` persists or is user-visible.
+  Surface the normalized dataset inline (and as downloadable/copyable output if
+  the environment supports it) rather than pointing at a path.
+
+Either way the *shape* of the output is identical — the same extracted, then
+normalized dataset and the same manifest; only where (and whether) it lands on
+disk changes.
+
 ## Non-Negotiable Rules
 
 - **Never mutate source files.** Raw inputs are read-only. Every output goes to a new file.
