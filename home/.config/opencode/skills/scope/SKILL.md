@@ -1,26 +1,26 @@
 ---
 name: scope
-description: "Stakeholder requirements-intake skill — turns a vague or bloated request into a right-sized, refinable scope artifact. Adaptive: asks a few high-leverage questions when input is too thin, drafts-and-trims when too bloated. Honest about what a non-technical stakeholder cannot know. Stand-alone; does not hand off to other agents."
+description: "Stakeholder requirements-intake skill — helps a stakeholder or user, via a series of structured prompts, turn their ideas or requests into a right-sized, refinable scope artifact. Adaptive: asks a few high-leverage questions when a request isn't specific enough, drafts-and-trims when it's too broad. Honest about what a non-technical stakeholder cannot know. Stand-alone; does not hand off to other agents."
 ---
 
 # Scope Skill
 
-Turn a stakeholder's request into a **right-sized, refinable scope artifact** that a product/client-manager can clearly understand, react to, and refine — the first stage of the product work-shaping funnel.
+Help a stakeholder or user, through a series of structured prompts, turn their ideas or requests into a **right-sized, refinable scope artifact** that a product/client-manager can clearly understand, react to, and refine — the first stage of the product work-shaping funnel.
 
 **Always announce at start:** "I'm using the scope skill to shape this request."
 
 **Audience:** product/client-managers — typically non-technical. Never force the stakeholder to author things they cannot know (system internals, authoritative technical scope, effort/complexity). Those belong to the `refine` skill.
 
-## The Problem This Solves
+## What This Helps With
 
-Stakeholders swing between **under-specification** (1–2 sentences, not actionable) and **over-specification** (many pages that ignore the real system). This skill enforces **right-sized friction**: enough structure to be actionable and honest, light enough that people actually use it.
+A request can land anywhere on a spectrum — sometimes **not specific enough** (1–2 sentences, not yet actionable), sometimes **too broad** (many pages spanning several distinct asks). This skill provides **right-sized friction**: enough structure to be actionable and honest, light enough that people actually use it.
 
 ## Adaptive Intake
 
-Detect which failure mode the input represents and respond accordingly:
+Detect where the request sits on the spectrum and respond accordingly:
 
-- **Too thin** → ask a **capped set of high-leverage clarifying questions**: at most **3–5**, asked **one at a time**, stopping early once the input is actionable. Never an interrogation.
-- **Too bloated** → skip questioning; go straight to **draft-and-trim**.
+- **Not specific enough** → ask a **capped set of high-leverage clarifying questions**: at most **3–5**, asked **one at a time**, stopping early once the request is actionable. Never an interrogation.
+- **Too broad** → skip questioning; go straight to **draft-and-trim**.
 - **In between** → ask only what is genuinely missing (still capped at 3–5), then draft.
 
 Prefer multiple-choice questions where possible; open-ended is fine. Focus questions on what the stakeholder *can* answer: the need, the desired outcome, how they'd know it worked.
