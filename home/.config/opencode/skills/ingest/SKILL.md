@@ -39,7 +39,7 @@ to the environment:
   Surface the normalized dataset inline (and as downloadable/copyable output if
   the environment supports it) rather than pointing at a path.
 
-Either way the *shape* of the output is identical — the same extracted-then-
+Either way the *shape* of the output is identical — the same extracted, then
 normalized dataset and the same manifest; only where (and whether) it lands on
 disk changes.
 
