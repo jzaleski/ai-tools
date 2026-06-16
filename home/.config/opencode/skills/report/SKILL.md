@@ -41,6 +41,20 @@ CSV of the underlying numbers. Confirm which combination the user wants.
   path), not buried in `.pipeline-cache/` — the report is a deliverable, not a
   cache artifact.
 
+**Persistence is environment-adaptive.** The report content is the canonical
+output in every environment — always render it inline (or in the requested
+format) so the user receives the deliverable directly:
+
+- **When a durable working directory is available** (e.g., opencode): write the
+  requested file outputs (`.md`, `.csv`, `.xlsx`, etc.) to a sensible path and
+  reference them.
+- **When no durable filesystem is available** (e.g., a Claude organizational
+  skill): code execution still works for generating files (e.g. building an XLSX
+  in the sandbox) — produce the requested format and deliver it as
+  downloadable/copyable output rather than assuming a stable on-disk path. For
+  text-shaped formats (Markdown, plain text, JSON), inline delivery is the
+  deliverable itself.
+
 ## Step 3: Artifacts & Scripts Section (Mandatory)
 
 **Every report ends with an Artifacts & Scripts section. This is non-negotiable.**
@@ -66,6 +80,13 @@ the work is reproducible and nothing is a mystery.
 **Decisions worth knowing:**
 - [normalization/analysis judgment calls that affect interpretation, or "none"]
 ```
+
+**The section is mandatory in every environment**, but adapt how it references
+artifacts: when a durable filesystem is available, list real paths as above.
+When none is available (e.g., a Claude organizational skill), list each artifact
+by name and how it was delivered (inline / downloadable) instead of a path that
+won't persist — the goal is unchanged: the user knows exactly what was produced,
+how it was computed, and what decisions shaped it.
 
 ## Hard Constraints
 
