@@ -90,10 +90,10 @@ run_medium() {
 }
 
 run_high() {
-  local model="${MODELS_DIR}/unsloth/gemma-4-31B-it-UD-Q8_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/gemma-4-31B-it-GGUF";
-  require_mmproj "${model}" "unsloth/gemma-4-31B-it-GGUF";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
@@ -116,10 +116,10 @@ run_high() {
 }
 
 run_long() {
-  local model="${MODELS_DIR}/unsloth/gemma-4-31B-it-UD-Q8_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/gemma-4-31B-it-GGUF";
-  require_mmproj "${model}" "unsloth/gemma-4-31B-it-GGUF";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
