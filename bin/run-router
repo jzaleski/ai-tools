@@ -44,17 +44,17 @@ require_mmproj() {
 # downloading any that are missing.  Mirrors the per-tier definitions in
 # bin/run-model and the sections in templates/llama-cpp.ini.template.
 require_models() {
-  local repo_35b="unsloth/Qwen3.6-35B-A3B-GGUF";
-  local repo_27b="unsloth/Qwen3.6-27B-GGUF";
-  # 35B-A3B tiers (low uses Q4_K_XL, medium/long use Q6_K_XL); the multimodal
+  local repo_qwen36="unsloth/Qwen3.6-35B-A3B-GGUF";
+  local repo_gemma4="unsloth/gemma-4-31B-it-GGUF";
+  # 35B-A3B tiers (low uses Q4_K_XL, medium uses Q6_K_XL); the multimodal
   # projector is the same F16 file, stored per-model alongside each .gguf.
-  require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_35b}";
-  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_35b}";
-  require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf" "${repo_35b}";
-  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf" "${repo_35b}";
-  # high tier + its multimodal projector
-  require_model  "${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf" "${repo_27b}";
-  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-27B-UD-Q8_K_XL.gguf" "${repo_27b}";
+  require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_qwen36}";
+  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_qwen36}";
+  require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf" "${repo_qwen36}";
+  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf" "${repo_qwen36}";
+  # high tier (gemma) + its multimodal projector
+  require_model  "${MODELS_DIR}/unsloth/gemma-4-31B-it-UD-Q8_K_XL.gguf" "${repo_gemma4}";
+  require_mmproj "${MODELS_DIR}/unsloth/gemma-4-31B-it-UD-Q8_K_XL.gguf" "${repo_gemma4}";
 }
 
 # Expand template tokens in a preset INI file and write the rendered result to

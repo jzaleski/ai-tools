@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-27B Q8_K_XL, 128K ctx), and long (Qwen3.6-35B-A3B Q6_K_XL, 256K ctx for long agent sessions). The tier axis runs from speed (low) to quality (high) within the Qwen3.6 family; `long` is a large-context sibling of `medium`. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
+This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (gemma-4-31B-it Q8_K_XL, 256K ctx), and long (gemma-4-31B-it Q8_K_XL, 256K ctx for long agent sessions). The low/medium tiers run within the Qwen3.6 family (speed → quality); the high and long tiers are served by a larger-context gemma model. The low/medium/high tiers are served by the router on port `8080`; `long` is **standalone-only** — excluded from the router preset and launched via `run-model --tier long`. It also defaults to port `8080`; set `PORT` (e.g. `8081`) to run it alongside the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -22,7 +22,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── run-model                   # Direct llama-server launcher (single model, --tier low|medium|high|long)
 │   └── run-router                  # Router server (llama.cpp, multi-model; HOST env toggles bind)
 ├── templates/                      # llama-server INI preset templates
-│   └── llama-cpp.ini.template      # Router preset (low: 32K, medium: 64K, high: 128K, long: 256K ctx)
+│   └── llama-cpp.ini.template      # Router preset (low: 32K, medium: 64K, high: 256K ctx)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -157,7 +157,7 @@ You can override default settings via environment variables.
 ## Components
 
 ### run-model
-Starts a single llama-server directly (no router). Accepts `--tier low|medium|high|long` (default: `medium`). Downloads the model **and its multimodal projector (mmproj)** automatically if not present. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set.
+Starts a single llama-server directly (no router). Accepts `--tier low|medium|high|long` (default: `medium`). Downloads the model **and its multimodal projector (mmproj)** automatically if not present. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set. The `long` tier is standalone-only (it is not part of the router preset); like the others it defaults to port `8080`, so set `PORT` (e.g. `8081`) to run it alongside the router.
 
 **Shared defaults (all tiers):**
 - Host: `127.0.0.1` (override with `HOST`)
@@ -169,8 +169,10 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 |---|---|---|---|---|---|
 | low | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 32,768 | 2048 / 512 |
 | medium | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q4_0 | 65,536 | 2048 / 512 |
-| high | `unsloth/Qwen3.6-27B-GGUF` | `UD-Q8_K_XL` | q8_0 | 131,072 | 1024 / 256 |
-| long | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q4_0 | 262,144 | 1024 / 256 |
+| high | `unsloth/gemma-4-31B-it-GGUF` | `UD-Q8_K_XL` | q8_0 | 262,144 | 1024 / 256 |
+| long | `unsloth/gemma-4-31B-it-GGUF` | `UD-Q8_K_XL` | q8_0 | 262,144 | 1024 / 256 |
+
+> The `long` tier is standalone-only — it is excluded from the router preset and must be launched via `run-model --tier long`. It defaults to port 8080 like the other tiers; set `PORT` (e.g. 8081) to run it alongside the router.
 
 **Vision (multimodal):** Every tier loads a multimodal projector (`--mmproj`) so image input works out of the box. The `F16` projector is downloaded from the same Hugging Face repo as the model (remote filename `mmproj-F16.gguf`) and stored alongside each model with a matching name — the model's filename with a `.mmproj` extension instead of `.gguf` (e.g. `Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf` → `Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj`).
 
@@ -180,13 +182,13 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 - `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
 
 ### run-router
-Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading all four tiers from the rendered INI preset (`templates/llama-cpp.ini.template` → `tmp/llama-cpp.ini`). Clients select a tier via the `model` parameter. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set.
+Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading the low/medium/high tiers from the rendered INI preset (`templates/llama-cpp.ini.template` → `tmp/llama-cpp.ini`). The `long` tier is excluded from the preset and is standalone-only via `run-model --tier long`. Clients select a tier via the `model` parameter. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set.
 
 **Defaults:**
 - Host: `127.0.0.1` (override with `HOST`)
 - Port: 8080
 - Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`, `repeat-penalty=1.0`
-- Per-tier context/KV/batch as in the run-model table above (low: 32K/q4_0/2048-512, medium: 64K/q4_0/2048-512, high: 128K/q8_0/1024-256, long: 256K/q4_0/1024-256)
+- Per-tier context/KV/batch as in the run-model table above (low: 32K/q4_0/2048-512, medium: 64K/q4_0/2048-512, high: 256K/q8_0/1024-256). The `long` tier is not part of the router preset.
 
 **Environment Variables:**
 - `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)
@@ -207,10 +209,10 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 # Expose a single model on the LAN
 HOST=0.0.0.0 ./bin/run-model --tier high
 
-# Start router (all four tiers on localhost:8080)
+# Start router (low/medium/high tiers on localhost:8080)
 ./bin/run-router
 
-# Start router exposed on the LAN (all four tiers on 0.0.0.0:8080)
+# Start router exposed on the LAN (low/medium/high tiers on 0.0.0.0:8080)
 HOST=0.0.0.0 ./bin/run-router
 ```
 
@@ -220,12 +222,13 @@ Clients select a model via the `model` query parameter or request body field:
 curl http://localhost:8080/v1/chat/completions?model=jzaleski/low    ...
 curl http://localhost:8080/v1/chat/completions?model=jzaleski/medium ...
 curl http://localhost:8080/v1/chat/completions?model=jzaleski/high   ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/long   ...
+# jzaleski/long is standalone-only: run `./bin/run-model --tier long`, then
+# curl the port it is listening on (8080 by default; set PORT to change it)
 ```
 
 ## Architecture
 
-The router listens on port 8080 and serves all four tiers. Alternatively, `run-model` bypasses the router and starts a single llama-server directly. Both bind to `127.0.0.1` unless `HOST=0.0.0.0` is set.
+The router listens on port 8080 and serves the low/medium/high tiers. The `long` tier is standalone-only and served directly by `run-model --tier long`. Alternatively, `run-model` bypasses the router and starts a single llama-server directly for any tier. Both bind to `127.0.0.1` unless `HOST=0.0.0.0` is set.
 
 ```
 ┌──────────────────────────┐   ┌──────────────────────────┐
@@ -242,9 +245,8 @@ The router listens on port 8080 and serves all four tiers. Alternatively, `run-m
    │ │jzaleski/low      │ │  HOST defaults to 127.0.0.1;
    │ │jzaleski/medium   │ │  set HOST=0.0.0.0 to expose
    │ │jzaleski/high     │ │  on the LAN.
-   │ │jzaleski/long     │ │
-   │ └──────────────────┘ │
-   └─────────────────────┘
+   │ └──────────────────┘ │  (jzaleski/long is standalone-
+   └─────────────────────┘   only, via run-model --tier long)
 ```
 
 ## Opencode Agent Architecture
@@ -298,20 +300,19 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 
 The opencode configuration (`~/.config/opencode/opencode.json`) defines 2 provider endpoints:
 
-Both providers expose the same four tiers with identical per-tier limits; they
+Both providers expose the same three tiers with identical per-tier limits; they
 differ only in endpoint (the server provider is the same models reached by
-launching with `HOST=0.0.0.0`).
+launching with `HOST=0.0.0.0`). The `long` tier is **not** part of the opencode
+configuration — it is standalone-only via `run-model --tier long`.
 
 | Provider | Endpoint | Model | Context | Input | Output | Modalities |
 |----------|----------|-------|---------|-------|--------|------------|
 | llama.cpp (local) | `localhost:8080` | jzaleski/low | 32,768 | 28,672 | 4,096 | text+image in, text out |
 | llama.cpp (local) | `localhost:8080` | jzaleski/medium | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| llama.cpp (local) | `localhost:8080` | jzaleski/high | 131,072 | 114,688 | 16,384 | text+image in, text out |
-| llama.cpp (local) | `localhost:8080` | jzaleski/long | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| llama.cpp (local) | `localhost:8080` | jzaleski/high | 262,144 | 229,376 | 32,768 | text+image in, text out |
 | llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/low | 32,768 | 28,672 | 4,096 | text+image in, text out |
 | llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/medium | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high | 131,072 | 114,688 | 16,384 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/long | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high | 262,144 | 229,376 | 32,768 | text+image in, text out |
 
 ### Agent Roles
 
@@ -386,7 +387,7 @@ opencode [options] [query]
 ## Performance Tips
 
 - GPU acceleration enabled with flash attention by default
-- KV cache quantization is tier-specific: low=q4_0, medium=q4_0, high=q8_0, long=q4_0
+- KV cache quantization is tier-specific: low=q4_0, medium=q4_0, high=q8_0, long=q8_0
 - Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
 - Batch/ubatch scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256
 - Sampling defaults are tuned for coding and tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`

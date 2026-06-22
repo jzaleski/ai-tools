@@ -49,18 +49,6 @@
         "jzaleski/high": {
           "name": "jzaleski/high",
           "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
-          },
-          "modalities": {
-            "input": ["text"],
-            "output": ["text"]
-          }
-        },
-        "jzaleski/long": {
-          "name": "jzaleski/long",
-          "limit": {
             "context": 262144,
             "input": 229376,
             "output": 32768
@@ -105,18 +93,6 @@
         },
         "jzaleski/high": {
           "name": "jzaleski/high",
-          "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
-          },
-          "modalities": {
-            "input": ["text"],
-            "output": ["text"]
-          }
-        },
-        "jzaleski/long": {
-          "name": "jzaleski/long",
           "limit": {
             "context": 262144,
             "input": 229376,
