@@ -8,11 +8,12 @@
 [*]
 flash-attn        = on
 n-gpu-layers      = -1
-presence-penalty  = 0.2
+predict           = 32768
+presence-penalty  = 0.0
 repeat-penalty    = 1.0
-min-p             = 0.02
-temp              = 0.7
-top-k             = 0
+min-p             = 0.0
+temp              = 0.6
+top-k             = 20
 top-p             = 0.95
 
 [jzaleski/low]
@@ -21,7 +22,7 @@ mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj
 ctx-size          = 32768
 batch-size        = 2048
 ubatch-size       = 512
-cache-type-k      = q4_0
+cache-type-k      = q8_0
 cache-type-v      = q4_0
 
 [jzaleski/medium]
@@ -30,7 +31,7 @@ mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.mmproj
 ctx-size          = 65536
 batch-size        = 2048
 ubatch-size       = 512
-cache-type-k      = q4_0
+cache-type-k      = q8_0
 cache-type-v      = q4_0
 
 [jzaleski/high]

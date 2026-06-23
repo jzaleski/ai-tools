@@ -162,15 +162,16 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 **Shared defaults (all tiers):**
 - Host: `127.0.0.1` (override with `HOST`)
 - Port: 8080
-- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`, `repeat-penalty=1.0`
+- Sampling: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
+- Output: `predict=32768` default (clients may override via `max_tokens`)
 - GPU: `n-gpu-layers=-1` (all), flash-attn on
 
 | Tier | Model | Quant | KV Cache | Context | Batch/Ubatch |
 |---|---|---|---|---|---|
-| low | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q4_0 | 32,768 | 2048 / 512 |
-| medium | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q4_0 | 65,536 | 2048 / 512 |
-| high | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q8_K_XL` | q8_0 | 131,072 | 1024 / 256 |
-| long | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q8_K_XL` | q8_0 | 262,144 | 1024 / 256 |
+| low | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q8_0/q4_0 | 32,768 | 2048 / 512 |
+| medium | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
+| high | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q8_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
+| long | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
 
 > The `long` tier is standalone-only — it is excluded from the router preset and must be launched via `run-model --tier long`. It defaults to port 8080 like the other tiers; set `PORT` (e.g. 8081) to run it alongside the router.
 
@@ -187,8 +188,9 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 **Defaults:**
 - Host: `127.0.0.1` (override with `HOST`)
 - Port: 8080
-- Sampling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`, `repeat-penalty=1.0`
-- Per-tier context/KV/batch as in the run-model table above (low: 32K/q4_0/2048-512, medium: 64K/q4_0/2048-512, high: 128K/q8_0/1024-256). The `long` tier is not part of the router preset.
+- Sampling: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
+- Output: `predict=32768` default (clients may override via `max_tokens`)
+- Per-tier context/KV/batch as in the run-model table above (low: 32K/q8_0-q4_0/2048-512, medium: 64K/q8_0-q4_0/2048-512, high: 128K/q8_0-q8_0/1024-256). The `long` tier is not part of the router preset.
 
 **Environment Variables:**
 - `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)
@@ -387,10 +389,10 @@ opencode [options] [query]
 ## Performance Tips
 
 - GPU acceleration enabled with flash attention by default
-- KV cache quantization is tier-specific: low=q4_0, medium=q4_0, high=q8_0, long=q8_0
+- KV cache quantization is tier-specific: low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces
 - Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
 - Batch/ubatch scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256
-- Sampling defaults are tuned for coding and tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
+- Sampling defaults are tuned for coding and tool-calling per Qwen3.6's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`; server-side `predict=32768` caps default output length
 
 ## Troubleshooting
 
@@ -407,7 +409,7 @@ opencode [options] [query]
 - Adjust quantization level
 
 **Quality issues:**
-- Sampling defaults are tuned for coding/tool-calling: `temp=0.7`, `top-k=0` (disabled), `top-p=0.95`, `min-p=0.02`, `presence-penalty=0.2`
+- Sampling defaults are tuned for coding/tool-calling per Qwen3.6's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`
 - For more creative/diverse responses, increase `temp` and `top-p`, or raise `presence-penalty`
 - For more deterministic output, lower `temp` (e.g. `0.4–0.6`)
 
