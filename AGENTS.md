@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-35B-A3B Q8_K_XL, 256K ctx), long (Qwen3.6-35B-A3B Q8_K_XL, 256K ctx). The low/medium/high tiers are served by the router; the long tier is **standalone-only** — it is excluded from the router preset and must be launched via `run-model --tier long`. Like the other tiers it binds port `8080` by default; set `PORT` to run it on another port (e.g. `8081`) so it can coexist with the router. Every tier loads an F16 multimodal projector (`--mmproj`, auto-downloaded) so image input works on all tiers. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+Supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-35B-A3B Q8_K_XL, 128K ctx), long (Qwen3.6-35B-A3B Q8_K_XL, 256K ctx). The low/medium/high tiers are served by the router; the long tier is **standalone-only** — it is excluded from the router preset and must be launched via `run-model --tier long`. Like the other tiers it binds port `8080` by default; set `PORT` to run it on another port (e.g. `8081`) so it can coexist with the router. Every tier loads an F16 multimodal projector (`--mmproj`, auto-downloaded) so image input works on all tiers. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -37,7 +37,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── run-model                          # Direct llama-server launcher (single model + mmproj, --tier low|medium|high|long)
 │   └── run-router                         # Router server (llama.cpp, multi-model + mmproj; HOST env toggles bind)
 ├── templates/                             # llama-server INI preset templates
-│   └── llama-cpp.ini.template             # Router preset (low: 32K, medium: 64K, high: 256K ctx; per-tier mmproj for vision)
+│   └── llama-cpp.ini.template             # Router preset (low: 32K, medium: 64K, high: 128K ctx; per-tier mmproj for vision)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (data, engineer, product)
@@ -171,7 +171,7 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 ```
 
 The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 32K, medium: 64K, high: 256K); models: `jzaleski/low` (Qwen3.6-35B-A3B Q4_K_XL), `jzaleski/medium` (Qwen3.6-35B-A3B Q6_K_XL), `jzaleski/high` (Qwen3.6-35B-A3B Q8_K_XL). The `long` tier is **not** wired into opencode — it is standalone-only via `run-model --tier long` (port `8080` by default; override `PORT` to coexist with the router).
+- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 32K, medium: 64K, high: 128K); models: `jzaleski/low` (Qwen3.6-35B-A3B Q4_K_XL), `jzaleski/medium` (Qwen3.6-35B-A3B Q6_K_XL), `jzaleski/high` (Qwen3.6-35B-A3B Q8_K_XL). The `long` tier is **not** wired into opencode — it is standalone-only via `run-model --tier long` (port `8080` by default; override `PORT` to coexist with the router).
 - **llama.cpp (server)**: `server-hostname-or-ip:8080` — same three aliases and contexts; reach this endpoint by launching with `HOST=0.0.0.0`
 
 Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.

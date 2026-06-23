@@ -49,9 +49,9 @@
         "jzaleski/high": {
           "name": "jzaleski/high",
           "limit": {
-            "context": 262144,
-            "input": 229376,
-            "output": 32768
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
           },
           "modalities": {
             "input": ["text", "image"],
@@ -94,9 +94,9 @@
         "jzaleski/high": {
           "name": "jzaleski/high",
           "limit": {
-            "context": 262144,
-            "input": 229376,
-            "output": 32768
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
           },
           "modalities": {
             "input": ["text", "image"],
