@@ -62,6 +62,7 @@ run_low() {
     --cache-type-v     q4_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
+    --reasoning-preserve \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -88,6 +89,7 @@ run_medium() {
     --cache-type-v     q4_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
+    --reasoning-preserve \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -114,6 +116,7 @@ run_high() {
     --cache-type-v     q8_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
+    --reasoning-preserve \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -140,6 +143,7 @@ run_long() {
     --cache-type-v     q8_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
+    --reasoning-preserve \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -161,6 +165,7 @@ run_low_multimodal() {
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
+    --image-min-tokens 1024 \
     --alias            jzaleski/low-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
@@ -171,6 +176,7 @@ run_low_multimodal() {
     --ctx-size         32768 \
     --cache-type-k     q8_0 \
     --cache-type-v     q4_0 \
+    --reasoning-preserve \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -188,6 +194,7 @@ run_medium_multimodal() {
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
+    --image-min-tokens 1024 \
     --alias            jzaleski/medium-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
@@ -198,6 +205,7 @@ run_medium_multimodal() {
     --ctx-size         65536 \
     --cache-type-k     q8_0 \
     --cache-type-v     q4_0 \
+    --reasoning-preserve \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -215,6 +223,7 @@ run_high_multimodal() {
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
+    --image-min-tokens 1024 \
     --alias            jzaleski/high-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
@@ -225,6 +234,7 @@ run_high_multimodal() {
     --ctx-size         131072 \
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
+    --reasoning-preserve \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -242,6 +252,7 @@ run_long_multimodal() {
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
+    --image-min-tokens 1024 \
     --alias            jzaleski/long-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
@@ -252,6 +263,7 @@ run_long_multimodal() {
     --ctx-size         262144 \
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
+    --reasoning-preserve \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
