@@ -43,16 +43,32 @@ require_mmproj() {
 # Ensure every model and mmproj file referenced by the router preset exists,
 # downloading any that are missing.  Mirrors the per-tier definitions in
 # bin/run-model and the sections in templates/llama-cpp.ini.template.
+#
+# The router serves 6 aliases: fast/no-vision MTP tiers (low, medium, high)
+# and vision-capable tiers (low-multimodal, medium-multimodal, high-multimodal).
+# long/long-multimodal are standalone-only (excluded from the router preset)
+# and launched via `run-model --tier long` / `--tier long-multimodal`.
 require_models() {
+  local repo_qwen36_mtp="unsloth/Qwen3.6-35B-A3B-MTP-GGUF";
   local repo_qwen36="unsloth/Qwen3.6-35B-A3B-GGUF";
-  # 35B-A3B tiers (low uses Q4_K_XL, medium uses Q6_K_XL, high uses Q8_K_XL);
-  # the multimodal projector is the same F16 file, stored per-model alongside
-  # each .gguf.
+
+  # Fast/no-vision tiers (low, medium, high): unsloth's MTP build, run with
+  # --spec-type draft-mtp speculative decoding. llama.cpp does not yet support
+  # combining --mmproj with MTP speculative decoding, so no multimodal
+  # projector is downloaded here. The MTP repo's filenames are identical to
+  # the non-MTP repo's, so the local copies are disambiguated with a "-MTP-"
+  # infix (see bin/run-model).
+  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q4_K_XL.gguf" "${repo_qwen36_mtp}" "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q6_K_XL.gguf" "${repo_qwen36_mtp}" "Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
+  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q8_K_XL.gguf" "${repo_qwen36_mtp}" "Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
+
+  # Vision-capable tiers (low-multimodal, medium-multimodal, high-multimodal):
+  # unsloth's original (non-MTP) build; the multimodal projector is the same
+  # F16 file, stored per-model alongside each .gguf.
   require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_qwen36}";
   require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_qwen36}";
   require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf" "${repo_qwen36}";
   require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf" "${repo_qwen36}";
-  # high tier (Qwen Q8_K_XL) + its multimodal projector
   require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf" "${repo_qwen36}";
   require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf" "${repo_qwen36}";
 }

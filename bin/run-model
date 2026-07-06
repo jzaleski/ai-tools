@@ -18,7 +18,9 @@ require_model() {
       exit 1;
     };
     # download-model stores under the remote basename; rename to the desired
-    # local name if they differ (e.g. a shared mmproj-F16.gguf kept per-family).
+    # local name if they differ (e.g. a shared mmproj-F16.gguf kept per-family,
+    # or the MTP repo's identically-named files disambiguated with a local
+    # "-MTP-" infix so they don't collide with the non-MTP cache entry).
     local downloaded="$(dirname "${model_file}")/$(basename "${hf_filename}")";
     if [[ "${downloaded}" != "${model_file}" ]] && [[ -f "${downloaded}" ]]; then
       mv "${downloaded}" "${model_file}";
@@ -37,7 +39,121 @@ require_mmproj() {
   require_model "${mmproj_file}" "${hf_repo}" "mmproj-F16.gguf";
 }
 
+# Fast tiers (low/medium/high/long): unsloth's MTP (multi-token prediction)
+# build of Qwen3.6-35B-A3B, run with llama.cpp's `--spec-type draft-mtp`
+# speculative decoding for ~1.5-2x faster inference. llama.cpp does not yet
+# support combining `--mmproj` with MTP speculative decoding, so these tiers
+# are text-only (no vision).
+
 run_low() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-MTP-GGUF" "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/low \
+    --host             "${HOST:-"127.0.0.1"}" \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       2048 \
+    --ubatch-size      512 \
+    --ctx-size         32768 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q4_0 \
+    --spec-type        draft-mtp \
+    --spec-draft-n-max 2 \
+    --predict          32768 \
+    --presence-penalty 0.0 \
+    --repeat-penalty   1.0 \
+    --min-p            0.0 \
+    --temp             0.6 \
+    --top-k            20 \
+    --top-p            0.95;
+}
+
+run_medium() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q6_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-MTP-GGUF" "Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/medium \
+    --host             "${HOST:-"127.0.0.1"}" \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       2048 \
+    --ubatch-size      512 \
+    --ctx-size         65536 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q4_0 \
+    --spec-type        draft-mtp \
+    --spec-draft-n-max 2 \
+    --predict          32768 \
+    --presence-penalty 0.0 \
+    --repeat-penalty   1.0 \
+    --min-p            0.0 \
+    --temp             0.6 \
+    --top-k            20 \
+    --top-p            0.95;
+}
+
+run_high() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q8_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-MTP-GGUF" "Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/high \
+    --host             "${HOST:-"127.0.0.1"}" \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       1024 \
+    --ubatch-size      256 \
+    --ctx-size         131072 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q8_0 \
+    --spec-type        draft-mtp \
+    --spec-draft-n-max 2 \
+    --predict          32768 \
+    --presence-penalty 0.0 \
+    --repeat-penalty   1.0 \
+    --min-p            0.0 \
+    --temp             0.6 \
+    --top-k            20 \
+    --top-p            0.95;
+}
+
+run_long() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q8_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-MTP-GGUF" "Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/long \
+    --host             "${HOST:-"127.0.0.1"}" \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       1024 \
+    --ubatch-size      256 \
+    --ctx-size         262144 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q8_0 \
+    --spec-type        draft-mtp \
+    --spec-draft-n-max 2 \
+    --predict          32768 \
+    --presence-penalty 0.0 \
+    --repeat-penalty   1.0 \
+    --min-p            0.0 \
+    --temp             0.6 \
+    --top-k            20 \
+    --top-p            0.95;
+}
+
+# Multimodal tiers (low-multimodal/medium-multimodal/high-multimodal/long-multimodal):
+# unsloth's original (non-MTP) Qwen3.6-35B-A3B build, loaded with the shared
+# F16 multimodal projector so image input works. No MTP speculative decoding.
+
+run_low_multimodal() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
@@ -45,7 +161,7 @@ run_low() {
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
-    --alias            jzaleski/low \
+    --alias            jzaleski/low-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -64,7 +180,7 @@ run_low() {
     --top-p            0.95;
 }
 
-run_medium() {
+run_medium_multimodal() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
@@ -72,7 +188,7 @@ run_medium() {
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
-    --alias            jzaleski/medium \
+    --alias            jzaleski/medium-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -91,7 +207,7 @@ run_medium() {
     --top-p            0.95;
 }
 
-run_high() {
+run_high_multimodal() {
   local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
@@ -99,7 +215,7 @@ run_high() {
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
-    --alias            jzaleski/high \
+    --alias            jzaleski/high-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -118,24 +234,24 @@ run_high() {
     --top-p            0.95;
 }
 
-run_long() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
+run_long_multimodal() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
-    --alias            jzaleski/long \
+    --alias            jzaleski/long-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
     --n-gpu-layers     -1 \
-    --batch-size       2048 \
-    --ubatch-size      512 \
+    --batch-size       1024 \
+    --ubatch-size      256 \
     --ctx-size         262144 \
     --cache-type-k     q8_0 \
-    --cache-type-v     q4_0 \
+    --cache-type-v     q8_0 \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -159,11 +275,15 @@ for arg in "$@"; do
 done
 
 case "${tier}" in
-  low)    run_low;;
-  medium) run_medium;;
-  high)   run_high;;
-  long)   run_long;;
+  low)               run_low;;
+  medium)            run_medium;;
+  high)              run_high;;
+  long)              run_long;;
+  low-multimodal)    run_low_multimodal;;
+  medium-multimodal) run_medium_multimodal;;
+  high-multimodal)   run_high_multimodal;;
+  long-multimodal)   run_long_multimodal;;
   *)
-    echo "Error: unknown tier '${tier}'. Use: low, medium, high, long" >&2;
+    echo "Error: unknown tier '${tier}'. Use: low, medium, high, long, low-multimodal, medium-multimodal, high-multimodal, long-multimodal" >&2;
     exit 1;;
 esac

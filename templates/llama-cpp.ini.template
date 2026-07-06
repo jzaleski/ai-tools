@@ -4,6 +4,18 @@
 # Each named section becomes a routable model alias.
 # Bind address is supplied by the launcher via --host (HOST env var); it is
 # intentionally not set here.
+#
+# Two variants per tier:
+#   - jzaleski/<tier>             fast/no-vision: unsloth's MTP build, run with
+#                                  spec-type draft-mtp speculative decoding.
+#                                  llama.cpp does not yet support combining
+#                                  mmproj with MTP speculative decoding, so
+#                                  these sections omit mmproj.
+#   - jzaleski/<tier>-multimodal  vision-capable: unsloth's original (non-MTP)
+#                                  build + the shared F16 multimodal projector.
+#                                  No spec-type/spec-draft-n-max.
+# long/long-multimodal are standalone-only (excluded here) — see
+# bin/run-model --tier long / --tier long-multimodal.
 
 [*]
 flash-attn        = on
@@ -17,6 +29,36 @@ top-k             = 20
 top-p             = 0.95
 
 [jzaleski/low]
+model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q4_K_XL.gguf
+ctx-size          = 32768
+batch-size        = 2048
+ubatch-size       = 512
+cache-type-k      = q8_0
+cache-type-v      = q4_0
+spec-type         = draft-mtp
+spec-draft-n-max  = 2
+
+[jzaleski/medium]
+model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q6_K_XL.gguf
+ctx-size          = 65536
+batch-size        = 2048
+ubatch-size       = 512
+cache-type-k      = q8_0
+cache-type-v      = q4_0
+spec-type         = draft-mtp
+spec-draft-n-max  = 2
+
+[jzaleski/high]
+model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q8_K_XL.gguf
+ctx-size          = 131072
+batch-size        = 1024
+ubatch-size       = 256
+cache-type-k      = q8_0
+cache-type-v      = q8_0
+spec-type         = draft-mtp
+spec-draft-n-max  = 2
+
+[jzaleski/low-multimodal]
 model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
 mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj
 ctx-size          = 32768
@@ -25,7 +67,7 @@ ubatch-size       = 512
 cache-type-k      = q8_0
 cache-type-v      = q4_0
 
-[jzaleski/medium]
+[jzaleski/medium-multimodal]
 model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf
 mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.mmproj
 ctx-size          = 65536
@@ -34,7 +76,7 @@ ubatch-size       = 512
 cache-type-k      = q8_0
 cache-type-v      = q4_0
 
-[jzaleski/high]
+[jzaleski/high-multimodal]
 model             = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf
 mmproj            = MODELS_DIR/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.mmproj
 ctx-size          = 131072

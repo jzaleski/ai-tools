@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-35B-A3B Q8_K_XL, 128K ctx), long (Qwen3.6-35B-A3B Q6_K_XL, 256K ctx). The low/medium/high tiers are served by the router; the long tier is **standalone-only** — it is excluded from the router preset and must be launched via `run-model --tier long`. Like the other tiers it binds port `8080` by default; set `PORT` to run it on another port (e.g. `8081`) so it can coexist with the router. Every tier loads an F16 multimodal projector (`--mmproj`, auto-downloaded) so image input works on all tiers. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+Supports four model tiers — low (32K ctx), medium (64K ctx), high (128K ctx), long (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/<tier>`) running unsloth's Qwen3.6-35B-A3B **MTP** (multi-token prediction) build with `--spec-type draft-mtp --spec-draft-n-max 2` speculative decoding, and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the original (non-MTP) Qwen3.6-35B-A3B build with an F16 multimodal projector (`--mmproj`, auto-downloaded). llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. The low/medium/high tiers and their `-multimodal` counterparts (6 aliases) are served by the router; `long` and `long-multimodal` are **standalone-only** — excluded from the router preset and must be launched via `run-model --tier long` / `--tier long-multimodal`. Like the other tiers they bind port `8080` by default; set `PORT` to run one on another port (e.g. `8081`) so it can coexist with the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -34,10 +34,10 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
 │   ├── configure-opencode                 # Installs opencode-ai and configures shell init
 │   ├── download-model                     # Downloads a single GGUF file from Hugging Face via curl
-│   ├── run-model                          # Direct llama-server launcher (single model + mmproj, --tier low|medium|high|long)
-│   └── run-router                         # Router server (llama.cpp, multi-model + mmproj; HOST env toggles bind)
+│   ├── run-model                          # Direct llama-server launcher (single model, --tier low|medium|high|long|<tier>-multimodal)
+│   └── run-router                         # Router server (llama.cpp, multi-model; HOST env toggles bind)
 ├── templates/                             # llama-server INI preset templates
-│   └── llama-cpp.ini.template             # Router preset (low: 32K, medium: 64K, high: 128K ctx; per-tier mmproj for vision)
+│   └── llama-cpp.ini.template             # Router preset (6 aliases: low/medium/high + -multimodal counterparts; ctx 32K/64K/128K)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (data, engineer, product)
@@ -51,17 +51,19 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ## Build/Test Commands
 
-Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose on the LAN. `run-model` takes an optional `--tier` flag (low/medium/high/long, default medium):
+Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose on the LAN. `run-model` takes an optional `--tier` flag (low/medium/high/long, or their `-multimodal` counterparts; default medium):
 
 ```bash
 ./bin/run-router                           # multi-model router, localhost (8080)
 HOST=0.0.0.0 ./bin/run-router              # multi-model router, exposed on LAN
 # Clients select tier via: ?model=jzaleski/low  jzaleski/medium  jzaleski/high
+#                          jzaleski/low-multimodal  jzaleski/medium-multimodal  jzaleski/high-multimodal
 
 ./bin/run-model                            # single model, medium tier, localhost (8080)
-./bin/run-model --tier low                 # single model, low tier
-./bin/run-model --tier high                # single model, high tier
-./bin/run-model --tier long                # single model, long tier
+./bin/run-model --tier low                 # single model, low tier (fast, no vision)
+./bin/run-model --tier high                # single model, high tier (fast, no vision)
+./bin/run-model --tier long                # single model, long tier (fast, no vision)
+./bin/run-model --tier high-multimodal     # single model, high tier (vision-capable)
 HOST=0.0.0.0 ./bin/run-model --tier high   # single model, high tier, exposed on LAN
 ```
 
@@ -94,7 +96,7 @@ Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-model`
 - Scripts: `run-{component}`
 - Bind toggle: `HOST` env var (`127.0.0.1` default / `0.0.0.0` for LAN)
 - Ports: 8080 (all scripts)
-- Aliases: `jzaleski/{tier}`
+- Aliases: `jzaleski/{tier}` (fast, no vision) / `jzaleski/{tier}-multimodal` (vision-capable)
 
 ---
 
@@ -116,13 +118,17 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │         Router Server            │ (Port 8080)
 │        --models-preset           │
 │                                  │
-│       ┌─────────────────┐        │
-│       │ jzaleski/low    │        │
-│       │ jzaleski/medium │        │
-│       │ jzaleski/high   │        │
-│       └─────────────────┘        │
+│       ┌───────────────────────┐  │
+│       │ jzaleski/low          │  │
+│       │ jzaleski/low-multimodal│ │
+│       │ jzaleski/medium        │ │
+│       │ jzaleski/medium-multimodal│
+│       │ jzaleski/high          │ │
+│       │ jzaleski/high-multimodal│ │
+│       └───────────────────────┘  │
 └──────────────────────────────────┘
 ```
+(`jzaleski/long` and `jzaleski/long-multimodal` are standalone-only, via `run-model --tier long` / `--tier long-multimodal`.)
 
 ---
 
@@ -171,10 +177,10 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 ```
 
 The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 32K, medium: 64K, high: 128K); models: `jzaleski/low` (Qwen3.6-35B-A3B Q4_K_XL), `jzaleski/medium` (Qwen3.6-35B-A3B Q6_K_XL), `jzaleski/high` (Qwen3.6-35B-A3B Q8_K_XL). The `long` tier is **not** wired into opencode — it is standalone-only via `run-model --tier long` (port `8080` by default; override `PORT` to coexist with the router).
-- **llama.cpp (server)**: `server-hostname-or-ip:8080` — same three aliases and contexts; reach this endpoint by launching with `HOST=0.0.0.0`
+- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 32K, medium: 64K, high: 128K); 6 models: `jzaleski/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.6-35B-A3B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively. `long`/`long-multimodal` are **not** wired into opencode — they are standalone-only via `run-model --tier long` / `--tier long-multimodal` (port `8080` by default; override `PORT` to coexist with the router).
+- **llama.cpp (server)**: `server-hostname-or-ip:8080` — same 6 aliases and contexts; reach this endpoint by launching with `HOST=0.0.0.0`
 
-Each provider specifies model limits for context window, input tokens, and output tokens. Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
+Each provider specifies model limits for context window, input tokens, and output tokens, plus per-model `modalities` (`jzaleski/<tier>` is text-only input; `jzaleski/<tier>-multimodal` is text+image input). Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
 ### Disabled Providers & Built-in Agents
 
@@ -246,10 +252,11 @@ Pinned versions live in top-level dotfiles:
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- KV cache quantization is tier-specific: low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q4_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces
+- KV cache quantization is tier-specific: low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces; V-cache matches `high`'s q8_0 on `long` too; identical between a tier and its `-multimodal` counterpart
 - Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
-- Batch/ubatch is tier-specific and scales inversely with context for steady latency on Apple Silicon: low & medium & long=2048/512, high=1024/256
+- Batch/ubatch is tier-specific and scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.6-35B-A3B family (no architecture change to drive retuning)
 - Sampling defaults are tuned for coding and tool-calling per Qwen3.6's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`. Server-side `predict=32768` caps default output length (clients may override via `max_tokens`).
+- MTP speculative decoding (`jzaleski/low|medium|high|long`): `--spec-type draft-mtp --spec-draft-n-max 2`, per the unsloth model card's recommended settings, for ~1.5-2x faster inference; llama.cpp does not yet support combining this with `--mmproj`, so these tiers are text-only
 
 ## Troubleshooting
 

@@ -30,6 +30,18 @@
             "output": 4096
           },
           "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/low-multimodal": {
+          "name": "jzaleski/low-multimodal",
+          "limit": {
+            "context": 32768,
+            "input": 28672,
+            "output": 4096
+          },
+          "modalities": {
             "input": ["text", "image"],
             "output": ["text"]
           }
@@ -42,12 +54,36 @@
             "output": 8192
           },
           "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/medium-multimodal": {
+          "name": "jzaleski/medium-multimodal",
+          "limit": {
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
+          },
+          "modalities": {
             "input": ["text", "image"],
             "output": ["text"]
           }
         },
         "jzaleski/high": {
           "name": "jzaleski/high",
+          "limit": {
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/high-multimodal": {
+          "name": "jzaleski/high-multimodal",
           "limit": {
             "context": 131072,
             "input": 114688,
@@ -75,6 +111,18 @@
             "output": 4096
           },
           "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/low-multimodal": {
+          "name": "jzaleski/low-multimodal",
+          "limit": {
+            "context": 32768,
+            "input": 28672,
+            "output": 4096
+          },
+          "modalities": {
             "input": ["text", "image"],
             "output": ["text"]
           }
@@ -87,12 +135,36 @@
             "output": 8192
           },
           "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/medium-multimodal": {
+          "name": "jzaleski/medium-multimodal",
+          "limit": {
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
+          },
+          "modalities": {
             "input": ["text", "image"],
             "output": ["text"]
           }
         },
         "jzaleski/high": {
           "name": "jzaleski/high",
+          "limit": {
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
+          },
+          "modalities": {
+            "input": ["text"],
+            "output": ["text"]
+          }
+        },
+        "jzaleski/high-multimodal": {
+          "name": "jzaleski/high-multimodal",
           "limit": {
             "context": 131072,
             "input": 114688,
