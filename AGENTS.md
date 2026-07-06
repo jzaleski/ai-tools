@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-35B-A3B Q8_K_XL, 128K ctx), long (Qwen3.6-35B-A3B Q8_K_XL, 256K ctx). The low/medium/high tiers are served by the router; the long tier is **standalone-only** — it is excluded from the router preset and must be launched via `run-model --tier long`. Like the other tiers it binds port `8080` by default; set `PORT` to run it on another port (e.g. `8081`) so it can coexist with the router. Every tier loads an F16 multimodal projector (`--mmproj`, auto-downloaded) so image input works on all tiers. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+Supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-35B-A3B Q8_K_XL, 128K ctx), long (Qwen3.6-35B-A3B Q6_K_XL, 256K ctx). The low/medium/high tiers are served by the router; the long tier is **standalone-only** — it is excluded from the router preset and must be launched via `run-model --tier long`. Like the other tiers it binds port `8080` by default; set `PORT` to run it on another port (e.g. `8081`) so it can coexist with the router. Every tier loads an F16 multimodal projector (`--mmproj`, auto-downloaded) so image input works on all tiers. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -246,9 +246,9 @@ Pinned versions live in top-level dotfiles:
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- KV cache quantization is tier-specific: low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces
+- KV cache quantization is tier-specific: low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q4_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces
 - Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
-- Batch/ubatch is tier-specific and scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256
+- Batch/ubatch is tier-specific and scales inversely with context for steady latency on Apple Silicon: low & medium & long=2048/512, high=1024/256
 - Sampling defaults are tuned for coding and tool-calling per Qwen3.6's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`. Server-side `predict=32768` caps default output length (clients may override via `max_tokens`).
 
 ## Troubleshooting

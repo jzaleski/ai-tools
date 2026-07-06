@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-35B-A3B Q8_K_XL, 128K ctx), and long (Qwen3.6-35B-A3B Q8_K_XL, 256K ctx for long agent sessions). All four tiers run within the Qwen3.6 family (speed → quality → context). The low/medium/high tiers are served by the router on port `8080`; `long` is **standalone-only** — excluded from the router preset and launched via `run-model --tier long`. It also defaults to port `8080`; set `PORT` (e.g. `8081`) to run it alongside the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
+This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (Qwen3.6-35B-A3B Q4_K_XL, 32K ctx), medium (Qwen3.6-35B-A3B Q6_K_XL, 64K ctx), high (Qwen3.6-35B-A3B Q8_K_XL, 128K ctx), and long (Qwen3.6-35B-A3B Q6_K_XL, 256K ctx for long agent sessions). All four tiers run within the Qwen3.6 family (speed → quality → context). The low/medium/high tiers are served by the router on port `8080`; `long` is **standalone-only** — excluded from the router preset and launched via `run-model --tier long`. It also defaults to port `8080`; set `PORT` (e.g. `8081`) to run it alongside the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -171,7 +171,7 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 | low | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q4_K_XL` | q8_0/q4_0 | 32,768 | 2048 / 512 |
 | medium | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
 | high | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q8_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
-| long | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
+| long | `unsloth/Qwen3.6-35B-A3B-GGUF` | `UD-Q6_K_XL` | q8_0/q4_0 | 262,144 | 2048 / 512 |
 
 > The `long` tier is standalone-only — it is excluded from the router preset and must be launched via `run-model --tier long`. It defaults to port 8080 like the other tiers; set `PORT` (e.g. 8081) to run it alongside the router.
 
@@ -389,9 +389,9 @@ opencode [options] [query]
 ## Performance Tips
 
 - GPU acceleration enabled with flash attention by default
-- KV cache quantization is tier-specific: low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces
+- KV cache quantization is tier-specific: low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q4_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces
 - Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
-- Batch/ubatch scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256
+- Batch/ubatch scales inversely with context for steady latency on Apple Silicon: low & medium & long=2048/512, high=1024/256
 - Sampling defaults are tuned for coding and tool-calling per Qwen3.6's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`; server-side `predict=32768` caps default output length
 
 ## Troubleshooting
