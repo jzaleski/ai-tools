@@ -63,6 +63,9 @@ run_low() {
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
     --reasoning-preserve \
+    --cache-reuse      256 \
+    --cache-ram        -1 \
+    --mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -90,6 +93,9 @@ run_medium() {
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
     --reasoning-preserve \
+    --cache-reuse      256 \
+    --cache-ram        -1 \
+    --mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -117,6 +123,9 @@ run_high() {
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
     --reasoning-preserve \
+    --cache-reuse      256 \
+    --cache-ram        -1 \
+    --mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -144,6 +153,9 @@ run_long() {
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
     --reasoning-preserve \
+    --cache-reuse      256 \
+    --cache-ram        -1 \
+    --mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -177,6 +189,9 @@ run_low_multimodal() {
     --cache-type-k     q8_0 \
     --cache-type-v     q4_0 \
     --reasoning-preserve \
+    --cache-reuse      256 \
+    --cache-ram        -1 \
+    --mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -206,6 +221,9 @@ run_medium_multimodal() {
     --cache-type-k     q8_0 \
     --cache-type-v     q4_0 \
     --reasoning-preserve \
+    --cache-reuse      256 \
+    --cache-ram        -1 \
+    --mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -235,6 +253,9 @@ run_high_multimodal() {
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
     --reasoning-preserve \
+    --cache-reuse      256 \
+    --cache-ram        -1 \
+    --mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -264,6 +285,9 @@ run_long_multimodal() {
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
     --reasoning-preserve \
+    --cache-reuse      256 \
+    --cache-ram        -1 \
+    --mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \

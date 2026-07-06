@@ -259,6 +259,8 @@ Pinned versions live in top-level dotfiles:
 - MTP speculative decoding (`jzaleski/low|medium|high|long`): `--spec-type draft-mtp --spec-draft-n-max 2`, per the unsloth model card's recommended settings, for ~1.5-2x faster inference; llama.cpp does not yet support combining this with `--mmproj`, so these tiers are text-only
 - `--reasoning-preserve` is set on all 8 tiers (server-wide default for the chat template's `preserve_reasoning` kwarg, matching Qwen3.6's agentic-use recommendation) — preserves full reasoning traces across turns at the cost of larger accumulated per-turn context; reconsider on the smaller tiers if context-constrained
 - `--image-min-tokens 1024` is set on all `-multimodal` tiers to preserve grounding/bbox accuracy on Qwen-VL models (see [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842))
+- `--cache-reuse 256` + `--cache-ram -1` are set on all 8 tiers — reuses KV cache for the shared prefix when a request extends a previous prompt (the common shape of an agent loop), with the idle-slot cache's default 8GiB budget removed given RAM to spare; pairs well with `--reasoning-preserve` making prompts grow faster
+- `--mlock` is set on all 8 tiers to pin model weights in RAM, avoiding macOS's background memory compression and the decompression stall it would otherwise cause on the first request after an idle period
 
 ## Troubleshooting
 

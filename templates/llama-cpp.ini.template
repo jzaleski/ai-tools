@@ -21,6 +21,9 @@
 flash-attn         = on
 n-gpu-layers       = -1
 reasoning-preserve = 1
+cache-reuse        = 256
+cache-ram          = -1
+mlock              = 1
 predict            = 32768
 presence-penalty   = 0.0
 repeat-penalty     = 1.0
