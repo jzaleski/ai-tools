@@ -12,19 +12,19 @@ require_model() {
   local hf_filename="${3:-"$(basename "${model_file}")"}";
   if [[ ! -f "${model_file}" ]]; then
     echo "Model not found: ${model_file}";
-    echo "Downloading ${hf_repo}/${hf_filename} ...";
-    "$(dirname "$0")/download-model" "${hf_repo}" "${hf_filename}" || {
+    echo "Downloading ${hf_repo}/${hf_filename} -> ${model_file} ...";
+    # Pass basename(model_file) as the explicit local filename so
+    # download-model saves directly under the disambiguated local name (e.g.
+    # a "-MTP-" infix) instead of the remote basename. This matters whenever
+    # hf_filename differs from basename(model_file) — e.g. the MTP repo ships
+    # files with the exact same names as the non-MTP repo, so without an
+    # explicit local name download-model's existence check can't tell the two
+    # repos' files apart and will wrongly skip a real download (and a
+    # subsequent rename would silently mislabel the wrong repo's weights).
+    "$(dirname "$0")/download-model" "${hf_repo}" "${hf_filename}" "$(basename "${model_file}")" || {
       echo "Error: download failed." >&2;
       exit 1;
     };
-    # download-model stores under the remote basename; rename to the desired
-    # local name if they differ (e.g. a shared mmproj-F16.gguf kept per-family,
-    # or the MTP repo's identically-named files disambiguated with a local
-    # "-MTP-" infix so they don't collide with the non-MTP cache entry).
-    local downloaded="$(dirname "${model_file}")/$(basename "${hf_filename}")";
-    if [[ "${downloaded}" != "${model_file}" ]] && [[ -f "${downloaded}" ]]; then
-      mv "${downloaded}" "${model_file}";
-    fi
   fi
 }
 

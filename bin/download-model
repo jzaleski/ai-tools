@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# download-model <hf-repo> <hf-filename> [--force]
+# download-model <hf-repo> <hf-filename> [local-filename] [--force]
 #
 # Downloads a single GGUF file from Hugging Face directly via curl.
 # Skips the download if the file already exists unless --force is passed, in
@@ -10,8 +10,17 @@
 # e.g. unsloth/Qwen3.6-35B-A3B-GGUF downloads into <MODELS_DIR>/unsloth/.
 #
 # Arguments (positional, in order):
-#   hf-repo      e.g. unsloth/Qwen3.6-35B-A3B-GGUF
-#   hf-filename  e.g. Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+#   hf-repo         e.g. unsloth/Qwen3.6-35B-A3B-GGUF
+#   hf-filename     e.g. Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf (used to build the
+#                   download URL)
+#   local-filename  optional; the filename to save under (default:
+#                   hf-filename). Use this to disambiguate two repos under
+#                   the same provider that happen to ship identically-named
+#                   files (e.g. an MTP repo vs. its non-MTP counterpart) —
+#                   without it, the existence check below can't tell the
+#                   two repos' files apart and will wrongly skip a real
+#                   download because a same-named file from a *different*
+#                   repo already exists at that path.
 #
 # Flags:
 #   --force      delete the existing file and re-download
@@ -23,7 +32,7 @@
 set -e;
 
 usage() {
-  echo "Usage: $(basename "$0") <hf-repo> <hf-filename> [--force]" >&2;
+  echo "Usage: $(basename "$0") <hf-repo> <hf-filename> [local-filename] [--force]" >&2;
   exit 1;
 }
 
@@ -33,20 +42,22 @@ fi
 
 hf_repo="${1}";
 hf_filename="${2}";
+local_filename="${hf_filename}";
 provider="${hf_repo%%/*}";
 dest_path="${MODELS_DIR:-"${HOME}/.cache/models"}/${provider}";
 # hf_filename may include a subdirectory (e.g. "UD-Q8_K_XL/file-00001-of-00006.gguf");
-# preserve that structure under dest_path.
+# preserve that structure under dest_path unless local-filename overrides it.
 force=false;
 
 for arg in "${@:3}"; do
   case "${arg}" in
     --force) force=true;;
-    *) echo "Unknown flag: ${arg}" >&2; usage;;
+    --*) echo "Unknown flag: ${arg}" >&2; usage;;
+    *) local_filename="${arg}";;
   esac
 done
 
-dest_file="${dest_path}/${hf_filename}";
+dest_file="${dest_path}/${local_filename}";
 
 if [[ "${force}" == "true" ]] && [[ -f "${dest_file}" ]]; then
   echo "Removing existing file: ${dest_file}";
