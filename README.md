@@ -107,7 +107,7 @@ These versions are managed and installed via the bootstrap system.
 
 ## Opencode Agent Configuration(s)
 
-The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
+The project includes `opencode-ai` (v1.17.15) agent configurations in `home/.config/opencode/`:
 
 - **data.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
 - **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
