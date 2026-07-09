@@ -101,13 +101,13 @@ The project tracks specific versions of key development tools in version files:
 |------|-------------|---------|
 | `.default-node-version` | Node.js version for nodenv | 24.18.0 |
 | `.default-npm-version` | npm version | 11.16.0 |
-| `.default-opencode-version` | opencode-ai version | opencode-ai@1.17.15 |
+| `.default-opencode-version` | opencode-ai version | 1.17.15 |
 
 These versions are managed and installed via the bootstrap system.
 
 ## Opencode Agent Configuration(s)
 
-The project includes `opencode-ai` (v1.17.15) agent configurations in `home/.config/opencode/`:
+The project includes `opencode-ai`  agent configurations in `home/.config/opencode/`:
 
 - **data.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
 - **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
