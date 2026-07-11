@@ -42,9 +42,9 @@ if [ $(uname) = "Darwin" ]; then
     do
       package_details=$($brew_cmd list $package 2> /dev/null || echo -n);
       if [ -z "$package_details" ]; then
-        $brew_cmd install $package;
+        $brew_cmd install -y $package;
       else
-        $brew_cmd upgrade $package;
+        $brew_cmd upgrade -y $package;
       fi
     done
   fi
