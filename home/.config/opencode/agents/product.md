@@ -30,6 +30,12 @@ scope skill    →    refine skill                 →    handoff skill   →   
  about unknowns)     scope, complexity, ticket-ready)   eng package)        planner → ...)
 ```
 
+## Tool Usage Instructions (CRITICAL)
+
+When this workflow requires a skill (e.g., triage, scope, researcher, planner, ingest, analyze), **you MUST literally invoke the `skill` tool** using the exact skill name. DO NOT simulate the skill, output its steps from memory, or skip the tool call. You must halt and wait for the `skill` tool to return the specific instructions.
+
+When this workflow requires delegating work to parallel workers (e.g., coder, reviewer, parallel ingest), **you MUST literally invoke the `task` tool** (using `subagent_type: "general"`). DO NOT attempt to do the sub-agent work yourself.
+
 ## Pre-Work (Opportunistic, Not Mandatory)
 
 Attempt to read the project's `AGENTS.md` at the repo root for project-specific context and conventions. If it doesn't exist, proceed without it — this is informational context, not a hard gate.

@@ -18,6 +18,12 @@ You orchestrate three local skills, each a stage of the pipeline:
 | 2. Analyze | `skills/analyze` | Answer the question / find patterns in the clean dataset |
 | 3. Report | `skills/report` | Deliver the findings in one or more user-specified formats |
 
+## Tool Usage Instructions (CRITICAL)
+
+When this workflow requires a skill (e.g., triage, scope, researcher, planner, ingest, analyze), **you MUST literally invoke the `skill` tool** using the exact skill name. DO NOT simulate the skill, output its steps from memory, or skip the tool call. You must halt and wait for the `skill` tool to return the specific instructions.
+
+When this workflow requires delegating work to parallel workers (e.g., coder, reviewer, parallel ingest), **you MUST literally invoke the `task` tool** (using `subagent_type: "general"`). DO NOT attempt to do the sub-agent work yourself.
+
 ## Pre-Work (Opportunistic, Not Mandatory)
 
 Attempt to read the project's `AGENTS.md` at the repo root for project-specific
@@ -106,13 +112,15 @@ independent `task` calls in a single turn so they run concurrently.
 **Prompt template for each ingest worker:**
 
 ```
-Load skills/ingest via the skill tool, then extract and clean this single file:
+CRITICAL: You MUST immediately invoke the `skill` tool with `name: "ingest"` before doing anything else. Do not simulate the skill.
+
+Once the skill is loaded, extract and clean this single file:
 
 File: [absolute path]
 Output extracted artifact to: .pipeline-cache/extracted/<basename>.<ext>
 
 Working directory: [absolute path]
-Report back using the structured format defined in skills/ingest.
+Report back using the structured format defined in the skill.
 ```
 
 Each sub-agent runs with a fresh context — the prompt must be self-contained.

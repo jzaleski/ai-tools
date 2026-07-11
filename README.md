@@ -107,6 +107,10 @@ These versions are managed and installed via the bootstrap system.
 
 ## Opencode Agent Configuration(s)
 
+### Gemini 3.1 Pro Specific Adjustments
+
+Gemini tends to skip tool calls (like `skill` and `task`) and attempts to simulate their execution inline. To prevent this, the agents and prompt templates have been updated with `CRITICAL` sections forcing literal tool execution.
+
 The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
 
 - **data.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
