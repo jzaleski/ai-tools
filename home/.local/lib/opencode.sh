@@ -137,6 +137,28 @@ if [ "$reset_opencode_models_cache" = "true" ] && [ -e "$opencode_models_cache_f
 fi
 
 # =============================================================================
+# DEFAULT MODEL CONFIGURATION
+# =============================================================================
+# Read the default model from .opencode-model in the repo root (or pwd) if it
+# exists, and append --model to the opencode arguments if not already specified.
+
+opencode_model_file="$(${git_cmd} rev-parse --show-toplevel 2> /dev/null || pwd)/.opencode-model";
+has_model_arg=0;
+for arg in "$@"; do
+  if [[ "$arg" == "--model" ]] || [[ "$arg" == "-m" ]]; then
+    has_model_arg=1;
+    break;
+  fi
+done
+
+if [[ "$has_model_arg" -eq 0 ]] && [[ -e "$opencode_model_file" ]]; then
+  opencode_model=$(${cat_cmd} "$opencode_model_file" 2> /dev/null | xargs);
+  if [[ -n "$opencode_model" ]]; then
+    set -- "$@" --model "$opencode_model";
+  fi
+fi
+
+# =============================================================================
 # EXECUTE OPENCODE
 # =============================================================================
 # Run the actual opencode command with all arguments (potentially modified
