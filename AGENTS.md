@@ -209,6 +209,7 @@ Toggle `enabled: true` in `opencode.json` to activate.
 - Persists the last session ID to `.last-opencode-session` in the git repo root
 - Resumes via `--continue` / `-s` / `--session` using the persisted ID
 - Resets model history and clears model cache on fresh sessions (configurable via `RESET_OPENCODE_HISTORY`, `RESET_OPENCODE_MODELS_CACHE`)
+- Reads default `--model`/`--agent` values from `.opencode-config` (JSON) in the git repo root, applied only when not already passed as a CLI flag; invalid JSON logs a warning to stderr and is otherwise ignored. Unlike `.last-opencode-session` (per-user, gitignored), `.opencode-config` is meant to be committed
 - Required binaries (all installed via bootstrap): `cat`, `git`, `jq`, `opencode`, `sqlite3`
 
 ---
