@@ -418,6 +418,23 @@ opencode [options] [query]
 - Automatically resets opencode model history on session start (configurable)
 - Clears model cache to ensure fresh model selection
 - Supports `--continue`, `-s`, or `--session` flags to preserve history/cache across invocations
+- Reads default `--model`/`--agent` values from `.opencode-config` (JSON) in the git repo root, applied only when the corresponding flag isn't already passed on the command line
+
+**Default Model/Agent Configuration**
+
+Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
+
+```json
+{
+  "model": "jzaleski/high",
+  "agent": "engineer"
+}
+```
+
+- Both keys are optional — set either, both, or neither.
+- Precedence (highest to lowest): explicit CLI flag (`--model`/`-m`, `--agent`) → `.opencode-config` → `opencode.json`'s `default_agent`/defaults.
+- Invalid JSON prints a warning to stderr and is otherwise ignored — the underlying `opencode` command still runs.
+- Unlike `.last-opencode-session`, this file is meant to be committed to the repo.
 
 **Required binaries** (all installed via bootstrap): `cat`, `git`, `jq`, `opencode`, `sqlite3`
 

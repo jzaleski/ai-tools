@@ -6,6 +6,9 @@
 #   1. Persists the last session ID to .last-opencode-session in the repo root
 #   2. Resumes sessions via --continue by reading the persisted session ID
 #   3. Resets opencode history/cache on new sessions (configurable via env vars)
+#   4. Reads default --model/--agent values from .opencode-config (JSON) in
+#      the repo root if present, applied only when not already passed on
+#      the command line
 #
 # The session persistence enables resuming sessions even after moving the repo
 # to a different location on the filesystem, which is useful when working across
@@ -137,24 +140,42 @@ if [ "$reset_opencode_models_cache" = "true" ] && [ -e "$opencode_models_cache_f
 fi
 
 # =============================================================================
-# DEFAULT MODEL CONFIGURATION
+# DEFAULT MODEL/AGENT CONFIGURATION
 # =============================================================================
-# Read the default model from .opencode-model in the repo root (or pwd) if it
-# exists, and append --model to the opencode arguments if not already specified.
+# Read default --model and --agent values from .opencode-config (JSON) in the
+# repo root (or pwd) if it exists, and append them to the opencode arguments
+# for any flag not already specified on the command line. Invalid JSON is
+# reported as a warning to stderr and otherwise ignored (the underlying
+# opencode command still runs normally, falling through to CLI flags and
+# opencode.json defaults).
 
-opencode_model_file="$(${git_cmd} rev-parse --show-toplevel 2> /dev/null || pwd)/.opencode-model";
+opencode_config_file="$(${git_cmd} rev-parse --show-toplevel 2> /dev/null || pwd)/.opencode-config";
+
 has_model_arg=0;
+has_agent_arg=0;
 for arg in "$@"; do
   if [[ "$arg" == "--model" ]] || [[ "$arg" == "-m" ]]; then
     has_model_arg=1;
-    break;
+  fi
+  if [[ "$arg" == "--agent" ]]; then
+    has_agent_arg=1;
   fi
 done
 
-if [[ "$has_model_arg" -eq 0 ]] && [[ -e "$opencode_model_file" ]]; then
-  opencode_model=$(${cat_cmd} "$opencode_model_file" 2> /dev/null | xargs);
-  if [[ -n "$opencode_model" ]]; then
-    set -- "$@" --model "$opencode_model";
+if [[ -e "$opencode_config_file" ]]; then
+  if ${jq_cmd} empty "$opencode_config_file" 2> /dev/null; then
+    opencode_config_model=$(${jq_cmd} -r '.model // empty' "$opencode_config_file" 2> /dev/null);
+    opencode_config_agent=$(${jq_cmd} -r '.agent // empty' "$opencode_config_file" 2> /dev/null);
+
+    if [[ "$has_model_arg" -eq 0 ]] && [[ -n "$opencode_config_model" ]]; then
+      set -- "$@" --model "$opencode_config_model";
+    fi
+
+    if [[ "$has_agent_arg" -eq 0 ]] && [[ -n "$opencode_config_agent" ]]; then
+      set -- "$@" --agent "$opencode_config_agent";
+    fi
+  else
+    echo "Warning: .opencode-config contains invalid JSON, ignoring" >&2;
   fi
 fi
 
