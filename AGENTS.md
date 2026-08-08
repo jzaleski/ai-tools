@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports four model tiers — low (32K ctx), medium (64K ctx), high (128K ctx), long (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/<tier>`) running unsloth's Qwen3.6-35B-A3B **MTP** (multi-token prediction) build with `--spec-type draft-mtp --spec-draft-n-max 2` speculative decoding, and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the original (non-MTP) Qwen3.6-35B-A3B build with an F16 multimodal projector (`--mmproj`, auto-downloaded). llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. The low/medium/high tiers and their `-multimodal` counterparts (6 aliases) are served by the router; `long` and `long-multimodal` are **standalone-only** — excluded from the router preset and must be launched via `run-model --tier long` / `--tier long-multimodal`. Like the other tiers they bind port `8080` by default; set `PORT` to run one on another port (e.g. `8081`) so it can coexist with the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+Supports four model tiers — low (32K ctx), medium (64K ctx), high (128K ctx), long (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/<tier>`) running unsloth's Qwen3.6-35B-A3B **MTP** (multi-token prediction) build with `--spec-type draft-mtp --spec-draft-n-max 2` speculative decoding, and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the original (non-MTP) Qwen3.6-35B-A3B build with an F16 multimodal projector (`--mmproj`, auto-downloaded). llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. The low/medium/high tiers and their `-multimodal` counterparts (6 aliases) are served by the router; `long` and `long-multimodal` are **standalone-only** — excluded from the router preset and must be launched via `run-model --tier long` / `--tier long-multimodal`. There is also an `experimental` tier (DeepSeek-V4-Flash, 256K ctx) available standalone via `run-model --tier experimental`. Like the other tiers they bind port `8080` by default; set `PORT` to run one on another port (e.g. `8081`) so it can coexist with the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -67,6 +67,7 @@ HOST=0.0.0.0 ./bin/run-router              # multi-model router, exposed on LAN
 ./bin/run-model --tier low                 # single model, low tier (fast, no vision)
 ./bin/run-model --tier high                # single model, high tier (fast, no vision)
 ./bin/run-model --tier long                # single model, long tier (fast, no vision)
+./bin/run-model --tier experimental        # single model, experimental tier (DeepSeek-V4-Flash)
 ./bin/run-model --tier high-multimodal     # single model, high tier (vision-capable)
 HOST=0.0.0.0 ./bin/run-model --tier high   # single model, high tier, exposed on LAN
 ```
@@ -132,7 +133,7 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │       └───────────────────────┘  │
 └──────────────────────────────────┘
 ```
-(`jzaleski/long` and `jzaleski/long-multimodal` are standalone-only, via `run-model --tier long` / `--tier long-multimodal`.)
+(`jzaleski/long`, `jzaleski/long-multimodal`, and `jzaleski/experimental` are standalone-only, via `run-model --tier <tier>`.)
 
 ---
 

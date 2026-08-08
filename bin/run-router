@@ -16,15 +16,12 @@ require_model() {
   if [[ ! -f "${model_file}" ]]; then
     echo "Model not found: ${model_file}";
     echo "Downloading ${hf_repo}/${hf_filename} -> ${model_file} ...";
-    # Pass basename(model_file) as the explicit local filename so
-    # download-model saves directly under the disambiguated local name (e.g.
-    # a "-MTP-" infix) instead of the remote basename. This matters whenever
-    # hf_filename differs from basename(model_file) — e.g. the MTP repo ships
-    # files with the exact same names as the non-MTP repo, so without an
-    # explicit local name download-model's existence check can't tell the two
-    # repos' files apart and will wrongly skip a real download (and a
-    # subsequent rename would silently mislabel the wrong repo's weights).
-    "$(dirname "$0")/download-model" "${hf_repo}" "${hf_filename}" "$(basename "${model_file}")" || {
+    # Pass model_file as the explicit local filename so download-model
+    # saves directly under the exact absolute path requested. This enables
+    # both disambiguated local names (e.g. a "-MTP-" infix) and custom
+    # directory structures (e.g. provider/repo/file.gguf) regardless of
+    # the remote path structure.
+    "$(dirname "$0")/download-model" "${hf_repo}" "${hf_filename}" "${model_file}" || {
       echo "Error: download failed." >&2;
       exit 1;
     };

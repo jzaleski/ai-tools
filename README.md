@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (32K ctx), medium (64K ctx), high (128K ctx), and long (256K ctx for long agent sessions) — each available in two variants: a fast, text-only variant (`jzaleski/<tier>`) running unsloth's Qwen3.6-35B-A3B **MTP** (multi-token prediction) build with `--spec-type draft-mtp` speculative decoding for ~1.5-2x faster inference, and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the original (non-MTP) Qwen3.6-35B-A3B build with a multimodal projector. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup. All eight aliases run within the Qwen3.6-35B-A3B family (speed → quality → context; fast → vision-capable). The low/medium/high tiers and their `-multimodal` counterparts (6 aliases total) are served by the router on port `8080`; `long` and `long-multimodal` are **standalone-only** — excluded from the router preset and launched via `run-model --tier long` / `--tier long-multimodal`. `run-model` also defaults to port `8080`; set `PORT` (e.g. `8081`) to run it alongside the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
+This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (32K ctx), medium (64K ctx), high (128K ctx), and long (256K ctx for long agent sessions) — each available in two variants: a fast, text-only variant (`jzaleski/<tier>`) running unsloth's Qwen3.6-35B-A3B **MTP** (multi-token prediction) build with `--spec-type draft-mtp` speculative decoding for ~1.5-2x faster inference, and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the original (non-MTP) Qwen3.6-35B-A3B build with a multimodal projector. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup. All eight aliases run within the Qwen3.6-35B-A3B family (speed → quality → context; fast → vision-capable). The low/medium/high tiers and their `-multimodal` counterparts (6 aliases total) are served by the router on port `8080`; `long` and `long-multimodal` are **standalone-only** — excluded from the router preset and launched via `run-model --tier long` / `--tier long-multimodal`. There is also an `experimental` tier (DeepSeek-V4-Flash) available standalone via `run-model --tier experimental`. `run-model` also defaults to port `8080`; set `PORT` (e.g. `8081`) to run it alongside the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -187,10 +187,11 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 | medium-multimodal | `UD-Q6_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
 | high-multimodal | `UD-Q8_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
 | long-multimodal | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
+| experimental | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
 
 Batch/ubatch are identical between a tier and its `-multimodal` counterpart — both stay in the same Qwen3.6-35B-A3B family (no architecture change), so there was no technical driver to retune them.
 
-> `long`/`long-multimodal` are standalone-only — excluded from the router preset and must be launched via `run-model --tier long` / `--tier long-multimodal`. They default to port 8080 like the other tiers; set `PORT` (e.g. 8081) to run one alongside the router.
+> `long`, `long-multimodal`, and `experimental` are standalone-only — excluded from the router preset and must be launched via `run-model --tier <tier>`. They default to port 8080 like the other tiers; set `PORT` (e.g. 8081) to run one alongside the router.
 
 **MTP speculative decoding:** The fast tiers load unsloth's MTP (multi-token prediction) build and run llama.cpp with `--spec-type draft-mtp --spec-draft-n-max 2`, per the model card's recommended settings, for ~1.5-2x faster inference. The MTP repo's per-quant filenames are identical to the non-MTP repo's (e.g. both ship `Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf`), so the local cache disambiguates them with a `-MTP-` infix (e.g. `Qwen3.6-35B-A3B-MTP-UD-Q4_K_XL.gguf`). `download-model` takes an explicit local filename (`download-model <hf-repo> <hf-filename> [local-filename]`) so it saves directly under that disambiguated name — without it, the existence check can't tell the two repos' same-named files apart and would wrongly skip downloading one of them.
 
@@ -233,6 +234,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 ./bin/run-model --tier low
 ./bin/run-model --tier high
 ./bin/run-model --tier long
+./bin/run-model --tier experimental
 
 # Start single model — vision-capable variant
 ./bin/run-model --tier high-multimodal
@@ -256,14 +258,14 @@ curl http://localhost:8080/v1/chat/completions?model=jzaleski/medium            
 curl http://localhost:8080/v1/chat/completions?model=jzaleski/medium-multimodal ...
 curl http://localhost:8080/v1/chat/completions?model=jzaleski/high              ...
 curl http://localhost:8080/v1/chat/completions?model=jzaleski/high-multimodal   ...
-# jzaleski/long and jzaleski/long-multimodal are standalone-only:
-# run `./bin/run-model --tier long` (or `--tier long-multimodal`), then curl
+# jzaleski/long, jzaleski/long-multimodal, and jzaleski/experimental are standalone-only:
+# run `./bin/run-model --tier <tier>`, then curl
 # the port it is listening on (8080 by default; set PORT to change it)
 ```
 
 ## Architecture
 
-The router listens on port 8080 and serves 6 aliases: the low/medium/high tiers and their `-multimodal` counterparts. The `long`/`long-multimodal` tiers are standalone-only and served directly by `run-model --tier long` / `--tier long-multimodal`. Alternatively, `run-model` bypasses the router and starts a single llama-server directly for any of the 8 tiers. Both bind to `127.0.0.1` unless `HOST=0.0.0.0` is set.
+The router listens on port 8080 and serves 6 aliases: the low/medium/high tiers and their `-multimodal` counterparts. The `long`/`long-multimodal`/`experimental` tiers are standalone-only and served directly by `run-model --tier <tier>`. Alternatively, `run-model` bypasses the router and starts a single llama-server directly for any of the 9 tiers. Both bind to `127.0.0.1` unless `HOST=0.0.0.0` is set.
 
 ```
 ┌───────────────────────────┐   ┌──────────────────────────┐
@@ -281,10 +283,11 @@ The router listens on port 8080 and serves 6 aliases: the low/medium/high tiers 
    │ │ jzaleski/low-multimodal  │ │  set HOST=0.0.0.0 to expose
    │ │ jzaleski/medium          │ │  on the LAN.
    │ │ jzaleski/medium-multimodal│ │
-   │ │ jzaleski/high            │ │  (jzaleski/long and
-   │ │ jzaleski/high-multimodal │ │  jzaleski/long-multimodal
-   │ └─────────────────────────┘ │  are standalone-only, via
-   └──────────────────────────────┘  run-model --tier long[-multimodal])
+   │ │ jzaleski/high            │ │  (jzaleski/long,
+   │ │ jzaleski/high-multimodal │ │  jzaleski/long-multimodal,
+   │ └─────────────────────────┘ │  and jzaleski/experimental
+   └──────────────────────────────┘  are standalone-only, via
+                                     run-model --tier <tier>)
 ```
 
 ## Opencode Agent Architecture
@@ -343,9 +346,8 @@ differ only in endpoint (the server provider is the same models reached by
 launching with `HOST=0.0.0.0`). The fast aliases (`jzaleski/low`,
 `jzaleski/medium`, `jzaleski/high`) are text-only (MTP speculative decoding
 does not yet support `--mmproj`); the `-multimodal` aliases accept image
-input. `long`/`long-multimodal` are **not** part of the opencode
-configuration — they are standalone-only via `run-model --tier long` /
-`--tier long-multimodal`.
+input. `long`, `long-multimodal`, and `experimental` are **not** part of the opencode
+configuration — they are standalone-only via `run-model --tier <tier>`.
 
 | Provider | Endpoint | Model | Context | Input | Output | Modalities |
 |----------|----------|-------|---------|-------|--------|------------|

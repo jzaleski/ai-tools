@@ -57,7 +57,11 @@ for arg in "${@:3}"; do
   esac
 done
 
-dest_file="${dest_path}/${local_filename}";
+if [[ "${local_filename}" == /* ]]; then
+  dest_file="${local_filename}";
+else
+  dest_file="${dest_path}/${local_filename}";
+fi
 
 if [[ "${force}" == "true" ]] && [[ -f "${dest_file}" ]]; then
   echo "Removing existing file: ${dest_file}";
