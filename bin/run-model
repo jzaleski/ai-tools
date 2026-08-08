@@ -97,7 +97,7 @@ run_low() {
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
-    --mlock \
+    --load-mode        mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -127,7 +127,7 @@ run_medium() {
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
-    --mlock \
+    --load-mode        mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -157,7 +157,7 @@ run_high() {
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
-    --mlock \
+    --load-mode        mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -187,7 +187,7 @@ run_long() {
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
-    --mlock \
+    --load-mode        mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -223,7 +223,7 @@ run_low_multimodal() {
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
-    --mlock \
+    --load-mode        mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -255,7 +255,7 @@ run_medium_multimodal() {
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
-    --mlock \
+    --load-mode        mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -287,7 +287,7 @@ run_high_multimodal() {
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
-    --mlock \
+    --load-mode        mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -319,7 +319,7 @@ run_long_multimodal() {
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
-    --mlock \
+    --load-mode        mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
@@ -364,7 +364,7 @@ run_experimental() {
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
-    --mlock \
+    --load-mode        mlock \
     --predict          32768 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
