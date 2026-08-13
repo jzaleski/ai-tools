@@ -15,7 +15,7 @@ Supports four model tiers — low (32K ctx), medium (64K ctx), high (128K ctx), 
 
 Gemini tends to skip tool calls (like `skill` and `task`) and attempts to simulate their execution inline. To prevent this, the agents and prompt templates have been updated with `CRITICAL` sections forcing literal tool execution.
 
-The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
+The project includes `opencode` agent configurations in `home/.config/opencode/`:
 
 - **data.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
 - **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
@@ -35,8 +35,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── bootstrap                          # System setup and configuration bootstrap
 │   ├── install-dependencies               # Installs/upgrades Homebrew base packages
 │   ├── configure-git                      # Configures global git settings (core.excludesfile)
-│   ├── configure-node                     # Clones/updates nodenv, installs Node.js and npm
-│   ├── configure-opencode                 # Installs opencode-ai and configures shell init
+│   ├── configure-opencode                 # Installs opencode via the anomalyco/tap Homebrew tap, configures shell init
 │   ├── download-model                     # Downloads a single GGUF file from Hugging Face via curl
 │   ├── run-model                          # Direct llama-server launcher (single model, --tier low|medium|high|long|<tier>-multimodal)
 │   └── run-router                         # Router server (llama.cpp, multi-model; HOST env toggles bind)
@@ -201,7 +200,7 @@ MCP integrations are declared in `opencode.json` but **disabled by default**:
 | Playwright | local | `npx @playwright/mcp@latest` |
 | Vercel | remote | `https://mcp.vercel.com/v1/mcp` |
 
-Toggle `enabled: true` in `opencode.json` to activate.
+Toggle `enabled: true` in `opencode.json` to activate. Playwright's `npx` command requires Node.js/npm on `PATH` — not installed by the bootstrap system.
 
 ### Opencode Wrapper
 
@@ -230,27 +229,16 @@ Bootstrap scripts are defined as an explicit ordered array in `bin/bootstrap` an
 |--------|---------|
 | `bin/install-dependencies` | Installs Homebrew (if missing) and base packages (`ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `openssl`, `readline`, `sqlite`, `wget`, `zsh`) |
 | `bin/configure-git` | Configures global git settings — sets `core.excludesfile` to `~/.gitignore` if not already set |
-| `bin/configure-node` | Clones/updates `nodenv` and the `node-build` plugin; installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) |
-| `bin/configure-opencode` | Installs `opencode-ai` (from `.default-opencode-version`); appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+| `bin/configure-opencode` | Adds the `anomalyco/tap` Homebrew tap (if not already tapped) and installs/upgrades `anomalyco/tap/opencode`; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
 
 To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
 ```bash
-BOOTSTRAP_SCRIPTS="configure-node,configure-opencode" bin/bootstrap
+BOOTSTRAP_SCRIPTS="configure-git,configure-opencode" bin/bootstrap
 ```
 To skip specific scripts, use `BOOTSTRAP_SKIP`:
 ```bash
 BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
 ```
-
-### Tool Versions
-
-Pinned versions live in top-level dotfiles:
-
-| File | Tool |
-|------|------|
-| `.default-node-version` | Node.js (nodenv) |
-| `.default-npm-version` | npm |
-| `.default-opencode-version` | opencode-ai |
 
 ---
 

@@ -4,37 +4,36 @@ set -e;
 
 cd $(dirname $0)/..;
 
-cat_cmd=$(which cat 2> /dev/null || echo -n);
-if [ -z "$cat_cmd" ]; then
-  echo "Error: Could not locate the \"cat\" command" >&2;
-  exit 1;
-fi
-
 grep_cmd=$(which grep 2> /dev/null || echo -n);
 if [ -z "$grep_cmd" ]; then
   echo "Error: Could not locate the \"grep\" command" >&2;
   exit 1;
 fi
 
-nodenv_cmd="$HOME/.nodenv/bin/nodenv";
-if [ ! -e "$nodenv_cmd" ]; then
-  echo "Error: Could not locate the \"nodenv\" command" >&2;
-  exit 1;
-fi
+if [ $(uname) = "Darwin" ]; then
+  brew_cmd=$(which brew 2> /dev/null || echo -n);
+  if [ -z "$brew_cmd" ]; then
+    echo "Error: Could not locate the \"brew\" command" >&2;
+    exit 1;
+  fi
 
-npm_cmd="$HOME/.nodenv/shims/npm";
-if [ ! -e "$npm_cmd" ]; then
-  echo "Error: Could not locate the \"npm\" command" >&2;
-  exit 1;
-fi
+  if [ $(uname -p) = "arm" ]; then
+    brew_cmd="arch -arm64 $brew_cmd";
+  fi
 
-opencode_cmd="$HOME/.nodenv/shims/opencode";
-default_opencode_version=$(${cat_cmd} .default-opencode-version);
-installed_opencode_version=$(${opencode_cmd} -v 2> /dev/null || echo -n);
+  opencode_tap="anomalyco/tap";
+  opencode_package="anomalyco/tap/opencode";
 
-if [ "$default_opencode_version" != "$installed_opencode_version" ]; then
-  ${npm_cmd} install -g "opencode-ai@$default_opencode_version";
-  ${nodenv_cmd} rehash;
+  if ! $brew_cmd tap | ${grep_cmd} -qx "$opencode_tap"; then
+    $brew_cmd tap "$opencode_tap";
+  fi
+
+  opencode_package_details=$($brew_cmd list $opencode_package 2> /dev/null || echo -n);
+  if [ -z "$opencode_package_details" ]; then
+    $brew_cmd install -y $opencode_package;
+  else
+    $brew_cmd upgrade -y $opencode_package;
+  fi
 fi
 
 for shell_init_script in "$HOME/.bashrc" "$HOME/.zshrc"; do

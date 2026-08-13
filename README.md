@@ -16,8 +16,7 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── bootstrap                   # System setup and configuration bootstrap
 │   ├── install-dependencies        # Installs/upgrades Homebrew base packages
 │   ├── configure-git               # Configures global git settings (core.excludesfile)
-│   ├── configure-node              # Clones/updates nodenv, installs Node.js and npm
-│   ├── configure-opencode          # Installs opencode-ai and configures shell init
+│   ├── configure-opencode          # Installs opencode via the anomalyco/tap Homebrew tap, configures shell init
 │   ├── download-model              # Downloads a single GGUF file from Hugging Face via curl
 │   ├── run-model                   # Direct llama-server launcher (single model, --tier low|medium|high|long|<tier>-multimodal)
 │   └── run-router                  # Router server (llama.cpp, multi-model; HOST env toggles bind)
@@ -46,9 +45,6 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── .local/lib/
 │   │   └── opencode.sh             # Opencode wrapper script (session persistence, cache reset)
 │   └── .opencoderc                 # Shell alias: opencode → ~/.local/lib/opencode.sh
-├── .default-node-version           # Default node version
-├── .default-npm-version            # Default npm version
-└── .default-opencode-version       # Default opencode-ai version
 ```
 
 ## Bootstrap System
@@ -76,12 +72,11 @@ Scripts run in the order defined in the `bin_scripts` array in `bin/bootstrap`:
 |--------|---------|
 | `bin/install-dependencies` | Installs Homebrew (if missing) and installs/upgrades: `ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `openssl`, `readline`, `sqlite`, `wget`, `zsh` |
 | `bin/configure-git` | Configures global git settings — sets `core.excludesfile` to `~/.gitignore` if not already set |
-| `bin/configure-node` | Clones/updates `nodenv` to `~/.nodenv` and the `node-build` plugin; installs Node.js (from `.default-node-version`) and npm (from `.default-npm-version`) |
-| `bin/configure-opencode` | Installs `opencode-ai` version from `.default-opencode-version` via npm; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+| `bin/configure-opencode` | Adds the `anomalyco/tap` Homebrew tap (if not already tapped) and installs/upgrades `anomalyco/tap/opencode`; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
 
 To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
 ```bash
-BOOTSTRAP_SCRIPTS="configure-node,configure-opencode" bin/bootstrap
+BOOTSTRAP_SCRIPTS="configure-git,configure-opencode" bin/bootstrap
 ```
 To skip specific scripts, use `BOOTSTRAP_SKIP`:
 ```bash
@@ -93,25 +88,13 @@ BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
 - At least 16GB RAM for 20B+ models
 - GPU support (recommended)
 
-## Tool Versions
-
-The project tracks specific versions of key development tools in version files:
-
-| File | Description | Default |
-|------|-------------|---------|
-| `.default-node-version` | Node.js version for nodenv | 24.18.0 |
-| `.default-npm-version` | npm version | 11.16.0 |
-| `.default-opencode-version` | opencode-ai version | 1.18.13 |
-
-These versions are managed and installed via the bootstrap system.
-
 ## Opencode Agent Configuration(s)
 
 ### Gemini 3.1 Pro Specific Adjustments
 
 Gemini tends to skip tool calls (like `skill` and `task`) and attempts to simulate their execution inline. To prevent this, the agents and prompt templates have been updated with `CRITICAL` sections forcing literal tool execution.
 
-The project includes `opencode-ai` agent configurations in `home/.config/opencode/`:
+The project includes `opencode` agent configurations in `home/.config/opencode/`:
 
 - **data.md**: Data pipeline orchestrator — triages scope, then runs raw data through ingest → analyze → report, dispatching parallel ingest workers when the input volume justifies it
 - **engineer.md**: Adaptive software engineer — triages task scope, then handles trivial changes directly, dispatches parallel coders for multi-file work, or runs the full researcher → planner → coder → reviewer → finisher lifecycle for larger features
@@ -387,7 +370,7 @@ The following MCP integrations are configured but **disabled by default**:
 | Integration | Type | Command / URL | Notes |
 |-------------|------|---------------|-------|
 | Jira | remote | `https://mcp.atlassian.com/v1/mcp` | Enable in `opencode.json` to use |
-| Playwright | local | `npx @playwright/mcp@latest` | Enable in `opencode.json` to use |
+| Playwright | local | `npx @playwright/mcp@latest` | Enable in `opencode.json` to use; requires Node.js/npm on `PATH` (not installed by the bootstrap system) |
 | Vercel | remote | `https://mcp.vercel.com/v1/mcp` | Enable in `opencode.json` to use |
 
 ### Usage

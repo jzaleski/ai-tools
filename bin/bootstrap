@@ -49,12 +49,11 @@ function shell_session_update() {
 
 # Default scripts to run (all of them, in order)
 # Users can override by setting BOOTSTRAP_SCRIPTS environment variable
-# Example: BOOTSTRAP_SCRIPTS="configure-node,configure-opencode" bin/bootstrap
+# Example: BOOTSTRAP_SCRIPTS="configure-git,configure-opencode" bin/bootstrap
 if [ -z "$BOOTSTRAP_SCRIPTS" ]; then
   bin_scripts=(
     install-dependencies \
     configure-git \
-    configure-node \
     configure-opencode \
   );
 else
