@@ -4,13 +4,13 @@ set -e;
 
 cd $(dirname $0)/..;
 
-grep_cmd=$(which grep 2> /dev/null || echo -n);
-if [ -z "$grep_cmd" ]; then
-  echo "Error: Could not locate the \"grep\" command" >&2;
-  exit 1;
-fi
-
 if [ $(uname) = "Darwin" ]; then
+  grep_cmd=$(which grep 2> /dev/null || echo -n);
+  if [ -z "$grep_cmd" ]; then
+    echo "Error: Could not locate the \"grep\" command" >&2;
+    exit 1;
+  fi
+
   brew_cmd=$(which brew 2> /dev/null || echo -n);
   if [ -z "$brew_cmd" ]; then
     echo "Error: Could not locate the \"brew\" command" >&2;
@@ -22,26 +22,26 @@ if [ $(uname) = "Darwin" ]; then
   fi
 
   opencode_tap="anomalyco/tap";
-  opencode_package="anomalyco/tap/opencode";
-
   if ! $brew_cmd tap | ${grep_cmd} -qx "$opencode_tap"; then
     $brew_cmd tap "$opencode_tap";
   fi
 
+  opencode_package="anomalyco/tap/opencode";
   opencode_package_details=$($brew_cmd list $opencode_package 2> /dev/null || echo -n);
+
   if [ -z "$opencode_package_details" ]; then
     $brew_cmd install -y $opencode_package;
   else
     $brew_cmd upgrade -y $opencode_package;
   fi
+
+  for shell_init_script in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    if [ ! -e "$shell_init_script" ]; then
+      touch $shell_init_script;
+    fi
+
+    if ! ${grep_cmd} "source \$HOME/.opencoderc" "$shell_init_script" > /dev/null 2>&1; then
+      echo -e "\n# \`opencode\` specific initialization\n[[ -e \"\$HOME/.opencoderc\" ]] && source \$HOME/.opencoderc;" >> "$shell_init_script";
+    fi
+  done
 fi
-
-for shell_init_script in "$HOME/.bashrc" "$HOME/.zshrc"; do
-  if [ ! -e "$shell_init_script" ]; then
-    touch $shell_init_script;
-  fi
-
-  if ! ${grep_cmd} "source \$HOME/.opencoderc" "$shell_init_script" > /dev/null 2>&1; then
-    echo -e "\n# \`opencode\` specific initialization\n[[ -e \"\$HOME/.opencoderc\" ]] && source \$HOME/.opencoderc;" >> "$shell_init_script";
-  fi
-done
