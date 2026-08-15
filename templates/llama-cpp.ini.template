@@ -23,11 +23,11 @@ reasoning-preserve = 1
 cache-reuse        = 256
 cache-ram          = -1
 load-mode          = mlock
-predict            = 32768
+predict            = 262144
 presence-penalty   = 0.0
 repeat-penalty     = 1.0
 min-p              = 0.0
-temp               = 0.6
+temp               = 1.0
 top-k              = 20
 top-p              = 0.95
 

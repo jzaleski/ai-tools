@@ -149,8 +149,8 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 **Shared defaults (all tiers):**
 - Host: `127.0.0.1` (override with `HOST`)
 - Port: 8080
-- Sampling: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
-- Output: `predict=32768` default (clients may override via `max_tokens`)
+- Sampling: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
+- Output: `predict=262144` default (clients may override via `max_tokens`)
 - GPU: `n-gpu-layers=-1` (all), flash-attn on
 
 **Fast/no-vision tiers** — `unsloth/Qwen3.8-27B-GGUF`, run with `--spec-type draft-mtp --spec-draft-n-max 2`:
@@ -198,8 +198,8 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 **Defaults:**
 - Host: `127.0.0.1` (override with `HOST`)
 - Port: 8080
-- Sampling: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
-- Output: `predict=32768` default (clients may override via `max_tokens`)
+- Sampling: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
+- Output: `predict=262144` default (clients may override via `max_tokens`)
 - Per-tier context/KV/batch as in the run-model tables above. `low`/`medium`/`high` additionally set `spec-type=draft-mtp`/`spec-draft-n-max=2` and omit `mmproj`; the `-multimodal` sections set `mmproj` and omit the spec-decoding keys.
 
 **Environment Variables:**
@@ -441,7 +441,7 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
 - KV cache quantization is tier-specific (same for a tier and its `-multimodal` counterpart): low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces; V-cache matches `high`'s q8_0 on `long` too (the Q6_K_XL/q4_0 medium-tier tradeoff wasn't worth it for the flagship long-context tier)
 - Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
 - Batch/ubatch scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.8-27B family
-- Sampling defaults are tuned for coding and tool-calling per Qwen3.8's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`; server-side `predict=32768` caps default output length
+- Sampling defaults are tuned for coding and tool-calling per Qwen3.8's thinking/coding profile: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`; server-side `predict=262144` caps default output length
 - `--reasoning-preserve` is set on all 8 tiers, preserving full reasoning traces across turns server-wide (matches Qwen3.8's agentic-use recommendation) — trades a larger accumulated context per turn for better multi-turn decision consistency; worth it with RAM/context to spare, worth reconsidering on the smaller tiers if you're context-constrained
 - `--image-min-tokens 1024` is set on all `-multimodal` tiers to preserve grounding/bbox accuracy on Qwen-VL models (see [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842))
 - `--cache-reuse 256` + `--cache-ram -1` are set on all 8 tiers to reuse KV cache across turns that extend a previous prompt (the common shape of an agent loop) instead of reprocessing from scratch, with the idle-slot cache's default 8GiB budget removed — tuned for hosts with RAM to spare
@@ -462,7 +462,7 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
 - Adjust quantization level
 
 **Quality issues:**
-- Sampling defaults are tuned for coding/tool-calling per Qwen3.8's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`
+- Sampling defaults are tuned for coding/tool-calling per Qwen3.8's thinking/coding profile: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`
 - For more creative/diverse responses, increase `temp` and `top-p`, or raise `presence-penalty`
 - For more deterministic output, lower `temp` (e.g. `0.4–0.6`)
 

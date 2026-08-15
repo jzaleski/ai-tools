@@ -98,11 +98,11 @@ run_low() {
     --cache-reuse      256 \
     --cache-ram        -1 \
     --load-mode        mlock \
-    --predict          32768 \
+    --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
     --min-p            0.0 \
-    --temp             0.6 \
+    --temp             1.0 \
     --top-k            20 \
     --top-p            0.95;
 }
@@ -128,11 +128,11 @@ run_medium() {
     --cache-reuse      256 \
     --cache-ram        -1 \
     --load-mode        mlock \
-    --predict          32768 \
+    --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
     --min-p            0.0 \
-    --temp             0.6 \
+    --temp             1.0 \
     --top-k            20 \
     --top-p            0.95;
 }
@@ -158,11 +158,11 @@ run_high() {
     --cache-reuse      256 \
     --cache-ram        -1 \
     --load-mode        mlock \
-    --predict          32768 \
+    --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
     --min-p            0.0 \
-    --temp             0.6 \
+    --temp             1.0 \
     --top-k            20 \
     --top-p            0.95;
 }
@@ -188,11 +188,11 @@ run_long() {
     --cache-reuse      256 \
     --cache-ram        -1 \
     --load-mode        mlock \
-    --predict          32768 \
+    --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
     --min-p            0.0 \
-    --temp             0.6 \
+    --temp             1.0 \
     --top-k            20 \
     --top-p            0.95;
 }
@@ -224,11 +224,11 @@ run_low_multimodal() {
     --cache-reuse      256 \
     --cache-ram        -1 \
     --load-mode        mlock \
-    --predict          32768 \
+    --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
     --min-p            0.0 \
-    --temp             0.6 \
+    --temp             1.0 \
     --top-k            20 \
     --top-p            0.95;
 }
@@ -256,11 +256,11 @@ run_medium_multimodal() {
     --cache-reuse      256 \
     --cache-ram        -1 \
     --load-mode        mlock \
-    --predict          32768 \
+    --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
     --min-p            0.0 \
-    --temp             0.6 \
+    --temp             1.0 \
     --top-k            20 \
     --top-p            0.95;
 }
@@ -288,11 +288,11 @@ run_high_multimodal() {
     --cache-reuse      256 \
     --cache-ram        -1 \
     --load-mode        mlock \
-    --predict          32768 \
+    --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
     --min-p            0.0 \
-    --temp             0.6 \
+    --temp             1.0 \
     --top-k            20 \
     --top-p            0.95;
 }
@@ -320,11 +320,11 @@ run_long_multimodal() {
     --cache-reuse      256 \
     --cache-ram        -1 \
     --load-mode        mlock \
-    --predict          32768 \
+    --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
     --min-p            0.0 \
-    --temp             0.6 \
+    --temp             1.0 \
     --top-k            20 \
     --top-p            0.95;
 }
@@ -365,7 +365,7 @@ run_experimental() {
     --cache-reuse      256 \
     --cache-ram        -1 \
     --load-mode        mlock \
-    --predict          32768 \
+    --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
     --min-p            0.0 \
