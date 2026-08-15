@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (32K ctx), medium (64K ctx), high (128K ctx), and long (256K ctx for long agent sessions) — each available in two variants: a fast, text-only variant (`jzaleski/<tier>`) running unsloth's Qwen3.6-35B-A3B **MTP** (multi-token prediction) build with `--spec-type draft-mtp` speculative decoding for ~1.5-2x faster inference, and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the original (non-MTP) Qwen3.6-35B-A3B build with a multimodal projector. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup. All eight aliases run within the Qwen3.6-35B-A3B family (speed → quality → context; fast → vision-capable). The low/medium/high tiers and their `-multimodal` counterparts (6 aliases total) are served by the router on port `8080`; `long` and `long-multimodal` are **standalone-only** — excluded from the router preset and launched via `run-model --tier long` / `--tier long-multimodal`. There is also an `experimental` tier (DeepSeek-V4-Flash) available standalone via `run-model --tier experimental`. `run-model` also defaults to port `8080`; set `PORT` (e.g. `8081`) to run it alongside the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
+This repository provides scripts and configurations for running local AI models using llama-server. It supports four model tiers — low (32K ctx), medium (64K ctx), high (128K ctx), and long (256K ctx for long agent sessions) — each available in two variants: a fast, text-only variant (`jzaleski/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp` speculative decoding for ~1.5-2x faster inference, and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the same Qwen3.8-27B model with a multimodal projector. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup. All eight aliases run within the Qwen3.8-27B family (speed → quality → context; fast → vision-capable). The low/medium/high tiers and their `-multimodal` counterparts (6 aliases total) are served by the router on port `8080`; `long` and `long-multimodal` are **standalone-only** — excluded from the router preset and launched via `run-model --tier long` / `--tier long-multimodal`. There is also an `experimental` tier (DeepSeek-V4-Flash) available standalone via `run-model --tier experimental`. `run-model` also defaults to port `8080`; set `PORT` (e.g. `8081`) to run it alongside the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -153,7 +153,7 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 - Output: `predict=32768` default (clients may override via `max_tokens`)
 - GPU: `n-gpu-layers=-1` (all), flash-attn on
 
-**Fast/no-vision tiers** — `unsloth/Qwen3.6-35B-A3B-MTP-GGUF`, run with `--spec-type draft-mtp --spec-draft-n-max 2`:
+**Fast/no-vision tiers** — `unsloth/Qwen3.8-27B-GGUF`, run with `--spec-type draft-mtp --spec-draft-n-max 2`:
 
 | Tier | Quant | KV Cache | Context | Batch/Ubatch |
 |---|---|---|---|---|
@@ -162,7 +162,7 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 | high | `UD-Q8_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
 | long | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
 
-**Vision-capable tiers** — `unsloth/Qwen3.6-35B-A3B-GGUF` (original, non-MTP build) + multimodal projector, no speculative decoding:
+**Vision-capable tiers** — `unsloth/Qwen3.8-27B-GGUF` + multimodal projector, no speculative decoding:
 
 | Tier | Quant | KV Cache | Context | Batch/Ubatch |
 |---|---|---|---|---|
@@ -172,15 +172,15 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 | long-multimodal | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
 | experimental | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
 
-Batch/ubatch are identical between a tier and its `-multimodal` counterpart — both stay in the same Qwen3.6-35B-A3B family (no architecture change), so there was no technical driver to retune them.
+Batch/ubatch are identical between a tier and its `-multimodal` counterpart — both stay in the same Qwen3.8-27B family (no architecture change), so there was no technical driver to retune them.
 
 > `long`, `long-multimodal`, and `experimental` are standalone-only — excluded from the router preset and must be launched via `run-model --tier <tier>`. They default to port 8080 like the other tiers; set `PORT` (e.g. 8081) to run one alongside the router.
 
-**MTP speculative decoding:** The fast tiers load unsloth's MTP (multi-token prediction) build and run llama.cpp with `--spec-type draft-mtp --spec-draft-n-max 2`, per the model card's recommended settings, for ~1.5-2x faster inference. The MTP repo's per-quant filenames are identical to the non-MTP repo's (e.g. both ship `Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf`), so the local cache disambiguates them with a `-MTP-` infix (e.g. `Qwen3.6-35B-A3B-MTP-UD-Q4_K_XL.gguf`). `download-model` takes an explicit local filename (`download-model <hf-repo> <hf-filename> [local-filename]`) so it saves directly under that disambiguated name — without it, the existence check can't tell the two repos' same-named files apart and would wrongly skip downloading one of them.
+**MTP speculative decoding:** The fast tiers run with `--spec-type draft-mtp --spec-draft-n-max 2`, per the model card's recommended settings, for ~1.5-2x faster inference. Qwen3.8-27B ships with MTP tensors natively in the main repo, so there is no need to disambiguate local filenames or download a separate model file.
 
-**Vision (multimodal):** Only the `-multimodal` tiers load a multimodal projector (`--mmproj`); the fast tiers are text-only because llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding. The `F16` projector is downloaded from the same Hugging Face repo as the (non-MTP) model (remote filename `mmproj-F16.gguf`) and stored alongside each model with a matching name — the model's filename with a `.mmproj` extension instead of `.gguf` (e.g. `Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf` → `Qwen3.6-35B-A3B-UD-Q4_K_XL.mmproj`). All `-multimodal` tiers also set `--image-min-tokens 1024`, per [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842) — Qwen-VL models need at least 1024 image tokens to keep grounding/bbox accuracy correct.
+**Vision (multimodal):** Only the `-multimodal` tiers load a multimodal projector (`--mmproj`); the fast tiers are text-only because llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding. The `F16` projector is downloaded from the same Hugging Face repo as the model (remote filename `mmproj-F16.gguf`) and stored alongside each model with a matching name — the model's filename with a `.mmproj` extension instead of `.gguf` (e.g. `Qwen3.8-27B-UD-Q4_K_XL.gguf` → `Qwen3.8-27B-UD-Q4_K_XL.mmproj`). All `-multimodal` tiers also set `--image-min-tokens 1024`, per [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842) — Qwen-VL models need at least 1024 image tokens to keep grounding/bbox accuracy correct.
 
-**Reasoning preservation:** All 8 tiers set `--reasoning-preserve`, which sets the chat template's `preserve_reasoning` kwarg server-wide instead of requiring each client request to pass `chat_template_kwargs: {"preserve_thinking": true}`. Qwen3.6's model card recommends this for agentic use (better decision consistency and KV-cache reuse across turns) at the cost of feeding more accumulated thinking-trace tokens back in on every subsequent turn — worth it on hardware with headroom to spare, less so if you're tight on context/memory on the smaller tiers.
+**Reasoning preservation:** All 8 tiers set `--reasoning-preserve`, which sets the chat template's `preserve_reasoning` kwarg server-wide instead of requiring each client request to pass `chat_template_kwargs: {"preserve_thinking": true}`. Qwen3.8's model card recommends this for agentic use (better decision consistency and KV-cache reuse across turns) at the cost of feeding more accumulated thinking-trace tokens back in on every subsequent turn — worth it on hardware with headroom to spare, less so if you're tight on context/memory on the smaller tiers.
 
 **Agentic/hardware tuning:** All 8 tiers also set `--cache-reuse 256`, `--cache-ram -1`, and `--load-mode mlock`, tuned for large-RAM dedicated inference hosts (e.g. Apple Silicon Mac Studio with 512GB unified memory) running agentic coding workloads:
 - `--cache-reuse 256` lets llama-server reuse cached KV state for the shared prefix when a new request extends a previous one (exactly the shape of an opencode agent loop: same system prompt + tool defs + growing history each turn) instead of reprocessing the whole prompt from scratch every time. Pairs especially well with `--reasoning-preserve`, which makes prompts grow faster.
@@ -440,9 +440,9 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
 - Each tier has a fast/no-vision variant (`jzaleski/<tier>`, MTP + speculative decoding) and a vision-capable variant (`jzaleski/<tier>-multimodal`, no speculative decoding); `--mmproj` and `--spec-type draft-mtp` are not yet supported together in llama.cpp
 - KV cache quantization is tier-specific (same for a tier and its `-multimodal` counterpart): low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces; V-cache matches `high`'s q8_0 on `long` too (the Q6_K_XL/q4_0 medium-tier tradeoff wasn't worth it for the flagship long-context tier)
 - Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
-- Batch/ubatch scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.6-35B-A3B family
-- Sampling defaults are tuned for coding and tool-calling per Qwen3.6's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`; server-side `predict=32768` caps default output length
-- `--reasoning-preserve` is set on all 8 tiers, preserving full reasoning traces across turns server-wide (matches Qwen3.6's agentic-use recommendation) — trades a larger accumulated context per turn for better multi-turn decision consistency; worth it with RAM/context to spare, worth reconsidering on the smaller tiers if you're context-constrained
+- Batch/ubatch scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.8-27B family
+- Sampling defaults are tuned for coding and tool-calling per Qwen3.8's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`; server-side `predict=32768` caps default output length
+- `--reasoning-preserve` is set on all 8 tiers, preserving full reasoning traces across turns server-wide (matches Qwen3.8's agentic-use recommendation) — trades a larger accumulated context per turn for better multi-turn decision consistency; worth it with RAM/context to spare, worth reconsidering on the smaller tiers if you're context-constrained
 - `--image-min-tokens 1024` is set on all `-multimodal` tiers to preserve grounding/bbox accuracy on Qwen-VL models (see [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842))
 - `--cache-reuse 256` + `--cache-ram -1` are set on all 8 tiers to reuse KV cache across turns that extend a previous prompt (the common shape of an agent loop) instead of reprocessing from scratch, with the idle-slot cache's default 8GiB budget removed — tuned for hosts with RAM to spare
 - `--load-mode mlock` is set on all 8 tiers to keep model weights pinned in RAM rather than subject to macOS's background memory compression, avoiding a decompression stall on the first request after an idle period
@@ -462,7 +462,7 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
 - Adjust quantization level
 
 **Quality issues:**
-- Sampling defaults are tuned for coding/tool-calling per Qwen3.6's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`
+- Sampling defaults are tuned for coding/tool-calling per Qwen3.8's thinking/coding profile: `temp=0.6`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`
 - For more creative/diverse responses, increase `temp` and `top-p`, or raise `presence-penalty`
 - For more deterministic output, lower `temp` (e.g. `0.4–0.6`)
 

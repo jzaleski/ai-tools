@@ -48,28 +48,22 @@ require_mmproj() {
 # long/long-multimodal are standalone-only (excluded from the router preset)
 # and launched via `run-model --tier long` / `--tier long-multimodal`.
 require_models() {
-  local repo_qwen36_mtp="unsloth/Qwen3.6-35B-A3B-MTP-GGUF";
-  local repo_qwen36="unsloth/Qwen3.6-35B-A3B-GGUF";
+  local repo_qwen38="unsloth/Qwen3.8-27B-GGUF";
 
-  # Fast/no-vision tiers (low, medium, high): unsloth's MTP build, run with
-  # --spec-type draft-mtp speculative decoding. llama.cpp does not yet support
-  # combining --mmproj with MTP speculative decoding, so no multimodal
-  # projector is downloaded here. The MTP repo's filenames are identical to
-  # the non-MTP repo's, so the local copies are disambiguated with a "-MTP-"
-  # infix (see bin/run-model).
-  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q4_K_XL.gguf" "${repo_qwen36_mtp}" "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
-  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q6_K_XL.gguf" "${repo_qwen36_mtp}" "Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
-  require_model "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q8_K_XL.gguf" "${repo_qwen36_mtp}" "Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
+  # Fast/no-vision tiers (low, medium, high) run with --spec-type draft-mtp 
+  # speculative decoding. llama.cpp does not yet support combining --mmproj 
+  # with MTP speculative decoding, so no multimodal projector is downloaded 
+  # for them. Vision-capable tiers (low-multimodal, medium-multimodal, 
+  # high-multimodal) use the identical model weights but without MTP enabled,
+  # and add the shared F16 multimodal projector.
+  require_model  "${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf" "${repo_qwen38}";
+  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf" "${repo_qwen38}";
 
-  # Vision-capable tiers (low-multimodal, medium-multimodal, high-multimodal):
-  # unsloth's original (non-MTP) build; the multimodal projector is the same
-  # F16 file, stored per-model alongside each .gguf.
-  require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_qwen36}";
-  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf" "${repo_qwen36}";
-  require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf" "${repo_qwen36}";
-  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf" "${repo_qwen36}";
-  require_model  "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf" "${repo_qwen36}";
-  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf" "${repo_qwen36}";
+  require_model  "${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf" "${repo_qwen38}";
+  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf" "${repo_qwen38}";
+
+  require_model  "${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf" "${repo_qwen38}";
+  require_mmproj "${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf" "${repo_qwen38}";
 }
 
 # Expand template tokens in a preset INI file and write the rendered result to

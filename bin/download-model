@@ -7,11 +7,11 @@
 # which case the existing file is deleted first.
 #
 # The provider (first component of hf-repo) is used as a subdirectory, so
-# e.g. unsloth/Qwen3.6-35B-A3B-GGUF downloads into <MODELS_DIR>/unsloth/.
+# e.g. unsloth/Qwen3.8-27B-GGUF downloads into <MODELS_DIR>/unsloth/.
 #
 # Arguments (positional, in order):
-#   hf-repo         e.g. unsloth/Qwen3.6-35B-A3B-GGUF
-#   hf-filename     e.g. Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf (used to build the
+#   hf-repo         e.g. unsloth/Qwen3.8-27B-GGUF
+#   hf-filename     e.g. Qwen3.8-27B-UD-Q4_K_XL.gguf (used to build the
 #                   download URL)
 #   local-filename  optional; the filename to save under (default:
 #                   hf-filename). Use this to disambiguate two repos under

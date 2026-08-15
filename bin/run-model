@@ -72,14 +72,14 @@ require_mmproj() {
 }
 
 # Fast tiers (low/medium/high/long): unsloth's MTP (multi-token prediction)
-# build of Qwen3.6-35B-A3B, run with llama.cpp's `--spec-type draft-mtp`
+# build of Qwen3.8-27B, run with llama.cpp's `--spec-type draft-mtp`
 # speculative decoding for ~1.5-2x faster inference. llama.cpp does not yet
 # support combining `--mmproj` with MTP speculative decoding, so these tiers
 # are text-only (no vision).
 
 run_low() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q4_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-MTP-GGUF" "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q4_K_XL.gguf";
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/low \
@@ -108,8 +108,8 @@ run_low() {
 }
 
 run_medium() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q6_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-MTP-GGUF" "Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q6_K_XL.gguf";
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/medium \
@@ -138,8 +138,8 @@ run_medium() {
 }
 
 run_high() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q8_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-MTP-GGUF" "Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q8_K_XL.gguf";
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/high \
@@ -168,8 +168,8 @@ run_high() {
 }
 
 run_long() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-MTP-UD-Q8_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-MTP-GGUF" "Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q8_K_XL.gguf";
   exec llama-server \
     --model            "${model}" \
     --alias            jzaleski/long \
@@ -198,14 +198,14 @@ run_long() {
 }
 
 # Multimodal tiers (low-multimodal/medium-multimodal/high-multimodal/long-multimodal):
-# unsloth's original (non-MTP) Qwen3.6-35B-A3B build, loaded with the shared
-# F16 multimodal projector so image input works. No MTP speculative decoding.
+# Qwen3.8-27B loaded with the shared F16 multimodal projector so image input works.
+# No MTP speculative decoding.
 
 run_low_multimodal() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
-  require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
+  require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
@@ -234,10 +234,10 @@ run_low_multimodal() {
 }
 
 run_medium_multimodal() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q6_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
-  require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
+  require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
@@ -266,10 +266,10 @@ run_medium_multimodal() {
 }
 
 run_high_multimodal() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
-  require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
+  require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
@@ -298,10 +298,10 @@ run_high_multimodal() {
 }
 
 run_long_multimodal() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.6-35B-A3B-UD-Q8_K_XL.gguf";
+  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf";
   local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
-  require_mmproj "${model}" "unsloth/Qwen3.6-35B-A3B-GGUF";
+  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
+  require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
   exec llama-server \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
