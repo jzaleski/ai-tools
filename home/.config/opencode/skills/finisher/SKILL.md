@@ -1,6 +1,6 @@
 ---
 name: finisher
-description: "Complete development work — verify tests pass, detect environment state, present structured merge/PR options to user, execute choice with proper cleanup."
+description: "Use when implementation is complete and every task has passed review, before deciding how to merge, publish, or otherwise integrate the work."
 mode: required
 ---
 
@@ -14,7 +14,9 @@ Guide completion of development work by presenting clear options and handling th
 
 ### Step 1: Verify Tests
 
-Before presenting options, run the project's test suite:
+Before presenting options, run the project's test suite **fresh, right now**
+— a passing run from earlier in the session doesn't count; a later commit
+may have broken something since:
 
 ```bash
 npm test    # JavaScript/TypeScript
@@ -37,20 +39,24 @@ Stop. Don't proceed to Step 2.
 
 ### Step 2: Detect Environment
 
-Determine workspace state before presenting options:
+Determine workspace state before presenting options. **Capture all three
+values now, before any `cd`** — Step 5 changes directory for Option 1 and
+for a confirmed discard, and Step 6's cleanup needs the pre-`cd` values to
+correctly detect a worktree:
 
 ```bash
 GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
 GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
+WORKTREE_PATH=$(git rev-parse --show-toplevel)
 ```
 
 This determines which menu to show and how cleanup works:
 
 | State | Menu | Cleanup |
 |-------|------|---------|
-| `GIT_DIR == GIT_COMMON` (normal repo) | Standard 4 options | No worktree to clean up |
-| `GIT_DIR != GIT_COMMON`, named branch | Standard 4 options | Provenance-based (Step 6) |
-| `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 3 options (no merge) | No cleanup (externally managed) |
+| `GIT_DIR == GIT_COMMON` (normal repo) | Standard 3 options | No worktree to clean up |
+| `GIT_DIR != GIT_COMMON`, named branch | Standard 3 options | Provenance-based (Step 6) |
+| `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 2 options (no merge) | Externally managed — leave in place |
 
 ### Step 3: Determine Base Branch
 
@@ -62,7 +68,7 @@ If that fails, ask: "This branch split from which base branch? (main or master)"
 
 ### Step 4: Present Options
 
-**Normal repo and named-branch worktree — present exactly these 4 options:**
+**Normal repo and named-branch worktree — present exactly these 3 options:**
 
 ```
 Implementation complete. What would you like to do?
@@ -70,24 +76,24 @@ Implementation complete. What would you like to do?
 1. Merge back to <base-branch> locally
 2. Push and create a Pull Request
 3. Keep the branch as-is (I'll handle it later)
-4. Discard this work
 
 Which option?
 ```
 
-**Detached HEAD — present exactly these 3 options:**
+**Detached HEAD — present exactly these 2 options:**
 
 ```
 Implementation complete. You're on a detached HEAD (externally managed workspace).
 
 1. Push as new branch and create a Pull Request
 2. Keep as-is (I'll handle it later)
-3. Discard this work
 
 Which option?
 ```
 
-Don't add explanation — keep options concise.
+Don't add explanation — keep options concise. Discarding the work is never a
+listed option — it happens only in response to an explicit, unambiguous
+request (see "If the User Asks to Discard the Work" after Option 3 below).
 
 ### Step 5: Execute Choice
 
@@ -103,7 +109,7 @@ git checkout <base-branch>
 git pull
 git merge <feature-branch>
 
-# Verify tests on merged result
+# Verify tests on merged result — run fresh now, don't reuse Step 1's result
 <test command>
 
 # Only after merge succeeds: cleanup (Step 6), then delete branch
@@ -137,7 +143,12 @@ Report: "Keeping branch <name>. Work preserved at current working directory."
 
 Don't cleanup. Don't delete anything.
 
-#### Option 4: Discard
+#### If the User Asks to Discard the Work
+
+This path is reachable only when the user explicitly asks to discard the
+work, in so many words — never inferred from "yeah get rid of it" or a
+guess that they're done with the branch. It is not one of the numbered
+options in Step 4.
 
 **Confirm first:**
 ```
@@ -162,21 +173,20 @@ git branch -D <feature-branch>
 
 ### Step 6: Cleanup Workspace
 
-**Only runs for Options 1 and 4.** Options 2 and 3 always preserve the workspace.
+**Only runs for Option 1 and a confirmed discard.** Options 2 and 3 always
+preserve the workspace.
 
-```bash
-GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
-GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
-WORKTREE_PATH=$(git rev-parse --show-toplevel)
-```
+Use the `GIT_DIR`, `GIT_COMMON`, and `WORKTREE_PATH` values captured in
+**Step 2** — do not recompute them here. Both callers (Option 1 and the
+confirmed-discard path) have already `cd`'d to `MAIN_ROOT` by this point, so
+a fresh `git rev-parse` would report "normal repo" unconditionally and
+silently skip cleanup of a real worktree.
 
 **If `GIT_DIR == GIT_COMMON`:** Normal repo, no worktree to clean up. Done.
 
-**If the current path is under `.worktrees/` or `worktrees/`:** We created this — we own cleanup.
+**If `WORKTREE_PATH` is under `.worktrees/` or `worktrees/`:** We created this — we own cleanup.
 
 ```bash
-MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
-cd "$MAIN_ROOT"
 git worktree remove "$WORKTREE_PATH"
 git worktree prune  # Self-healing: clean up any stale registrations
 ```
@@ -190,24 +200,26 @@ git worktree prune  # Self-healing: clean up any stale registrations
 | 1. Merge locally | ✅ | — | ❌ | ✅ |
 | 2. Create PR | — | ✅ | ✅ | — |
 | 3. Keep as-is | — | — | ✅ | — |
-| 4. Discard | — | — | ❌ | ✅ (force) |
+| Discard (explicit request only, not a listed option) | — | — | ❌ | ✅ (force) |
 
 ## Red Flags
 
 **Never:**
 - Proceed with failing tests
-- Merge without verifying tests on result
-- Delete work without confirmation
+- Merge without verifying tests on result — run them fresh, don't reuse an earlier result
+- List discarding the work as a numbered option, or infer a discard request from anything short of an explicit, unambiguous ask
+- Delete work without typed confirmation
 - Force-push without explicit request
 - Remove a workspace before confirming merge success
 - Clean up workspaces you didn't create (provenance check)
 - Run `git worktree remove` from inside the workspace being removed
+- Recompute `GIT_DIR`/`GIT_COMMON`/`WORKTREE_PATH` in Step 6 — reuse the values captured in Step 2, before any `cd`
 
 **Always:**
-- Verify tests before offering options
-- Detect environment before presenting menu
-- Present exactly 4 options (or 3 for detached HEAD)
-- Get typed confirmation for Option 4
-- Cleanup only for Options 1 and 4
+- Verify tests before offering options, and again, fresh, before merging (Step 5, Option 1)
+- Detect environment before presenting menu, capturing worktree state before any `cd`
+- Present exactly 3 options (or 2 for detached HEAD) — discard is never listed
+- Get typed confirmation before any discard
+- Cleanup only for Option 1 and a confirmed discard
 - `cd` to main repo root before any worktree removal
 - Run `git worktree prune` after removal
