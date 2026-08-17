@@ -140,7 +140,9 @@ branch check → [researcher] → [planner] → parallel coder batches → [revi
 
 Load the **researcher** skill inline (via the `skill` tool) — it requires direct user dialogue. It handles context exploration, clarifying questions, approach proposals, design presentation with approval gates, spec writing, and self-review.
 
-**HARD-GATE:** Do not proceed to planning or implementation until the user approves the design document.
+<HARD-GATE>
+Do not proceed to planning or implementation until the user approves the design document.
+</HARD-GATE>
 
 ### Phase 2: Planner (skill: `skills/planner`)
 
@@ -185,7 +187,9 @@ After all batches complete:
 1. **Spec compliance pass** — dispatch a reviewer with `mode=spec-compliance`.
 2. **Code quality pass** — only after spec compliance passes, dispatch with `mode=code-quality`.
 
-**HARD-GATE:** Never run code-quality before spec-compliance passes.
+<HARD-GATE>
+Never run code-quality before spec-compliance passes.
+</HARD-GATE>
 
 If a review finds issues: dispatch the original coder sub-agent to fix, then re-dispatch the reviewer with identical inputs. Repeat until approved, up to the 3-round cap defined in `skills/reviewer`'s Review Loop Protocol — never skip re-reviews, even if the implementer claims it's fixed. If round 3 still has open issues, stop looping and bring the findings to the user per that same protocol.
 

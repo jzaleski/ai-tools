@@ -49,13 +49,21 @@ After **3 failed fix attempts** on the same issue, stop attempting a 4th variati
 - **If invoked inline (Path A):** stop and tell the user directly what you tried, what you learned from each attempt, and that you believe the approach needs reconsidering before a 4th attempt.
 - **If invoked as a dispatched sub-agent (via `coder`):** report back with status `BLOCKED`, using `coder`'s escalation format — describe what you tried, what you ruled out, and what kind of help would unblock you (more context, a different approach, a smaller/different task).
 
-## Red Flags — Stop and Return to Step 1
+## Red Flags
 
-- "Quick fix for now, I'll investigate properly later"
-- "It's probably X" without having reproduced or traced anything
-- Changing more than one thing at once "to save a round trip"
-- About to report a fix as done without having just run the check that proves it
-- Reaching for fix attempt #4 on the same issue without questioning the approach
+**Never:**
+- Say "quick fix for now, I'll investigate properly later"
+- Propose a fix based on "it's probably X" without having reproduced or traced anything
+- Change more than one thing at once "to save a round trip"
+- Report a fix as done without having just run the check that proves it
+- Reach for fix attempt #4 on the same issue without questioning the approach
+
+**Always:**
+- Reproduce the failure (or explicitly say you couldn't) before proposing anything
+- Trace to the source — fix where the problem originates, not where it surfaced
+- Test one hypothesis at a time, with the smallest change that proves or disproves it
+- Run the verification check fresh, this turn, before calling anything fixed
+- Stop and reconsider the approach after 3 failed fix attempts, rather than trying a 4th
 
 ## Common Rationalizations
 
