@@ -116,11 +116,11 @@ If you find issues during self-review, fix them now before reporting.
 
 When the orchestrator sends you back review findings to fix, this replaces "Before You Begin" for that round:
 
-1. **Restate each finding in your own words before touching code.** If any
-   finding is unclear, this is a **HARD-GATE** — stop and ask the
-   orchestrator for clarification rather than guessing at intent. Items can
-   be related; a partial fix based on a guess is often wrong for reasons
-   you won't see until later.
+<HARD-GATE>
+If any review finding is unclear, stop and ask the orchestrator for clarification rather than guessing at intent. Items can be related; a partial fix based on a guess is often wrong for reasons you won't see until later.
+</HARD-GATE>
+
+1. **Restate each finding in your own words before touching code.**
 2. **Verify against the actual code before implementing the suggested
    fix.** A reviewer's suggestion can be wrong for this codebase even when
    it's generically reasonable — check before applying it.
