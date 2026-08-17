@@ -175,7 +175,7 @@ Turn 2: task(coder, task-3) + task(coder, task-4)                              [
 ...
 Turn N:   task(reviewer, mode=spec-compliance, all-output)
 Turn N+1: task(reviewer, mode=code-quality, all-output)   [only if spec-compliance passes]
-Turn N+2: if issues → fix via coder sub-agent, then re-dispatch reviewer with identical inputs
+Turn N+2: if issues → fix via coder sub-agent, then re-dispatch reviewer with identical inputs (capped at 3 rounds — see skills/reviewer)
 ```
 
 ### Phase 4: Reviewer (skill: `skills/reviewer`)
@@ -187,7 +187,7 @@ After all batches complete:
 
 **HARD-GATE:** Never run code-quality before spec-compliance passes.
 
-If a review finds issues: dispatch the original coder sub-agent to fix, then re-dispatch the reviewer with identical inputs. Repeat until approved — never skip re-reviews, even if the implementer claims it's fixed.
+If a review finds issues: dispatch the original coder sub-agent to fix, then re-dispatch the reviewer with identical inputs. Repeat until approved, up to the 3-round cap defined in `skills/reviewer`'s Review Loop Protocol — never skip re-reviews, even if the implementer claims it's fixed. If round 3 still has open issues, stop looping and bring the findings to the user per that same protocol.
 
 ### Phase 5: Finisher (skill: `skills/finisher`)
 
