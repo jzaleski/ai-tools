@@ -1,6 +1,6 @@
 ---
 name: planner
-description: "Write comprehensive implementation plans from approved designs — task decomposition with exact file paths, code, commands. Includes independence analysis for parallel dispatch and no-placeholder enforcement."
+description: "Use when a design has been approved and needs to be broken down into executable implementation tasks."
 ---
 
 # Planner — Task Decomposition Skill
@@ -130,6 +130,15 @@ After defining all tasks, analyze which ones can run in parallel:
 - Both tasks modify the same file
 - Integration work that requires a specific component to exist first
 
+**Same-shape work (batch into one dispatch, not one coder per task):**
+- Several tasks that are each a small, identical-shape edit — the same
+  one-line fix, the same field addition, the same rename — repeated across
+  different files
+- Dispatch ONE coder with the whole batch listed (every file and its exact
+  change) rather than one coder per file. Reserve one-dispatch-per-task for
+  work that needs its own judgment, its own tests, or its own review
+  surface — not for mechanical repetition.
+
 Output an analysis at the end of the plan:
 
 ```markdown
@@ -138,6 +147,8 @@ Output an analysis at the end of the plan:
 ### Batch 1 (independent — dispatch together):
 - Task 1 (src/auth/login.ts) + Task 3 (src/api/routes.ts) + Task 5 (docs/README.md)
   Rationale: No shared files, no cross-dependencies
+- Tasks 6-9 (same one-line config rename across 4 files) — dispatch as ONE coder covering all 4, not 4 separate coders
+  Rationale: Identical-shape mechanical edit; one review surface covers all four
 
 ### Batch 2 (depends on Batch 1):
 - Task 4 (tests/integration/auth-api.test.ts)
