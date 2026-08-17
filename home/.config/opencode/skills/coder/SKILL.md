@@ -1,6 +1,6 @@
 ---
 name: coder
-description: "Sub-agent implementer — executes individual tasks from a plan with TDD, self-review, and structured reporting. For orchestrators: dispatch this skill per independent task, then follow the review pipeline."
+description: "Use when an orchestrator has an approved plan and needs an individual task implemented, tested, and reported back."
 ---
 
 # Coder Skill
@@ -18,6 +18,22 @@ If you have questions about:
 - Anything unclear in the task description
 
 **Ask them now.** Raise any concerns before starting work. Don't guess or make assumptions.
+
+## If This Task Is a Bugfix
+
+<HARD-GATE>
+Do not edit code to fix a bug, test failure, or unexpected behavior until you have invoked `skills/debugging` and can state the root cause with evidence. This applies even under time pressure or when the fix looks obvious.
+</HARD-GATE>
+
+New features and refactors don't need this — only tasks whose goal is fixing broken behavior.
+
+## Constraints
+
+- **Never dispatch your own sub-agents.** You implement directly. If you need
+  a second opinion or a review, report back to the orchestrator (`BLOCKED`
+  or `DONE_WITH_CONCERNS`) instead of spawning a helper or reviewer
+  yourself — review always comes from the orchestrator after your report,
+  never from an agent you spawned.
 
 ## Your Job
 
@@ -92,12 +108,37 @@ Before reporting back, review your work:
 - Do tests actually verify behavior (not just mock behavior)?
 - Did I follow TDD if required?
 - Are tests comprehensive?
+- Did I run the tests **just now**, in this turn, rather than relying on an earlier run or assuming they'd still pass?
 
 If you find issues during self-review, fix them now before reporting.
 
+## Responding to Review Feedback
+
+When the orchestrator sends you back review findings to fix, this replaces "Before You Begin" for that round:
+
+1. **Restate each finding in your own words before touching code.** If any
+   finding is unclear, this is a **HARD-GATE** — stop and ask the
+   orchestrator for clarification rather than guessing at intent. Items can
+   be related; a partial fix based on a guess is often wrong for reasons
+   you won't see until later.
+2. **Verify against the actual code before implementing the suggested
+   fix.** A reviewer's suggestion can be wrong for this codebase even when
+   it's generically reasonable — check before applying it.
+3. **If you believe a finding is wrong, say so with specific evidence**
+   (file:line, behavior, a test result) rather than silently complying or
+   arguing without evidence. State the disagreement clearly; the
+   orchestrator decides how to resolve it — that call isn't yours to make
+   unilaterally.
+4. **No performative agreement.** Don't write "You're absolutely right!" or
+   "Great catch!" — state the fix you made, or state your disagreement.
+   Actions and technical statements only.
+5. Fix one item at a time, verify each, then move to the next.
+
 ## Report Format
 
-When done, report using this exact format:
+Every `Tests:` line in the report below must reflect a command you ran in
+this turn — not a result remembered from earlier in the task. When done,
+report using this exact format:
 
 ```
 Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
