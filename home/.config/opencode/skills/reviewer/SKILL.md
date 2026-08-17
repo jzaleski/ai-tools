@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: "Dual-role review skill — handles both spec compliance review (did they build what was requested?) and code quality review (is it well-built?). Orchestrators dispatch this per completed task or for final cross-batch validation."
+description: "Use after a coder task completes, or for a final cross-batch check, to verify spec compliance and code quality."
 ---
 
 # Reviewer Skill
@@ -43,6 +43,9 @@ The implementer finished suspiciously quickly. Their report may be incomplete, i
 - Compare actual implementation to requirements line by line
 - Check for missing pieces they claimed to implement
 - Look for extra features they didn't mention
+- Re-run any test command the report cites rather than trusting its stated
+  result — the same verification-before-completion standard you'd apply to
+  your own claims applies to reviewing theirs
 
 ### Verify Against Requirements
 
@@ -131,6 +134,12 @@ If NEEDS FIXES: implementer must fix at the specified severity level(s) and re-r
 When a review finds issues:
 1. The same implementer sub-agent fixes them
 2. The orchestrator dispatches the same reviewer again with identical inputs
-3. Repeat until APPROVED or PASS
+3. Repeat until APPROVED or PASS, **up to 3 rounds total**
 4. Never skip the re-review — even if the implementer says "I fixed it"
 5. Never move to the next task while any review has open issues
+
+**Cap:** If round 3's re-review still reports open issues, stop looping.
+Don't dispatch a 4th round and don't guess at a resolution. Present the open
+findings directly to the user: what's still failing, what's been tried each
+round, and let them decide whether to fix differently, accept the issue as a
+known limitation, or abandon the current approach.
