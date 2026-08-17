@@ -94,6 +94,7 @@ run_low() {
     --cache-type-v     q4_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
+    --chat-template-kwargs '{"reasoning_effort":"low"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
@@ -124,6 +125,7 @@ run_medium() {
     --cache-type-v     q4_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
+    --chat-template-kwargs '{"reasoning_effort":"medium"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
@@ -154,6 +156,7 @@ run_high() {
     --cache-type-v     q8_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
+    --chat-template-kwargs '{"reasoning_effort":"high"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
@@ -184,6 +187,7 @@ run_long() {
     --cache-type-v     q8_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
+    --chat-template-kwargs '{"reasoning_effort":"high"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
@@ -220,6 +224,7 @@ run_low_multimodal() {
     --ctx-size         32768 \
     --cache-type-k     q8_0 \
     --cache-type-v     q4_0 \
+    --chat-template-kwargs '{"reasoning_effort":"low"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
@@ -252,6 +257,7 @@ run_medium_multimodal() {
     --ctx-size         65536 \
     --cache-type-k     q8_0 \
     --cache-type-v     q4_0 \
+    --chat-template-kwargs '{"reasoning_effort":"medium"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
@@ -284,6 +290,7 @@ run_high_multimodal() {
     --ctx-size         131072 \
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
+    --chat-template-kwargs '{"reasoning_effort":"high"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
@@ -316,6 +323,7 @@ run_long_multimodal() {
     --ctx-size         262144 \
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
+    --chat-template-kwargs '{"reasoning_effort":"high"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
