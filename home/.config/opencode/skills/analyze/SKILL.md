@@ -1,6 +1,6 @@
 ---
 name: analyze
-description: "Answer a question or find patterns in a clean dataset — aggregations, groupings, comparisons, trends, outliers, distributions, joins. Use after data has been ingested and normalized, when the user wants insight rather than just extraction. Single-pass; produces findings, not a formatted report."
+description: "Use after data has been ingested and normalized, when you need aggregations, groupings, comparisons, trends, outliers, distributions, or joins — insight rather than just extraction."
 ---
 
 # Analyze Skill

@@ -1,6 +1,6 @@
 ---
 name: scope
-description: "Stakeholder requirements-intake skill — helps a stakeholder or user, via a series of structured prompts, turn their ideas or requests into a right-sized, refinable scope artifact. Adaptive: asks a few high-leverage questions when a request isn't specific enough, drafts-and-trims when it's too broad. Honest about what a non-technical stakeholder cannot know. Stand-alone; does not hand off to other agents."
+description: "Use when a stakeholder or user has an idea or request — too vague or too broad — that needs to become a right-sized, refinable artifact."
 ---
 
 # Scope Skill

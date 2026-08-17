@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: "Mandatory pre-work step — explores project context, asks clarifying questions one at a time, proposes approaches, presents design for user approval. Terminal state: user-approved design doc ready for planning."
+description: "Use before writing any implementation plan or code — when requirements need clarifying, approaches need exploring, or a design needs approval."
 ---
 
 # Researcher — Design & Discovery Skill

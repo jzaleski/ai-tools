@@ -1,6 +1,6 @@
 ---
 name: triage
-description: "Inbound request triage skill — the front door of the product work-shaping funnel. Classifies a raw, unsorted request into a routing bucket (product shaping, engineering, data, needs-info, or not-actionable) and produces a fast triage decision artifact. Single-pass; inline-only; stand-alone — recommends a next step but never invokes another agent or skill."
+description: "Use when a raw, unsorted inbound request arrives and needs to be classified and routed before any other work begins."
 ---
 
 # Triage Skill

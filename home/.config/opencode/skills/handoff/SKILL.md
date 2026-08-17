@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: "Engineering hand-off packaging skill — turns a refined scope brief into a self-contained, liftable engineering hand-off artifact that seeds the engineer agent's design phase. Produces a separate liftable artifact; stand-alone; points to the engineer agent but never invokes it."
+description: "Use when a refined scope brief exists and is ready to be packaged for engineering, before any work reaches the engineer agent."
 ---
 
 # Handoff Skill

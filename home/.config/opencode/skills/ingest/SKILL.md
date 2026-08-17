@@ -1,6 +1,6 @@
 ---
 name: ingest
-description: "Pull data out of raw files (PDF, XLSX, CSV/TSV, JSON, HTML, Markdown, plain text), clean each one, and converge everything into one consistent dataset ready for analysis. Use when you have a pile of messy files to extract and normalize. Scales from one file to many via an explicit parallelism ladder."
+description: "Use when you have one or more raw files (PDF, XLSX, CSV/TSV, JSON, HTML, Markdown, plain text) that need extracting, cleaning, and normalizing into one dataset."
 ---
 
 # Ingest Skill

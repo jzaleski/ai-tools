@@ -1,6 +1,6 @@
 ---
 name: report
-description: "Deliver analysis findings as a polished output in one or more formats — Markdown, CSV, XLSX, JSON, plain text, or inline. Use as the final pipeline stage once analysis is done. Always asks for the format if unspecified, and always documents the artifacts and scripts it created."
+description: "Use when analysis findings exist and need to be delivered as a polished output in a specific format, once analysis is done."
 ---
 
 # Report Skill

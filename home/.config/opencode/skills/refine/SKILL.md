@@ -1,6 +1,6 @@
 ---
 name: refine
-description: "Technical product-manager skill — matures a stakeholder scope artifact into a system-aware, ticket-ready brief in collaboration with engineering. Augments the same document in place with system considerations, authoritative scope, complexity, resolved open questions, and a ticket breakdown. Stand-alone; does not hand off to other agents."
+description: "Use when an existing stakeholder scope artifact needs technical maturation before it is ready to hand off to engineering."
 ---
 
 # Refine Skill
