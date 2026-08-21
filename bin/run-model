@@ -277,9 +277,27 @@ run_high_multimodal() {
 # Note on naming: "DSpark" is DeepSeek's proprietary speculative decoding algorithm
 # (DeepSeek Spark), completely unrelated to Apache Spark. It functions similarly to
 # MTP but is optimized for V4, yielding ~1.5x-2x faster inference.
-# Context is intentionally kept at 256K for "Think High" reasoning. If experimenting
-# with "Think Max" in the future (`reasoning_effort: max`), context should be
-# bumped to at least 384K (393216) per Unsloth's recommendations.
+#
+# Settings below follow Unsloth's DeepSeek-V4-Flash-0731 guide
+# (https://unsloth.ai/docs/models/deepseek-v4):
+# - Context is set to the model's stated maximum (1,048,576 / "1M"). Sized for
+#   a dedicated M3 Ultra Mac Studio (512GB unified memory): UD-Q8_K_XL + the
+#   DSpark drafter total ~179GB per Unsloth's own hardware table, leaving
+#   ~333GB of headroom for the KV cache. DeepSeek-V4 uses MLA (Multi-head
+#   Latent Attention), which compresses the per-token KV cache footprint far
+#   below a standard dense-attention model, so even 1M tokens of context fits
+#   comfortably in that headroom without needing hundreds more GB of RAM.
+# - `top-p 0.95` is Unsloth's agentic-scenario recommendation for
+#   DeepSeek-V4-Flash-0731 (general/non-agentic use recommends `1.0` instead);
+#   this tier is used for agentic coding/tool-calling, so 0.95 applies.
+# - `min-p 0.01` matches every llama.cpp invocation shown in Unsloth's guide
+#   (including the DSpark example), even though it isn't called out in their
+#   prose "Recommended Settings" table alongside temp/top-p.
+# - `top-k` is intentionally omitted: none of Unsloth's DeepSeek-V4 examples
+#   pass it, so this tier relies on llama-server's built-in default rather
+#   than reusing the `20` tuned for Qwen3.8's separate sampling profile.
+# - `--spec-draft-n-max 3` is already Unsloth's documented "good default" for
+#   DSpark (~1.9x faster; larger values measured slower) — unchanged here.
 run_experimental() {
   local base_model="${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q8_K_XL.gguf";
   local drafter_model="${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
@@ -299,7 +317,7 @@ run_experimental() {
     --n-gpu-layers     -1 \
     --batch-size       1024 \
     --ubatch-size      256 \
-    --ctx-size         262144 \
+    --ctx-size         1048576 \
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
     --spec-type        draft-dspark \
@@ -312,9 +330,8 @@ run_experimental() {
     --predict          262144 \
     --presence-penalty 0.0 \
     --repeat-penalty   1.0 \
-    --min-p            0.0 \
+    --min-p            0.01 \
     --temp             1.0 \
-    --top-k            20 \
     --top-p            0.95;
 }
 

@@ -146,7 +146,7 @@ You can override default settings via environment variables.
 ### run-model
 Starts a single llama-server directly (no router). Accepts `--tier low|medium|high|low-multimodal|medium-multimodal|high-multimodal|experimental` (default: `medium`). Downloads the model automatically if not present. Fast tiers (no `-multimodal` suffix) also download the model's MTP head and run with speculative decoding; `-multimodal` tiers download the shared multimodal projector (mmproj) instead. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set. The `experimental` tier is standalone-only (not part of the router preset); like the others it defaults to port `8080`, so set `PORT` (e.g. `8081`) to run it alongside the router.
 
-**Shared defaults (all tiers):**
+**Shared defaults (6 Qwen3.8-27B tiers — low/medium/high + their `-multimodal` counterparts):**
 - Host: `127.0.0.1` (override with `HOST`)
 - Port: 8080
 - Sampling: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
@@ -168,11 +168,16 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 | low-multimodal | `UD-Q4_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
 | medium-multimodal | `UD-Q6_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
 | high-multimodal | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
-| experimental | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
 
 Batch/ubatch are identical between a tier and its `-multimodal` counterpart — both stay in the same Qwen3.8-27B family (no architecture change), so there was no technical driver to retune them.
 
-> `experimental` is standalone-only — excluded from the router preset and must be launched via `run-model --tier <tier>`. It defaults to port 8080 like the other tiers; set `PORT` (e.g. 8081) to run it alongside the router.
+**Experimental tier** — `unsloth/DeepSeek-V4-Flash-0731-GGUF` (`UD-Q8_K_XL`) with DSpark speculative decoding, standalone-only (excluded from the router preset; must be launched via `run-model --tier experimental`). It defaults to port 8080 like the other tiers; set `PORT` (e.g. 8081) to run it alongside the router.
+
+| Tier | Quant | KV Cache | Context | Batch/Ubatch |
+|---|---|---|---|---|
+| experimental | `UD-Q8_K_XL` | q8_0/q8_0 | 1,048,576 | 1024 / 256 |
+
+Sampling for `experimental` follows [Unsloth's DeepSeek-V4-Flash-0731 guide](https://unsloth.ai/docs/models/deepseek-v4) rather than the Qwen shared defaults above, and diverges from them in three ways: `min-p=0.01` (matches every llama.cpp example in Unsloth's guide, though not called out in their prose recommendations), no `top-k` override (Unsloth's examples never pass one, so llama-server's built-in default applies instead of the `20` tuned for Qwen3.8), and `top-p=0.95` for the agentic/tool-calling use case this tier targets (Unsloth recommends `1.0` for non-agentic use instead). `temp=1.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`, and `predict=262144` are unchanged from the shared defaults. Context is set to the model's stated 1,048,576-token ("1M") maximum — sized for a dedicated M3 Ultra Mac Studio (512GB unified memory), where the `UD-Q8_K_XL` weights plus the DSpark drafter total ~179GB per Unsloth's own hardware table, leaving ~333GB of headroom for the KV cache; DeepSeek-V4's MLA (Multi-head Latent Attention) architecture keeps the per-token KV cache footprint small enough that even 1M tokens of context fits comfortably within that headroom. `--spec-draft-n-max 3` is Unsloth's documented "good default" for DSpark (~1.9x faster; larger values measured slower).
 
 **MTP speculative decoding:** The fast tiers run with `--spec-type draft-mtp --spec-draft-n-max 2`, per the model card's recommended settings, for ~1.5-2x faster inference. Qwen3.8-27B ships with MTP tensors natively in the main repo, so there is no need to disambiguate local filenames or download a separate model file.
 
