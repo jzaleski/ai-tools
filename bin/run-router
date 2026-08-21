@@ -45,8 +45,6 @@ require_mmproj() {
 #
 # The router serves 6 aliases: fast/no-vision MTP tiers (low, medium, high)
 # and vision-capable tiers (low-multimodal, medium-multimodal, high-multimodal).
-# long/long-multimodal are standalone-only (excluded from the router preset)
-# and launched via `run-model --tier long` / `--tier long-multimodal`.
 require_models() {
   local repo_qwen38="unsloth/Qwen3.8-27B-GGUF";
 

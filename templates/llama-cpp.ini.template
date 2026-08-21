@@ -13,8 +13,6 @@
 #   - jzaleski/<tier>-multimodal  vision-capable: the same model weights but
 #                                  without MTP enabled, plus the shared F16 multimodal projector.
 #                                  No spec-type/spec-draft-n-max.
-# long/long-multimodal are standalone-only (excluded here) — see
-# bin/run-model --tier long / --tier long-multimodal.
 
 [*]
 flash-attn         = on
@@ -33,7 +31,7 @@ top-p              = 0.95
 
 [jzaleski/low]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf
-ctx-size          = 32768
+ctx-size          = 65536
 batch-size        = 2048
 ubatch-size       = 512
 cache-type-k      = q8_0
@@ -44,18 +42,18 @@ chat-template-kwargs = {"reasoning_effort":"low"}
 
 [jzaleski/medium]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf
-ctx-size          = 65536
-batch-size        = 2048
-ubatch-size       = 512
+ctx-size          = 131072
+batch-size        = 1024
+ubatch-size       = 256
 cache-type-k      = q8_0
-cache-type-v      = q4_0
+cache-type-v      = q8_0
 spec-type         = draft-mtp
 spec-draft-n-max  = 2
 chat-template-kwargs = {"reasoning_effort":"medium"}
 
 [jzaleski/high]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf
-ctx-size          = 131072
+ctx-size          = 262144
 batch-size        = 1024
 ubatch-size       = 256
 cache-type-k      = q8_0
@@ -68,7 +66,7 @@ chat-template-kwargs = {"reasoning_effort":"high"}
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf
 mmproj            = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q4_K_XL.mmproj
 image-min-tokens  = 1024
-ctx-size          = 32768
+ctx-size          = 65536
 batch-size        = 2048
 ubatch-size       = 512
 cache-type-k      = q8_0
@@ -79,18 +77,18 @@ chat-template-kwargs = {"reasoning_effort":"low"}
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf
 mmproj            = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q6_K_XL.mmproj
 image-min-tokens  = 1024
-ctx-size          = 65536
-batch-size        = 2048
-ubatch-size       = 512
+ctx-size          = 131072
+batch-size        = 1024
+ubatch-size       = 256
 cache-type-k      = q8_0
-cache-type-v      = q4_0
+cache-type-v      = q8_0
 chat-template-kwargs = {"reasoning_effort":"medium"}
 
 [jzaleski/high-multimodal]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf
 mmproj            = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q8_K_XL.mmproj
 image-min-tokens  = 1024
-ctx-size          = 131072
+ctx-size          = 262144
 batch-size        = 1024
 ubatch-size       = 256
 cache-type-k      = q8_0

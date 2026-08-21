@@ -25,9 +25,9 @@
         "jzaleski/low": {
           "name": "jzaleski/low",
           "limit": {
-            "context": 32768,
-            "input": 28672,
-            "output": 4096
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
           },
           "modalities": {
             "input": ["text"],
@@ -37,9 +37,9 @@
         "jzaleski/low-multimodal": {
           "name": "jzaleski/low-multimodal",
           "limit": {
-            "context": 32768,
-            "input": 28672,
-            "output": 4096
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
           },
           "modalities": {
             "input": ["text", "image"],
@@ -49,9 +49,9 @@
         "jzaleski/medium": {
           "name": "jzaleski/medium",
           "limit": {
-            "context": 65536,
-            "input": 57344,
-            "output": 8192
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
           },
           "modalities": {
             "input": ["text"],
@@ -61,9 +61,9 @@
         "jzaleski/medium-multimodal": {
           "name": "jzaleski/medium-multimodal",
           "limit": {
-            "context": 65536,
-            "input": 57344,
-            "output": 8192
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
           },
           "modalities": {
             "input": ["text", "image"],
@@ -73,9 +73,9 @@
         "jzaleski/high": {
           "name": "jzaleski/high",
           "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
+            "context": 262144,
+            "input": 229376,
+            "output": 32768
           },
           "modalities": {
             "input": ["text"],
@@ -85,9 +85,9 @@
         "jzaleski/high-multimodal": {
           "name": "jzaleski/high-multimodal",
           "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
+            "context": 262144,
+            "input": 229376,
+            "output": 32768
           },
           "modalities": {
             "input": ["text", "image"],
@@ -106,9 +106,9 @@
         "jzaleski/low": {
           "name": "jzaleski/low",
           "limit": {
-            "context": 32768,
-            "input": 28672,
-            "output": 4096
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
           },
           "modalities": {
             "input": ["text"],
@@ -118,9 +118,9 @@
         "jzaleski/low-multimodal": {
           "name": "jzaleski/low-multimodal",
           "limit": {
-            "context": 32768,
-            "input": 28672,
-            "output": 4096
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
           },
           "modalities": {
             "input": ["text", "image"],
@@ -130,9 +130,9 @@
         "jzaleski/medium": {
           "name": "jzaleski/medium",
           "limit": {
-            "context": 65536,
-            "input": 57344,
-            "output": 8192
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
           },
           "modalities": {
             "input": ["text"],
@@ -142,9 +142,9 @@
         "jzaleski/medium-multimodal": {
           "name": "jzaleski/medium-multimodal",
           "limit": {
-            "context": 65536,
-            "input": 57344,
-            "output": 8192
+            "context": 131072,
+            "input": 114688,
+            "output": 16384
           },
           "modalities": {
             "input": ["text", "image"],
@@ -154,9 +154,9 @@
         "jzaleski/high": {
           "name": "jzaleski/high",
           "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
+            "context": 262144,
+            "input": 229376,
+            "output": 32768
           },
           "modalities": {
             "input": ["text"],
@@ -166,9 +166,9 @@
         "jzaleski/high-multimodal": {
           "name": "jzaleski/high-multimodal",
           "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
+            "context": 262144,
+            "input": 229376,
+            "output": 32768
           },
           "modalities": {
             "input": ["text", "image"],

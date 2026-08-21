@@ -71,7 +71,7 @@ require_mmproj() {
   require_model "${mmproj_file}" "${hf_repo}" "mmproj-F16.gguf";
 }
 
-# Fast tiers (low/medium/high/long): unsloth's MTP (multi-token prediction)
+# Fast tiers (low/medium/high): unsloth's MTP (multi-token prediction)
 # build of Qwen3.8-27B, run with llama.cpp's `--spec-type draft-mtp`
 # speculative decoding for ~1.5-2x faster inference. llama.cpp does not yet
 # support combining `--mmproj` with MTP speculative decoding, so these tiers
@@ -89,7 +89,7 @@ run_low() {
     --n-gpu-layers     -1 \
     --batch-size       2048 \
     --ubatch-size      512 \
-    --ctx-size         32768 \
+    --ctx-size         65536 \
     --cache-type-k     q8_0 \
     --cache-type-v     q4_0 \
     --spec-type        draft-mtp \
@@ -118,11 +118,11 @@ run_medium() {
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
     --n-gpu-layers     -1 \
-    --batch-size       2048 \
-    --ubatch-size      512 \
-    --ctx-size         65536 \
+    --batch-size       1024 \
+    --ubatch-size      256 \
+    --ctx-size         131072 \
     --cache-type-k     q8_0 \
-    --cache-type-v     q4_0 \
+    --cache-type-v     q8_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 2 \
     --chat-template-kwargs '{"reasoning_effort":"medium"}' \
@@ -151,37 +151,6 @@ run_high() {
     --n-gpu-layers     -1 \
     --batch-size       1024 \
     --ubatch-size      256 \
-    --ctx-size         131072 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
-    --spec-type        draft-mtp \
-    --spec-draft-n-max 2 \
-    --chat-template-kwargs '{"reasoning_effort":"high"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-k            20 \
-    --top-p            0.95;
-}
-
-run_long() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q8_K_XL.gguf";
-  exec llama-server \
-    --model            "${model}" \
-    --alias            jzaleski/long \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       1024 \
-    --ubatch-size      256 \
     --ctx-size         262144 \
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
@@ -201,7 +170,7 @@ run_long() {
     --top-p            0.95;
 }
 
-# Multimodal tiers (low-multimodal/medium-multimodal/high-multimodal/long-multimodal):
+# Multimodal tiers (low-multimodal/medium-multimodal/high-multimodal):
 # Qwen3.8-27B loaded with the shared F16 multimodal projector so image input works.
 # No MTP speculative decoding.
 
@@ -221,7 +190,7 @@ run_low_multimodal() {
     --n-gpu-layers     -1 \
     --batch-size       2048 \
     --ubatch-size      512 \
-    --ctx-size         32768 \
+    --ctx-size         65536 \
     --cache-type-k     q8_0 \
     --cache-type-v     q4_0 \
     --chat-template-kwargs '{"reasoning_effort":"low"}' \
@@ -252,11 +221,11 @@ run_medium_multimodal() {
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
     --n-gpu-layers     -1 \
-    --batch-size       2048 \
-    --ubatch-size      512 \
-    --ctx-size         65536 \
+    --batch-size       1024 \
+    --ubatch-size      256 \
+    --ctx-size         131072 \
     --cache-type-k     q8_0 \
-    --cache-type-v     q4_0 \
+    --cache-type-v     q8_0 \
     --chat-template-kwargs '{"reasoning_effort":"medium"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
@@ -281,39 +250,6 @@ run_high_multimodal() {
     --mmproj           "${mmproj}" \
     --image-min-tokens 1024 \
     --alias            jzaleski/high-multimodal \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       1024 \
-    --ubatch-size      256 \
-    --ctx-size         131072 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
-    --chat-template-kwargs '{"reasoning_effort":"high"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-k            20 \
-    --top-p            0.95;
-}
-
-run_long_multimodal() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf";
-  local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  exec llama-server \
-    --model            "${model}" \
-    --mmproj           "${mmproj}" \
-    --image-min-tokens 1024 \
-    --alias            jzaleski/long-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -399,13 +335,11 @@ case "${tier}" in
   low)               run_low;;
   medium)            run_medium;;
   high)              run_high;;
-  long)              run_long;;
   experimental)      run_experimental;;
   low-multimodal)    run_low_multimodal;;
   medium-multimodal) run_medium_multimodal;;
   high-multimodal)   run_high_multimodal;;
-  long-multimodal)   run_long_multimodal;;
   *)
-    echo "Error: unknown tier '${tier}'. Use: low, medium, high, long, experimental, low-multimodal, medium-multimodal, high-multimodal, long-multimodal" >&2;
+    echo "Error: unknown tier '${tier}'. Use: low, medium, high, experimental, low-multimodal, medium-multimodal, high-multimodal" >&2;
     exit 1;;
 esac

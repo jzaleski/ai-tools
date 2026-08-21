@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports four model tiers — low (32K ctx), medium (64K ctx), high (128K ctx), long (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 2` speculative decoding (MTP), and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. The low/medium/high tiers and their `-multimodal` counterparts (6 aliases) are served by the router; `long` and `long-multimodal` are **standalone-only** — excluded from the router preset and must be launched via `run-model --tier long` / `--tier long-multimodal`. There is also an `experimental` tier (DeepSeek-V4-Flash, 256K ctx) available standalone via `run-model --tier experimental`. Like the other tiers they bind port `8080` by default; set `PORT` to run one on another port (e.g. `8081`) so it can coexist with the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+Supports three model tiers — low (64K ctx), medium (128K ctx), high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 2` speculative decoding (MTP), and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases (low/medium/high and their `-multimodal` counterparts) are served by the router. There is also an `experimental` tier (DeepSeek-V4-Flash, 256K ctx) available standalone via `run-model --tier experimental`. Like the other tiers it binds port `8080` by default; set `PORT` to run it on another port (e.g. `8081`) so it can coexist with the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -37,10 +37,10 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── configure-git                      # Configures global git settings (core.excludesfile)
 │   ├── configure-opencode                 # Installs opencode via the anomalyco/tap Homebrew tap, configures shell init
 │   ├── download-model                     # Downloads a single GGUF file from Hugging Face via curl
-│   ├── run-model                          # Direct llama-server launcher (single model, --tier low|medium|high|long|<tier>-multimodal)
+│   ├── run-model                          # Direct llama-server launcher (single model, --tier low|medium|high|<tier>-multimodal)
 │   └── run-router                         # Router server (llama.cpp, multi-model; HOST env toggles bind)
 ├── templates/                             # llama-server INI preset templates
-│   └── llama-cpp.ini.template             # Router preset (6 aliases: low/medium/high + -multimodal counterparts; ctx 32K/64K/128K)
+│   └── llama-cpp.ini.template             # Router preset (6 aliases: low/medium/high + -multimodal counterparts; ctx 64K/128K/256K)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (data, engineer, product)
@@ -54,7 +54,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ## Build/Test Commands
 
-Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose on the LAN. `run-model` takes an optional `--tier` flag (low/medium/high/long, or their `-multimodal` counterparts; default medium):
+Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose on the LAN. `run-model` takes an optional `--tier` flag (low/medium/high, or their `-multimodal` counterparts; default medium):
 
 ```bash
 ./bin/run-router                           # multi-model router, localhost (8080)
@@ -65,7 +65,6 @@ HOST=0.0.0.0 ./bin/run-router              # multi-model router, exposed on LAN
 ./bin/run-model                            # single model, medium tier, localhost (8080)
 ./bin/run-model --tier low                 # single model, low tier (fast, no vision)
 ./bin/run-model --tier high                # single model, high tier (fast, no vision)
-./bin/run-model --tier long                # single model, long tier (fast, no vision)
 ./bin/run-model --tier experimental        # single model, experimental tier (DeepSeek-V4-Flash)
 ./bin/run-model --tier high-multimodal     # single model, high tier (vision-capable)
 HOST=0.0.0.0 ./bin/run-model --tier high   # single model, high tier, exposed on LAN
@@ -132,7 +131,7 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │       └───────────────────────┘  │
 └──────────────────────────────────┘
 ```
-(`jzaleski/long`, `jzaleski/long-multimodal`, and `jzaleski/experimental` are standalone-only, via `run-model --tier <tier>`.)
+(`jzaleski/experimental` is standalone-only, via `run-model --tier <tier>`.)
 
 ---
 
@@ -181,7 +180,7 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 ```
 
 The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 32K, medium: 64K, high: 128K); 6 models: `jzaleski/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.8-27B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively. `long`/`long-multimodal` are **not** wired into opencode — they are standalone-only via `run-model --tier long` / `--tier long-multimodal` (port `8080` by default; override `PORT` to coexist with the router).
+- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 64K, medium: 128K, high: 256K); 6 models: `jzaleski/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.8-27B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively.
 - **llama.cpp (server)**: `server-hostname-or-ip:8080` — same 6 aliases and contexts; reach this endpoint by launching with `HOST=0.0.0.0`
 
 Each provider specifies model limits for context window, input tokens, and output tokens, plus per-model `modalities` (`jzaleski/<tier>` is text-only input; `jzaleski/<tier>-multimodal` is text+image input). Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
@@ -246,15 +245,15 @@ BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
 
 - GPU acceleration enabled with flash attention by default
 - Use Q4-Q6 quantization for memory-constrained environments
-- KV cache quantization is tier-specific: low=q8_0/q4_0 (K/V), medium=q8_0/q4_0 (K/V), high=q8_0/q8_0, long=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces; V-cache matches `high`'s q8_0 on `long` too; identical between a tier and its `-multimodal` counterpart
-- Context size is tier-specific: low=32K, medium=64K, high=128K, long=256K
-- Batch/ubatch is tier-specific and scales inversely with context for steady latency on Apple Silicon: low & medium=2048/512, high & long=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.8-27B family (no architecture change to drive retuning)
+- KV cache quantization is tier-specific: low=q8_0/q4_0 (K/V), medium=q8_0/q8_0 (K/V), high=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces; V-cache moves to q8_0 at 128K+ context (medium and high) to preserve quality at longer context lengths; identical between a tier and its `-multimodal` counterpart
+- Context size is tier-specific: low=64K, medium=128K, high=256K
+- Batch/ubatch is tier-specific and scales inversely with context for steady latency on Apple Silicon: low=2048/512, medium & high=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.8-27B family (no architecture change to drive retuning)
 - Sampling defaults are tuned for coding and tool-calling per Qwen3.8's thinking/coding profile: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`. Server-side `predict=262144` caps default output length (clients may override via `max_tokens`).
-- MTP speculative decoding (`jzaleski/low|medium|high|long`): `--spec-type draft-mtp --spec-draft-n-max 2`, per the unsloth model card's recommended settings, for ~1.5-2x faster inference; llama.cpp does not yet support combining this with `--mmproj`, so these tiers are text-only
-- `--reasoning-preserve` is set on all 8 tiers (server-wide default for the chat template's `preserve_reasoning` kwarg, matching Qwen3.8's agentic-use recommendation) — preserves full reasoning traces across turns at the cost of larger accumulated per-turn context; reconsider on the smaller tiers if context-constrained
+- MTP speculative decoding (`jzaleski/low|medium|high`): `--spec-type draft-mtp --spec-draft-n-max 2`, per the unsloth model card's recommended settings, for ~1.5-2x faster inference; llama.cpp does not yet support combining this with `--mmproj`, so these tiers are text-only
+- `--reasoning-preserve` is set on all 6 tiers (server-wide default for the chat template's `preserve_reasoning` kwarg, matching Qwen3.8's agentic-use recommendation) — preserves full reasoning traces across turns at the cost of larger accumulated per-turn context; reconsider on the smaller tiers if context-constrained
 - `--image-min-tokens 1024` is set on all `-multimodal` tiers to preserve grounding/bbox accuracy on Qwen-VL models (see [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842))
-- `--cache-reuse 256` + `--cache-ram -1` are set on all 8 tiers — reuses KV cache for the shared prefix when a request extends a previous prompt (the common shape of an agent loop), with the idle-slot cache's default 8GiB budget removed given RAM to spare; pairs well with `--reasoning-preserve` making prompts grow faster
-- `--load-mode mlock` is set on all 8 tiers to pin model weights in RAM, avoiding macOS's background memory compression and the decompression stall it would otherwise cause on the first request after an idle period
+- `--cache-reuse 256` + `--cache-ram -1` are set on all 6 tiers — reuses KV cache for the shared prefix when a request extends a previous prompt (the common shape of an agent loop), with the idle-slot cache's default 8GiB budget removed given RAM to spare; pairs well with `--reasoning-preserve` making prompts grow faster
+- `--load-mode mlock` is set on all 6 tiers to pin model weights in RAM, avoiding macOS's background memory compression and the decompression stall it would otherwise cause on the first request after an idle period
 
 ## Troubleshooting
 
