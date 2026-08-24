@@ -31,14 +31,15 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   │   ├── skills/                 # Vendored workflow skills (no external plugins)
 │   │   │   ├── analyze/            # Find patterns / answer questions (pipeline stage 2)
 │   │   │   ├── coder/              # Sub-agent implementer (TDD, self-review)
+│   │   │   ├── debugging/          # Root cause analysis for bugs and test failures
 │   │   │   ├── finisher/           # Verify, merge/PR, cleanup
-│   │   │   ├── handoff/             # Package a refined brief into a liftable eng hand-off (product stage 3)
+│   │   │   ├── handoff/            # Package a refined brief into a liftable eng hand-off (product stage 3)
 │   │   │   ├── ingest/             # Extract + clean + normalize raw files (pipeline stage 1)
 │   │   │   ├── planner/            # Task decomposition + independence analysis
 │   │   │   ├── refine/             # Mature a scope into a ticket-ready brief (product stage 2)
 │   │   │   ├── report/             # Deliver findings in one+ formats (pipeline stage 3)
 │   │   │   ├── researcher/         # Design & discovery (approval-gated)
-│   │   │   ├── reviewer/         # Spec compliance + code quality review
+│   │   │   ├── reviewer/           # Spec compliance + code quality review
 │   │   │   ├── scope/              # Stakeholder requirements intake (product stage 1)
 │   │   │   └── triage/             # Classify & route an inbound request (product front door)
 │   │   └── opencode.json           # Opencode provider and agent configuration
@@ -113,6 +114,7 @@ Workflow skills are vendored locally under `home/.config/opencode/skills/` — n
 | `researcher` | Design & discovery — clarifying questions, approach proposals, spec writing with user approval gate |
 | `planner` | Task decomposition with exact file paths, code, commands, and parallel-dispatch independence analysis |
 | `coder` | Sub-agent implementer — TDD, self-review, structured status reporting |
+| `debugging` | Root cause analysis for bugs, test failures, or unexpected behavior |
 | `reviewer` | Dual-mode review — spec compliance (did they build what was asked?) then code quality |
 | `finisher` | Verify tests, detect workspace state, present merge/PR options, execute with cleanup |
 
@@ -370,6 +372,9 @@ The following MCP integrations are configured but **disabled by default**:
 
 | Integration | Type | Command / URL | Notes |
 |-------------|------|---------------|-------|
+| AWS API | local | `uvx awslabs.aws-api-mcp-server@latest` | Enable in `opencode.json` to use; requires `uvx` (uv) |
+| Google Cloud | local | `npx -y @google-cloud/gcloud-mcp` | Enable in `opencode.json` to use; requires Node.js/npm on `PATH` (not installed by the bootstrap system) |
+| GitHub | remote | `https://api.githubcopilot.com/mcp/` | Enable in `opencode.json` to use; requires a Personal Access Token in headers |
 | Jira | remote | `https://mcp.atlassian.com/v1/mcp` | Enable in `opencode.json` to use |
 | Playwright | local | `npx @playwright/mcp@latest` | Enable in `opencode.json` to use; requires Node.js/npm on `PATH` (not installed by the bootstrap system) |
 | Vercel | remote | `https://mcp.vercel.com/v1/mcp` | Enable in `opencode.json` to use |

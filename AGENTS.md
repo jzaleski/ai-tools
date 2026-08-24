@@ -195,11 +195,14 @@ MCP integrations are declared in `opencode.json` but **disabled by default**:
 
 | Integration | Type | Command / URL |
 |-------------|------|---------------|
+| AWS API | local | `uvx awslabs.aws-api-mcp-server@latest` |
+| Google Cloud | local | `npx -y @google-cloud/gcloud-mcp` |
+| GitHub | remote | `https://api.githubcopilot.com/mcp/` |
 | Jira | remote | `https://mcp.atlassian.com/v1/mcp` |
 | Playwright | local | `npx @playwright/mcp@latest` |
 | Vercel | remote | `https://mcp.vercel.com/v1/mcp` |
 
-Toggle `enabled: true` in `opencode.json` to activate. Playwright's `npx` command requires Node.js/npm on `PATH` — not installed by the bootstrap system.
+Toggle `enabled: true` in `opencode.json` to activate. Playwright and Google Cloud's `npx` commands require Node.js/npm on `PATH` — not installed by the bootstrap system. AWS API requires `uvx` (uv). GitHub requires a Personal Access Token in headers.
 
 ### Opencode Wrapper
 
