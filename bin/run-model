@@ -82,7 +82,7 @@ run_low() {
   require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q4_K_XL.gguf";
   exec llama-server \
     --model            "${model}" \
-    --alias            jzaleski/low \
+    --alias            jzaleski/default/low \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -113,7 +113,7 @@ run_medium() {
   require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q6_K_XL.gguf";
   exec llama-server \
     --model            "${model}" \
-    --alias            jzaleski/medium \
+    --alias            jzaleski/default/medium \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -144,7 +144,7 @@ run_high() {
   require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q8_K_XL.gguf";
   exec llama-server \
     --model            "${model}" \
-    --alias            jzaleski/high \
+    --alias            jzaleski/default/high \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -183,7 +183,7 @@ run_low_multimodal() {
     --model            "${model}" \
     --mmproj           "${mmproj}" \
     --image-min-tokens 1024 \
-    --alias            jzaleski/low-multimodal \
+    --alias            jzaleski/default/low-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -216,7 +216,7 @@ run_medium_multimodal() {
     --model            "${model}" \
     --mmproj           "${mmproj}" \
     --image-min-tokens 1024 \
-    --alias            jzaleski/medium-multimodal \
+    --alias            jzaleski/default/medium-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -249,7 +249,7 @@ run_high_multimodal() {
     --model            "${model}" \
     --mmproj           "${mmproj}" \
     --image-min-tokens 1024 \
-    --alias            jzaleski/high-multimodal \
+    --alias            jzaleski/default/high-multimodal \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -298,7 +298,7 @@ run_high_multimodal() {
 #   than reusing the `20` tuned for Qwen3.8's separate sampling profile.
 # - `--spec-draft-n-max 3` is already Unsloth's documented "good default" for
 #   DSpark (~1.9x faster; larger values measured slower) — unchanged here.
-run_experimental() {
+run_experimental_quark() {
   local base_model="${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q8_K_XL.gguf";
   local drafter_model="${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
 
@@ -310,7 +310,7 @@ run_experimental() {
   exec llama-server \
     --model            "${first_part}" \
     --spec-draft-model "${drafter_model}" \
-    --alias            jzaleski/experimental \
+    --alias            jzaleski/experimental/quark \
     --host             "${HOST:-"127.0.0.1"}" \
     --port             "${PORT:-"8080"}" \
     --flash-attn       on \
@@ -335,7 +335,38 @@ run_experimental() {
     --top-p            0.95;
 }
 
-tier="medium";
+run_experimental_boson() {
+  local model="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/Qwen3.8-Flash-Next-UD-Q8_K_XL.gguf";
+  require_model "${model}" "unsloth/Qwen3.8-Flash-Next-GGUF" "Qwen3.8-Flash-Next-UD-Q8_K_XL.gguf";
+  exec llama-server \
+    --model            "${model}" \
+    --alias            jzaleski/experimental/boson \
+    --host             "${HOST:-"127.0.0.1"}" \
+    --port             "${PORT:-"8080"}" \
+    --flash-attn       on \
+    --n-gpu-layers     -1 \
+    --batch-size       1024 \
+    --ubatch-size      256 \
+    --ctx-size         262144 \
+    --cache-type-k     q8_0 \
+    --cache-type-v     q8_0 \
+    --spec-type        draft-mtp \
+    --spec-draft-n-max 3 \
+    --chat-template-kwargs '{"reasoning_effort":"high"}' \
+    --reasoning-preserve \
+    --cache-reuse      256 \
+    --cache-ram        -1 \
+    --load-mode        mlock \
+    --predict          262144 \
+    --presence-penalty 0.0 \
+    --repeat-penalty   1.0 \
+    --min-p            0.0 \
+    --temp             1.0 \
+    --top-k            20 \
+    --top-p            0.95;
+}
+
+tier="default/medium";
 for arg in "$@"; do
   case "${arg}" in
     --tier) ;;
@@ -349,14 +380,21 @@ for arg in "$@"; do
 done
 
 case "${tier}" in
-  low)               run_low;;
-  medium)            run_medium;;
-  high)              run_high;;
-  experimental)      run_experimental;;
-  low-multimodal)    run_low_multimodal;;
-  medium-multimodal) run_medium_multimodal;;
-  high-multimodal)   run_high_multimodal;;
+  default/low)               run_low;;
+  default/medium)            run_medium;;
+  default/high)              run_high;;
+  default/low-multimodal)    run_low_multimodal;;
+  default/medium-multimodal) run_medium_multimodal;;
+  default/high-multimodal)   run_high_multimodal;;
+  experimental/quark)        run_experimental_quark;;
+  experimental/boson)        run_experimental_boson;;
+  experimental)
+    echo "Error: the 'experimental' tier has been removed. Use experimental/quark or experimental/boson." >&2;
+    exit 1;;
+  low|medium|high|low-multimodal|medium-multimodal|high-multimodal)
+    echo "Error: standard tiers have moved to the default/ namespace (e.g. default/${tier})." >&2;
+    exit 1;;
   *)
-    echo "Error: unknown tier '${tier}'. Use: low, medium, high, experimental, low-multimodal, medium-multimodal, high-multimodal" >&2;
+    echo "Error: unknown tier '${tier}'. Use: default/low, default/medium, default/high, default/low-multimodal, default/medium-multimodal, default/high-multimodal, experimental/quark, experimental/boson" >&2;
     exit 1;;
 esac
