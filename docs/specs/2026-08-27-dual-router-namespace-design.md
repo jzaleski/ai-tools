@@ -25,17 +25,9 @@ Migrate the existing flat model namespace (`jzaleski/low`, `jzaleski/experimenta
 
 ## Architecture
 
-### Default Router
-*   **Port:** 8080 (default)
-*   **Script:** `bin/run-router`
-*   **Template:** `templates/llama-cpp-default.ini.template`
-*   **Role:** Serves the 6 standard Qwen aliases.
-
-### Experimental Router
-*   **Port:** 8081 (default)
-*   **Script:** `bin/run-experimental-router` (New)
-*   **Template:** `templates/llama-cpp-experimental.ini.template` (New)
-*   **Role:** Serves the experimental particle aliases.
+### The Router (`bin/run-router`)
+*   **Default Mode:** Runs on Port 8080. Serves the 6 standard Qwen aliases using `llama-cpp-default.ini.template`.
+*   **Experimental Mode:** Runs on Port 8081. Triggered via a flag (e.g. `--experimental`). Serves the experimental particle aliases using `llama-cpp-experimental.ini.template`.
 
 ### Single Model Launcher
 *   **Script:** `bin/run-model`
@@ -49,9 +41,8 @@ Migrate the existing flat model namespace (`jzaleski/low`, `jzaleski/experimenta
 
 2.  **Script Updates:**
     *   Update `bin/run-model` to parse `default/*` and `experimental/*` tiers. Add the download/execution logic for `Qwen3.8-Flash-Next` under the `boson` tier.
-    *   Update `bin/run-router` to use `llama-cpp-default.ini.template`.
-    *   Create `bin/run-experimental-router` to require the experimental models and use `llama-cpp-experimental.ini.template`.
+    *   Update `bin/run-router` to accept an `--experimental` flag. When present, it switches to port 8081 (unless overridden) and loads `llama-cpp-experimental.ini.template`.
 
 3.  **Config & Docs:**
-    *   Update `home/.config/opencode/opencode.json` to define the new `default/` and `experimental/` models across the local and server providers.
-    *   Update `AGENTS.md` and `README.md` to reflect the new architecture, namespaces, and the new 8081 port for experimental testing.
+    *   Update `home/.config/opencode/opencode.json` to define the new `default/` and `experimental/` models across the local and server providers. Add a new local provider for the experimental router on port 8081.
+    *   Update `AGENTS.md` and `README.md` to reflect the new architecture, namespaces, and the `--experimental` router flag.
