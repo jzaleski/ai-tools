@@ -75,14 +75,76 @@ render_preset() {
   echo "${out}";
 }
 
+require_experimental_models() {
+  # quark: DeepSeek-V4-Flash
+  require_split_model "${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q8_K_XL.gguf" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "UD-Q8_K_XL/DeepSeek-V4-Flash-0731-UD-Q8_K_XL.gguf" 5;
+  require_model "${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
+
+  # boson: Qwen3.8-Flash-Next
+  require_model "${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/Qwen3.8-Flash-Next-UD-Q8_K_XL.gguf" "unsloth/Qwen3.8-Flash-Next-GGUF" "Qwen3.8-Flash-Next-UD-Q8_K_XL.gguf";
+}
+
+# Ensure all parts of a split GGUF model exist, downloading them if missing.
+# Args: <base-model-file> <hf-repo> <hf-base-filename> [num-parts]
+require_split_model() {
+  local base_model_file="${1}";
+  local hf_repo="${2}";
+  local hf_base_filename="${3}";
+  local num_parts="${4:-1}";
+
+  if [[ "${num_parts}" -eq 1 ]]; then
+    require_model "${base_model_file}" "${hf_repo}" "${hf_base_filename}";
+    return 0;
+  fi
+
+  local local_dir="$(dirname "${base_model_file}")";
+  local local_base="$(basename "${base_model_file}" .gguf)";
+  local hf_dir="$(dirname "${hf_base_filename}")";
+  local hf_base="$(basename "${hf_base_filename}" .gguf)";
+  
+  if [[ "${hf_dir}" == "." ]]; then
+    hf_dir="";
+  else
+    hf_dir="${hf_dir}/";
+  fi
+
+  local i;
+  for ((i=1; i<=num_parts; i++)); do
+    local part_suffix;
+    part_suffix=$(printf -- "-%05d-of-%05d.gguf" "${i}" "${num_parts}");
+    require_model "${local_dir}/${local_base}${part_suffix}" "${hf_repo}" "${hf_dir}${hf_base}${part_suffix}";
+  done
+}
+
 main() {
+  local mode="default";
+  for arg in "$@"; do
+    case "${arg}" in
+      --experimental) mode="experimental";;
+      --default)      mode="default";;
+    esac
+  done
+
+  local preset_file;
+  local default_port;
+
+  if [[ "${mode}" == "experimental" ]]; then
+    require_experimental_models;
+    preset_file="${TEMPLATES_DIR}/llama-cpp-experimental.ini.template";
+    default_port="8081";
+  else
+    require_models;
+    preset_file="${TEMPLATES_DIR}/llama-cpp-default.ini.template";
+    default_port="8080";
+  fi
+
   local preset;
-  require_models;
-  preset="$(render_preset "${TEMPLATES_DIR}/llama-cpp.ini.template")";
+  preset="$(render_preset "${preset_file}")";
+  
   exec llama-server \
     --host "${HOST:-"127.0.0.1"}" \
-    --port "${PORT:-"8080"}" \
+    --port "${PORT:-"${default_port}"}" \
     --models-preset "${preset}";
 }
 
-main;
+main "$@";
