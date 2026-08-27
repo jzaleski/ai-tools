@@ -339,42 +339,36 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 └──────────┬───────────┘
            │
            ▼
-┌──────────────────────┐
-│    LLM Providers     │
-│                      │
-│  ┌────────────────┐  │ ┌────────────────┐  ┌────────────────────┐
-│  │ Local (default)│  │ │ Server (default) │ │ Local (experimental)│
-│  │ localhost:8080 │  │ │ remote:8080       │ │ localhost:8081      │
-│  │ per-tier ctx   │  │ │ per-tier ctx      │ │ quark / boson ctx   │
-│  └────────────────┘  │ └────────────────┘  └────────────────────┘
-└──────────────────────┘
+┌───────────────────────────────────────────────────────┐
+│                     LLM Providers                     │
+│                                                       │
+│ ┌───────────────────────┐  ┌────────────────────────┐ │
+│ │ jzaleski/default      │  │ jzaleski/experimental  │ │
+│ │ server-hostname-or-ip │  │ server-hostname-or-ip  │ │
+│ │ :8080, per-tier ctx   │  │ :8081, quark/boson ctx │ │
+│ └───────────────────────┘  └────────────────────────┘ │
+└───────────────────────────────────────────────────────┘
 ```
 
 ### Provider Configuration
 
-The opencode configuration (`~/.config/opencode/opencode.json`) defines 3 provider endpoints:
+The opencode configuration (`~/.config/opencode/opencode.json`) defines 2 provider endpoints, one per router namespace:
 
-The two `(default)` providers expose the same 6 `jzaleski/default/*` aliases with identical per-tier limits; they differ only in endpoint (the server provider is the same models reached by launching `run-router --default` with `HOST=0.0.0.0`). The fast aliases (`jzaleski/default/low`,
+The `jzaleski/default` provider exposes the 6 `jzaleski/default/*` aliases at `server-hostname-or-ip:8080`; the fast aliases (`jzaleski/default/low`,
 `jzaleski/default/medium`, `jzaleski/default/high`) are text-only (MTP speculative decoding
 does not yet support `--mmproj`); the `-multimodal` aliases accept image
-input. The `(experimental)` provider exposes `jzaleski/experimental/quark` and `jzaleski/experimental/boson` at `localhost:8081` (text-only); there is no server-side `(experimental)` provider configured.
+input. The `jzaleski/experimental` provider exposes `jzaleski/experimental/quark` and `jzaleski/experimental/boson` at `server-hostname-or-ip:8081` (both text-only). Both `baseURL`s ship templated with the `server-hostname-or-ip` placeholder rather than a hardcoded `localhost` — replace it with `localhost` if opencode runs on the same machine as the llama-server, or with that machine's actual hostname/IP if opencode runs elsewhere. Either way, the `HOST` env var on the server side independently governs whether the underlying router/model binds to `127.0.0.1` (local-only) or `0.0.0.0` (LAN-reachable) — `HOST` and the provider's `baseURL` are two separate settings that both need to agree for a remote connection to work. Each model's display `name` in opencode is a short human-readable label (e.g. `Low`, `High (Multimodal)`, `Quark`, `Boson`) rather than the full `jzaleski/<namespace>/<alias>` model ID.
 
-| Provider | Endpoint | Model | Context | Input | Output | Modalities |
-|----------|----------|-------|---------|-------|--------|------------|
-| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/low | 65,536 | 57,344 | 8,192 | text in, text out |
-| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/low-multimodal | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/medium | 131,072 | 114,688 | 16,384 | text in, text out |
-| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/medium-multimodal | 131,072 | 114,688 | 16,384 | text+image in, text out |
-| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/high | 262,144 | 229,376 | 32,768 | text in, text out |
-| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/high-multimodal | 262,144 | 229,376 | 32,768 | text+image in, text out |
-| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/low | 65,536 | 57,344 | 8,192 | text in, text out |
-| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/low-multimodal | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/medium | 131,072 | 114,688 | 16,384 | text in, text out |
-| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/medium-multimodal | 131,072 | 114,688 | 16,384 | text+image in, text out |
-| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/high | 262,144 | 229,376 | 32,768 | text in, text out |
-| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/high-multimodal | 262,144 | 229,376 | 32,768 | text+image in, text out |
-| llama.cpp (local) (experimental) | `localhost:8081` | jzaleski/experimental/quark | 1,048,576 | 917,504 | 131,072 | text in, text out |
-| llama.cpp (local) (experimental) | `localhost:8081` | jzaleski/experimental/boson | 262,144 | 229,376 | 32,768 | text in, text out |
+| Provider | Endpoint | Model | Display Name | Context | Input | Output | Modalities |
+|----------|----------|-------|---------------|---------|-------|--------|------------|
+| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/low | Low | 65,536 | 57,344 | 8,192 | text in, text out |
+| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/low-multimodal | Low (Multimodal) | 65,536 | 57,344 | 8,192 | text+image in, text out |
+| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/medium | Medium | 131,072 | 114,688 | 16,384 | text in, text out |
+| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/medium-multimodal | Medium (Multimodal) | 131,072 | 114,688 | 16,384 | text+image in, text out |
+| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/high | High | 262,144 | 229,376 | 32,768 | text in, text out |
+| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/high-multimodal | High (Multimodal) | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| jzaleski/experimental | `server-hostname-or-ip:8081` | jzaleski/experimental/quark | Quark | 1,048,576 | 917,504 | 131,072 | text in, text out |
+| jzaleski/experimental | `server-hostname-or-ip:8081` | jzaleski/experimental/boson | Boson | 262,144 | 229,376 | 32,768 | text in, text out |
 
 ### Agent Roles
 
@@ -463,7 +457,7 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
 
 - `autoupdate`: disabled (manual updates only)
 - `default_agent`: `engineer` (full tool access for general work)
-- Server providers use `server-hostname-or-ip` placeholder - replace with actual hostname/IP
+- Both providers ship with a `server-hostname-or-ip` placeholder in their `baseURL` — replace with `localhost` or the actual hostname/IP (see Provider Configuration above)
 - Input/output token limits set to optimize for local inference constraints
 
 ## Performance Tips

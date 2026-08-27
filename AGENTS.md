@@ -109,10 +109,10 @@ Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-model`
 
 ## Environment Variables
 
-| Variable | Description | Default (Local) | Default (Server) |
-|----------|-------------|-----------------|------------------|
-| `HOST` | Host address | `127.0.0.1` | `0.0.0.0` |
-| `PORT` | Network port | `8080` | `8080` |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `HOST` | Bind address | `127.0.0.1` (set `0.0.0.0` to expose on the LAN) |
+| `PORT` | Network port | `8080` for `--default` / `default/*` tiers, `8081` for `--experimental` / `experimental/*` tiers |
 
 Model-specific parameters (quantization, context size, sampling settings, etc.) are configured in the INI preset files under `templates/`.
 
@@ -183,23 +183,23 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 └─────────┬────────┘
           │
           ▼
-┌──────────────────┐
-│   LLM Providers  │
-│                  │
-│ ┌──────────────┐ │ ┌───────────────┐ ┌──────────────────┐
-│ │ Local        │ │ │ Server        │ │ Local             │
-│ │ (default)    │ │ │ (default)     │ │ (experimental)    │
-│ │ Port 8080    │ │ │ (remote)      │ │ Port 8081         │
-│ └──────────────┘ │ └───────────────┘ └──────────────────┘
-└──────────────────┘
+┌────────────────────────────────────────────────┐
+│                 LLM Providers                  │
+│                                                │
+│ ┌──────────────────┐ ┌───────────────────────┐ │
+│ │ jzaleski/default │ │ jzaleski/experimental │ │
+│ │ Port 8080        │ │ Port 8081             │ │
+│ └──────────────────┘ └───────────────────────┘ │
+└────────────────────────────────────────────────┘
 ```
 
-The opencode configuration defines 3 provider endpoints:
-- **llama.cpp (local) (default)**: `localhost:8080` — per-tier context (low: 64K, medium: 128K, high: 256K); 6 models: `jzaleski/default/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/default/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.8-27B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively.
-- **llama.cpp (server) (default)**: `server-hostname-or-ip:8080` — same 6 aliases and contexts; reach this endpoint by launching with `HOST=0.0.0.0`
-- **llama.cpp (local) (experimental)**: `localhost:8081` — 2 models: `jzaleski/experimental/quark` (DeepSeek-V4-Flash-0731, 1M ctx, text-only) and `jzaleski/experimental/boson` (Qwen3.8-Flash-Next, 256K ctx, text-only). No server-side experimental provider is configured.
+The opencode configuration defines 2 provider endpoints, one per router namespace, both templated with a `server-hostname-or-ip` placeholder in their `baseURL` (replace with `localhost` or an actual hostname/IP):
+- **jzaleski/default**: `server-hostname-or-ip:8080` — per-tier context (low: 64K, medium: 128K, high: 256K); 6 models: `jzaleski/default/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/default/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.8-27B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively. Each model's display `name` is a short human-readable label (`Low`, `Medium`, `High`, and their `(Multimodal)` counterparts).
+- **jzaleski/experimental**: `server-hostname-or-ip:8081` — 2 models: `jzaleski/experimental/quark` (DeepSeek-V4-Flash-0731, 1M ctx, text-only, display name `Quark`) and `jzaleski/experimental/boson` (Qwen3.8-Flash-Next, 256K ctx, text-only, display name `Boson`).
 
-Each provider specifies model limits for context window, input tokens, and output tokens, plus per-model `modalities` (`jzaleski/default/<tier>` is text-only input; `jzaleski/default/<tier>-multimodal` is text+image input; both experimental models are text-only). Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
+Neither provider is opinionated about network topology — the `HOST` env var already governs whether the underlying router/model binds to `127.0.0.1` (local-only) or `0.0.0.0` (LAN-reachable). If opencode runs on a different machine than the llama-server, edit the relevant provider's `baseURL` directly in your own `opencode.json` (e.g. `http://192.168.1.50:8080/v1`) instead of maintaining a separate checked-in provider.
+
+Each provider specifies model limits for context window, input tokens, and output tokens, plus per-model `modalities` (`jzaleski/default/<tier>` is text-only input; `jzaleski/default/<tier>-multimodal` is text+image input; both experimental models are text-only).
 
 ### Disabled Providers & Built-in Agents
 
