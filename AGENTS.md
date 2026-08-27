@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-The default router (`--default`) binds to port 8080 and supports three model tiers — low (64K ctx), medium (128K ctx), high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/default/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/default/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases (low/medium/high and their `-multimodal` counterparts) are served by the default router. The experimental router (`--experimental`) binds to port 8081 by default so it can coexist with the default router, and serves DeepSeek-V4-Flash under the namespace `jzaleski/experimental/<particle>` (e.g. `quark` for 1M ctx, `boson` for 2M ctx). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+The default router (`--default`) binds to port 8080 and supports three model tiers — low (64K ctx), medium (128K ctx), high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/default/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/default/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases (low/medium/high and their `-multimodal` counterparts) are served by the default router. The experimental router (`--experimental`) binds to port 8081 by default so it can coexist with the default router, and serves two additional aliases under the `jzaleski/experimental/<particle>` namespace: `quark` (DeepSeek-V4-Flash-0731, 1M ctx, DSpark speculative decoding) and `boson` (Qwen3.8-Flash-Next, 256K ctx, MTP speculative decoding). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -67,8 +67,8 @@ HOST=0.0.0.0 ./bin/run-router --default    # default multi-model router, exposed
 ./bin/run-model                            # single model, default medium tier, localhost (8080)
 ./bin/run-model --tier default/low         # single model, low tier (fast, no vision)
 ./bin/run-model --tier default/high        # single model, high tier (fast, no vision)
-./bin/run-model --tier experimental/quark  # single model, experimental tier (DeepSeek-V4-Flash, 1M ctx)
-./bin/run-model --tier experimental/boson  # single model, experimental tier (DeepSeek-V4-Flash, 2M ctx)
+./bin/run-model --tier experimental/quark  # single model, experimental tier (DeepSeek-V4-Flash-0731, 1M ctx, DSpark)
+./bin/run-model --tier experimental/boson  # single model, experimental tier (Qwen3.8-Flash-Next, 256K ctx, MTP)
 ./bin/run-model --tier default/high-multimodal # single model, high tier (vision-capable)
 HOST=0.0.0.0 ./bin/run-model --tier default/high # single model, high tier, exposed on LAN
 ```
@@ -184,20 +184,22 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
           │
           ▼
 ┌──────────────────┐
-│    LLM Provider  │
+│   LLM Providers  │
 │                  │
-│ ┌──────────────┐ │ ┌───────────────┐
-│ │ Local        │ │ │ Server        │
-│ │ Port 8080    │ │ │ (remote)      │
-│ └──────────────┘ │ └───────────────┘
+│ ┌──────────────┐ │ ┌───────────────┐ ┌──────────────────┐
+│ │ Local        │ │ │ Server        │ │ Local             │
+│ │ (default)    │ │ │ (default)     │ │ (experimental)    │
+│ │ Port 8080    │ │ │ (remote)      │ │ Port 8081         │
+│ └──────────────┘ │ └───────────────┘ └──────────────────┘
 └──────────────────┘
 ```
 
-The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 64K, medium: 128K, high: 256K); 6 models: `jzaleski/default/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/default/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.8-27B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively.
-- **llama.cpp (server)**: `server-hostname-or-ip:8080` — same 6 aliases and contexts; reach this endpoint by launching with `HOST=0.0.0.0`
+The opencode configuration defines 3 provider endpoints:
+- **llama.cpp (local) (default)**: `localhost:8080` — per-tier context (low: 64K, medium: 128K, high: 256K); 6 models: `jzaleski/default/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/default/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.8-27B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively.
+- **llama.cpp (server) (default)**: `server-hostname-or-ip:8080` — same 6 aliases and contexts; reach this endpoint by launching with `HOST=0.0.0.0`
+- **llama.cpp (local) (experimental)**: `localhost:8081` — 2 models: `jzaleski/experimental/quark` (DeepSeek-V4-Flash-0731, 1M ctx, text-only) and `jzaleski/experimental/boson` (Qwen3.8-Flash-Next, 256K ctx, text-only). No server-side experimental provider is configured.
 
-Each provider specifies model limits for context window, input tokens, and output tokens, plus per-model `modalities` (`jzaleski/default/<tier>` is text-only input; `jzaleski/default/<tier>-multimodal` is text+image input). Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
+Each provider specifies model limits for context window, input tokens, and output tokens, plus per-model `modalities` (`jzaleski/default/<tier>` is text-only input; `jzaleski/default/<tier>-multimodal` is text+image input; both experimental models are text-only). Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
 ### Disabled Providers & Built-in Agents
 

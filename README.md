@@ -4,7 +4,7 @@ Utilities for running local LLMs with llama-server
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. It supports three model tiers — low (64K ctx), medium (128K ctx), and high (256K ctx) — each available in two variants: a fast, text-only variant (`jzaleski/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp` speculative decoding for ~1.5-2x faster inference, and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the same Qwen3.8-27B model with a multimodal projector. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup. All six aliases run within the Qwen3.8-27B family (speed → quality → context; fast → vision-capable) and are served by the router on port `8080`. There is also an `experimental` tier (DeepSeek-V4-Flash) available standalone via `run-model --tier experimental`. `run-model` also defaults to port `8080`; set `PORT` (e.g. `8081`) to run it alongside the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
+This repository provides scripts and configurations for running local AI models using llama-server. The default router (`run-router --default`) binds to port `8080` and serves three model tiers — low (64K ctx), medium (128K ctx), and high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/default/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/default/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases are served by the default router. The experimental router (`run-router --experimental`) binds to port `8081` by default so it can coexist with the default router, and serves two more aliases under the `jzaleski/experimental/<particle>` namespace: `quark` (`unsloth/DeepSeek-V4-Flash-0731-GGUF`, 1M ctx, DSpark speculative decoding) and `boson` (`unsloth/Qwen3.8-Flash-Next-GGUF`, 256K ctx, MTP speculative decoding). `run-model` bypasses both routers and starts a single llama-server directly for any of the eight tiers via `--tier <namespace>/<tier>` (e.g. `default/high`, `experimental/quark`), defaulting to `default/medium`; its default listen port matches the tier's namespace (`8080` for `default/*`, `8081` for `experimental/*`), mirroring the two routers so a default and an experimental tier can run side by side without a `PORT` override. Bind address for both routers and `run-model` is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -18,10 +18,11 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── configure-git               # Configures global git settings (core.excludesfile)
 │   ├── configure-opencode          # Installs opencode via the anomalyco/tap Homebrew tap, configures shell init
 │   ├── download-model              # Downloads a single GGUF file from Hugging Face via curl
-│   ├── run-model                   # Direct llama-server launcher (single model, --tier low|medium|high|<tier>-multimodal)
-│   └── run-router                  # Router server (llama.cpp, multi-model; HOST env toggles bind)
+│   ├── run-model                   # Direct llama-server launcher (single model, --tier default/low|default/medium|default/high|default/<tier>-multimodal|experimental/quark|experimental/boson)
+│   └── run-router                  # Router server (llama.cpp, multi-model; --default binds 8080, --experimental binds 8081; HOST env toggles bind)
 ├── templates/                      # llama-server INI preset templates
-│   └── llama-cpp.ini.template      # Router preset (6 aliases: low/medium/high + -multimodal variants)
+│   ├── llama-cpp-default.ini.template      # Default router preset (6 aliases: default/low|medium|high + -multimodal variants)
+│   └── llama-cpp-experimental.ini.template # Experimental router preset (2 aliases: experimental/quark, experimental/boson)
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -141,12 +142,20 @@ You can override default settings via environment variables.
 
 **Common Variables:**
 - `HOST`: Network interface address to bind the server to (default: `127.0.0.1`; set `0.0.0.0` to expose on the LAN)
-- `PORT`: Network port for the server to listen on (default: 8080)
+- `PORT`: Network port for the server to listen on (default: `8080`; anything in the `experimental` namespace — `run-router --experimental` or `run-model --tier experimental/*` — defaults to `8081` instead, so a default and an experimental instance can run side by side; see Components below)
 
 ## Components
 
 ### run-model
-Starts a single llama-server directly (no router). Accepts `--tier low|medium|high|low-multimodal|medium-multimodal|high-multimodal|experimental` (default: `medium`). Downloads the model automatically if not present. Fast tiers (no `-multimodal` suffix) also download the model's MTP head and run with speculative decoding; `-multimodal` tiers download the shared multimodal projector (mmproj) instead. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set. The `experimental` tier is standalone-only (not part of the router preset); like the others it defaults to port `8080`, so set `PORT` (e.g. `8081`) to run it alongside the router.
+Starts a single llama-server directly (no router). Accepts `--tier <namespace>/<tier>` (default: `default/medium`):
+- `default/low`, `default/medium`, `default/high` — fast, text-only Qwen3.8-27B tiers with MTP speculative decoding
+- `default/low-multimodal`, `default/medium-multimodal`, `default/high-multimodal` — vision-capable Qwen3.8-27B tiers (same weights, `--mmproj` instead of speculative decoding)
+- `experimental/quark` — DeepSeek-V4-Flash-0731, 1M ctx, DSpark speculative decoding
+- `experimental/boson` — Qwen3.8-Flash-Next, 256K ctx, MTP speculative decoding
+
+Downloads the model automatically if not present, fetching multi-part GGUFs (`experimental/quark`, `experimental/boson`) shard-by-shard. Fast `default/*` tiers and `experimental/boson` also download the model's MTP head and run with speculative decoding; `experimental/quark` downloads a separate DSpark drafter model instead; `-multimodal` tiers download the shared multimodal projector (mmproj) instead. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set. The default listen port matches the tier's namespace — `8080` for `default/*` tiers, `8081` for `experimental/*` tiers — so a `default/*` and an `experimental/*` tier can already run side by side without touching `PORT`; use `PORT` to override further (e.g. to avoid colliding with a router running on the same default port).
+
+Bare legacy tier names (`low`, `medium`, `high`, `low-multimodal`, `medium-multimodal`, `high-multimodal`) and the old standalone `experimental` tier are no longer accepted — `run-model` exits with an error pointing you at the equivalent `default/*` tier or `experimental/quark`/`experimental/boson`.
 
 **Shared defaults (6 Qwen3.8-27B tiers — low/medium/high + their `-multimodal` counterparts):**
 - Host: `127.0.0.1` (override with `HOST`)
@@ -159,29 +168,32 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 
 | Tier | Quant | KV Cache | Context | Batch/Ubatch |
 |---|---|---|---|---|
-| low | `UD-Q4_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
-| medium | `UD-Q6_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
-| high | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
+| default/low | `UD-Q4_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
+| default/medium | `UD-Q6_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
+| default/high | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
 
 **Vision-capable tiers** — `unsloth/Qwen3.8-27B-GGUF` + multimodal projector, no speculative decoding:
 
 | Tier | Quant | KV Cache | Context | Batch/Ubatch |
 |---|---|---|---|---|
-| low-multimodal | `UD-Q4_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
-| medium-multimodal | `UD-Q6_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
-| high-multimodal | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
+| default/low-multimodal | `UD-Q4_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
+| default/medium-multimodal | `UD-Q6_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
+| default/high-multimodal | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
 
 Batch/ubatch are identical between a tier and its `-multimodal` counterpart — both stay in the same Qwen3.8-27B family (no architecture change), so there was no technical driver to retune them.
 
-**Experimental tier** — `unsloth/DeepSeek-V4-Flash-0731-GGUF` (`UD-Q8_K_XL`) with DSpark speculative decoding, standalone-only (excluded from the router preset; must be launched via `run-model --tier experimental`). It defaults to port 8080 like the other tiers; set `PORT` (e.g. 8081) to run it alongside the router.
+**Experimental tiers** — excluded from the default router; served by the experimental router (`run-router --experimental`, port `8081`) or directly via `run-model --tier experimental/quark|boson`:
 
-| Tier | Quant | KV Cache | Context | Batch/Ubatch |
-|---|---|---|---|---|
-| experimental | `UD-Q8_K_XL` | q8_0/q8_0 | 1,048,576 | 1024 / 256 |
+| Tier | Model | Quant | KV Cache | Context | Batch/Ubatch | Speculative Decoding |
+|---|---|---|---|---|---|---|
+| experimental/quark | `unsloth/DeepSeek-V4-Flash-0731-GGUF` | `UD-Q4_K_XL` | q8_0/q8_0 | 1,048,576 | 1024 / 256 | DSpark (`--spec-draft-n-max 3`) |
+| experimental/boson | `unsloth/Qwen3.8-Flash-Next-GGUF` | `UD-Q4_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 | MTP (`--spec-draft-n-max 3`) |
 
-Sampling for `experimental` follows [Unsloth's DeepSeek-V4-Flash-0731 guide](https://unsloth.ai/docs/models/deepseek-v4) rather than the Qwen shared defaults above, and diverges from them in three ways: `min-p=0.01` (matches every llama.cpp example in Unsloth's guide, though not called out in their prose recommendations), no `top-k` override (Unsloth's examples never pass one, so llama-server's built-in default applies instead of the `20` tuned for Qwen3.8), and `top-p=0.95` for the agentic/tool-calling use case this tier targets (Unsloth recommends `1.0` for non-agentic use instead). `temp=1.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`, and `predict=262144` are unchanged from the shared defaults. Context is set to the model's stated 1,048,576-token ("1M") maximum — sized for a dedicated M3 Ultra Mac Studio (512GB unified memory), where the `UD-Q8_K_XL` weights plus the DSpark drafter total ~179GB per Unsloth's own hardware table, leaving ~333GB of headroom for the KV cache; DeepSeek-V4's MLA (Multi-head Latent Attention) architecture keeps the per-token KV cache footprint small enough that even 1M tokens of context fits comfortably within that headroom. `--spec-draft-n-max 3` is Unsloth's documented "good default" for DSpark (~1.9x faster; larger values measured slower).
+Sampling for `experimental/quark` follows [Unsloth's DeepSeek-V4-Flash-0731 guide](https://unsloth.ai/docs/models/deepseek-v4) rather than the Qwen shared defaults above, and diverges from them in three ways: `min-p=0.01` (matches every llama.cpp example in Unsloth's guide, though not called out in their prose recommendations), no `top-k` override (Unsloth's examples never pass one, so llama-server's built-in default applies instead of the `20` tuned for Qwen3.8), and `top-p=0.95` for the agentic/tool-calling use case this tier targets (Unsloth recommends `1.0` for non-agentic use instead). `temp=1.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`, and `predict=262144` are unchanged from the shared defaults. Context is set to the model's stated 1,048,576-token ("1M") maximum — sized for a dedicated M3 Ultra Mac Studio (512GB unified memory), where the `UD-Q4_K_XL` weights plus the DSpark drafter total ~172GB per Unsloth's own hardware table, leaving ~340GB of headroom for the KV cache; DeepSeek-V4's MLA (Multi-head Latent Attention) architecture keeps the per-token KV cache footprint small enough that even 1M tokens of context fits comfortably within that headroom. `--spec-draft-n-max 3` is Unsloth's documented "good default" for DSpark (~1.9x faster; larger values measured slower).
 
-**MTP speculative decoding:** The fast tiers run with `--spec-type draft-mtp --spec-draft-n-max 3`, for ~1.5-2x faster inference. Unsloth's MTP guide documents `2` as the "best starting point" but states 1-6 are all valid and the optimal value is hardware-dependent — `3` was chosen empirically for this hardware, re-benchmark if it changes. Qwen3.8-27B ships with MTP tensors natively in the main repo, so there is no need to disambiguate local filenames or download a separate model file.
+`experimental/boson` uses the same shared Qwen sampling defaults as the `default/*` fast tiers (`temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`) and runs standard MTP speculative decoding rather than DSpark.
+
+**MTP speculative decoding:** The fast `default/*` tiers and `experimental/boson` run with `--spec-type draft-mtp --spec-draft-n-max 3`, for ~1.5-2x faster inference. Unsloth's MTP guide documents `2` as the "best starting point" but states 1-6 are all valid and the optimal value is hardware-dependent — `3` was chosen empirically for this hardware, re-benchmark if it changes. Both model families ship with MTP tensors natively in their main repos, so there is no need to disambiguate local filenames or download a separate model file for MTP (unlike DSpark, which needs the separate drafter downloaded for `experimental/quark`).
 
 **Vision (multimodal):** Only the `-multimodal` tiers load a multimodal projector (`--mmproj`); the fast tiers are text-only because llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding. The `F16` projector is downloaded from the same Hugging Face repo as the model (remote filename `mmproj-F16.gguf`) and stored alongside each model with a matching name — the model's filename with a `.mmproj` extension instead of `.gguf` (e.g. `Qwen3.8-27B-UD-Q4_K_XL.gguf` → `Qwen3.8-27B-UD-Q4_K_XL.mmproj`). All `-multimodal` tiers also set `--image-min-tokens 1024`, per [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842) — Qwen-VL models need at least 1024 image tokens to keep grounding/bbox accuracy correct.
 
@@ -194,87 +206,102 @@ Sampling for `experimental` follows [Unsloth's DeepSeek-V4-Flash-0731 guide](htt
 
 **Environment Variables:**
 - `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)
-- `PORT`: Override listen port (default: 8080)
+- `PORT`: Override listen port (default: `8080` for `default/*` tiers, `8081` for `experimental/*` tiers)
 - `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
 
 ### run-router
-Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading 6 aliases (low/medium/high + their `-multimodal` counterparts) from the rendered INI preset (`templates/llama-cpp.ini.template` → `tmp/llama-cpp.ini`). Clients select an alias via the `model` parameter. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set.
+Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading model aliases from a rendered INI preset. Accepts `--default` (default mode if no flag given) or `--experimental`:
+- `--default` — loads 6 aliases (`jzaleski/default/low|medium|high` + their `-multimodal` counterparts) from `templates/llama-cpp-default.ini.template` → `tmp/llama-cpp-default.ini`; binds to port `8080` by default.
+- `--experimental` — loads 2 aliases (`jzaleski/experimental/quark`, `jzaleski/experimental/boson`) from `templates/llama-cpp-experimental.ini.template` → `tmp/llama-cpp-experimental.ini`; binds to port `8081` by default so it can run alongside the default router.
+
+Clients select an alias via the `model` parameter. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set. Both routers can run at once (they default to different ports) to make every tier reachable simultaneously.
 
 **Defaults:**
 - Host: `127.0.0.1` (override with `HOST`)
-- Port: 8080
-- Sampling: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
+- Port: `8080` for `--default`, `8081` for `--experimental` (override either with `PORT`)
+- Sampling: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0` on `--default`; `experimental/quark` overrides `min-p`/`top-p` and drops the `top-k` default per Unsloth's DeepSeek guidance, while `experimental/boson` matches the `--default` sampling defaults (see the run-model tables above)
 - Output: `predict=262144` default (clients may override via `max_tokens`)
-- Per-tier context/KV/batch as in the run-model tables above. `low`/`medium`/`high` additionally set `spec-type=draft-mtp`/`spec-draft-n-max=3` and omit `mmproj`; the `-multimodal` sections set `mmproj` and omit the spec-decoding keys.
+- Per-tier context/KV/batch as in the run-model tables above. `default/low|medium|high` and `experimental/boson` additionally set `spec-type=draft-mtp`/`spec-draft-n-max=3` and omit `mmproj`; the `default/*-multimodal` sections set `mmproj` and omit the spec-decoding keys; `experimental/quark` sets `spec-type=draft-dspark`/`spec-draft-n-max=3` and a separate `spec-draft-model`.
 
 **Environment Variables:**
 - `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)
-- `PORT`: Override listen port (default: 8080)
+- `PORT`: Override listen port (default: `8080` for `--default`, `8081` for `--experimental`)
 - `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
 
 ## Usage
 
 ```bash
-# Start single model directly — medium tier (default), localhost
+# Start single model directly — default/medium tier (default), localhost
 ./bin/run-model
 
-# Start single model — specific tier
-./bin/run-model --tier low
-./bin/run-model --tier high
-./bin/run-model --tier experimental
+# Start single model — specific default tier
+./bin/run-model --tier default/low
+./bin/run-model --tier default/high
 
 # Start single model — vision-capable variant
-./bin/run-model --tier high-multimodal
+./bin/run-model --tier default/high-multimodal
+
+# Start single model — experimental tiers
+./bin/run-model --tier experimental/quark
+./bin/run-model --tier experimental/boson
 
 # Expose a single model on the LAN
-HOST=0.0.0.0 ./bin/run-model --tier high
+HOST=0.0.0.0 ./bin/run-model --tier default/high
 
-# Start router (low/medium/high + their -multimodal counterparts on localhost:8080)
-./bin/run-router
+# Start the default router (default/low|medium|high + their -multimodal counterparts on localhost:8080)
+./bin/run-router --default
 
-# Start router exposed on the LAN
-HOST=0.0.0.0 ./bin/run-router
+# Start the experimental router (experimental/quark, experimental/boson on localhost:8081)
+./bin/run-router --experimental
+
+# Run both routers at once — every tier reachable simultaneously
+./bin/run-router --default &
+./bin/run-router --experimental &
+
+# Start a router exposed on the LAN
+HOST=0.0.0.0 ./bin/run-router --default
 ```
 
 Clients select a model via the `model` query parameter or request body field:
 
 ```bash
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/low               ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/low-multimodal    ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/medium            ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/medium-multimodal ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/high              ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/high-multimodal   ...
-# jzaleski/experimental is standalone-only:
-# run `./bin/run-model --tier <tier>`, then curl
-# the port it is listening on (8080 by default; set PORT to change it)
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/low               ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/low-multimodal    ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/medium            ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/medium-multimodal ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/high              ...
+curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/high-multimodal   ...
+curl http://localhost:8081/v1/chat/completions?model=jzaleski/experimental/quark        ...
+curl http://localhost:8081/v1/chat/completions?model=jzaleski/experimental/boson        ...
+# Or run any tier standalone via run-model and curl the port it listens on
+# (defaults to 8080 for default/* tiers, 8081 for experimental/* tiers — override with PORT)
 ```
 
 ## Architecture
 
-The router listens on port 8080 and serves 6 aliases: the low/medium/high tiers and their `-multimodal` counterparts. The `experimental` tier is standalone-only and served directly by `run-model --tier <tier>`. Alternatively, `run-model` bypasses the router and starts a single llama-server directly for any of the 7 tiers. Both bind to `127.0.0.1` unless `HOST=0.0.0.0` is set.
+There are two routers, each serving a fixed set of aliases, plus `run-model` for launching any single tier directly. The default router (`run-router --default`, port `8080`) serves 6 aliases: the `default/low|medium|high` tiers and their `-multimodal` counterparts. The experimental router (`run-router --experimental`, port `8081`) serves 2 aliases: `experimental/quark` and `experimental/boson`. `run-model` bypasses both routers and starts a single llama-server directly for any of the 8 tiers via `--tier <namespace>/<tier>`, defaulting its listen port to `8080` for `default/*` tiers or `8081` for `experimental/*` tiers (mirroring the routers). All three bind to `127.0.0.1` unless `HOST=0.0.0.0` is set.
 
 ```
-┌───────────────────────────┐   ┌──────────────────────────┐
-│   ./bin/run-router         │   │   ./bin/run-model         │
-│   (multi-model router)     │   │   (single model)          │
-└────────────┬───────────────┘   └────────────┬─────────────┘
-             │                                 │
-   ┌──────────┴──────────────────┐    ┌─────────┴──────────┐
-   │  llama.cpp (router)         │    │  llama.cpp         │
-   │  HOST:8080                  │    │  HOST:8080         │
-   │  --models-preset            │    │  (direct, --tier)  │
-   │                             │    └────────────────────┘
-   │ ┌─────────────────────────┐ │
-   │ │ jzaleski/low             │ │  HOST defaults to 127.0.0.1;
-   │ │ jzaleski/low-multimodal  │ │  set HOST=0.0.0.0 to expose
-   │ │ jzaleski/medium          │ │  on the LAN.
-   │ │ jzaleski/medium-multimodal│ │
-   │ │ jzaleski/high            │ │
-   │ │ jzaleski/high-multimodal │ │  (jzaleski/experimental is
-   │ └─────────────────────────┘ │  standalone-only, via
-   └──────────────────────────────┘  run-model --tier <tier>)
+┌────────────────────────────┐  ┌────────────────────────────────┐  ┌─────────────────────┐
+│  ./bin/run-router --default │  │  ./bin/run-router --experimental │  │  ./bin/run-model     │
+│  (multi-model router)       │  │  (multi-model router)            │  │  (single model)      │
+└──────────────┬───────────────┘  └────────────────┬─────────────────┘  └───────────┬──────────┘
+               │                                     │                               │
+    ┌──────────┴───────────┐              ┌──────────┴───────────┐        ┌──────────┴─────────┐
+    │ llama.cpp (default)   │              │ llama.cpp (experimental)│    │ llama.cpp            │
+    │ HOST:8080              │              │ HOST:8081                │    │ HOST:8080 or :8081   │
+    │ --models-preset        │              │ --models-preset          │    │ (--tier, see below)  │
+    │                        │              │                          │    └──────────────────────┘
+    │ jzaleski/default/low          │      │ jzaleski/experimental/quark │
+    │ jzaleski/default/low-multimodal│     │ jzaleski/experimental/boson │
+    │ jzaleski/default/medium        │      └──────────────────────────┘
+    │ jzaleski/default/medium-multimodal│
+    │ jzaleski/default/high             │
+    │ jzaleski/default/high-multimodal  │
+    └────────────────────────────────────┘
 ```
+
+HOST defaults to `127.0.0.1` for all three launchers; set `HOST=0.0.0.0` to expose on the LAN. `run-model` accepts any of the 8 tiers directly (`default/low|medium|high[-multimodal]`, `experimental/quark|boson`) and defaults its port to `8080` for `default/*` tiers or `8081` for `experimental/*` tiers, so a default and an experimental tier (whether via router or `run-model`) can run side by side without a `PORT` override.
 
 ## Opencode Agent Architecture
 
@@ -315,40 +342,39 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 ┌──────────────────────┐
 │    LLM Providers     │
 │                      │
-│  ┌────────────────┐  │ ┌────────────────┐
-│  │ Local          │  │ │ Server         │
-│  │ localhost:8080 │  │ │ remote:8080    │
-│  │ per-tier ctx   │  │ │ per-tier ctx   │
-│  └────────────────┘  │ └────────────────┘
+│  ┌────────────────┐  │ ┌────────────────┐  ┌────────────────────┐
+│  │ Local (default)│  │ │ Server (default) │ │ Local (experimental)│
+│  │ localhost:8080 │  │ │ remote:8080       │ │ localhost:8081      │
+│  │ per-tier ctx   │  │ │ per-tier ctx      │ │ quark / boson ctx   │
+│  └────────────────┘  │ └────────────────┘  └────────────────────┘
 └──────────────────────┘
 ```
 
 ### Provider Configuration
 
-The opencode configuration (`~/.config/opencode/opencode.json`) defines 2 provider endpoints:
+The opencode configuration (`~/.config/opencode/opencode.json`) defines 3 provider endpoints:
 
-Both providers expose the same 6 aliases with identical per-tier limits; they
-differ only in endpoint (the server provider is the same models reached by
-launching with `HOST=0.0.0.0`). The fast aliases (`jzaleski/low`,
-`jzaleski/medium`, `jzaleski/high`) are text-only (MTP speculative decoding
+The two `(default)` providers expose the same 6 `jzaleski/default/*` aliases with identical per-tier limits; they differ only in endpoint (the server provider is the same models reached by launching `run-router --default` with `HOST=0.0.0.0`). The fast aliases (`jzaleski/default/low`,
+`jzaleski/default/medium`, `jzaleski/default/high`) are text-only (MTP speculative decoding
 does not yet support `--mmproj`); the `-multimodal` aliases accept image
-input. `experimental` is **not** part of the opencode
-configuration — it is standalone-only via `run-model --tier <tier>`.
+input. The `(experimental)` provider exposes `jzaleski/experimental/quark` and `jzaleski/experimental/boson` at `localhost:8081` (text-only); there is no server-side `(experimental)` provider configured.
 
 | Provider | Endpoint | Model | Context | Input | Output | Modalities |
 |----------|----------|-------|---------|-------|--------|------------|
-| llama.cpp (local) | `localhost:8080` | jzaleski/low | 65,536 | 57,344 | 8,192 | text in, text out |
-| llama.cpp (local) | `localhost:8080` | jzaleski/low-multimodal | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| llama.cpp (local) | `localhost:8080` | jzaleski/medium | 131,072 | 114,688 | 16,384 | text in, text out |
-| llama.cpp (local) | `localhost:8080` | jzaleski/medium-multimodal | 131,072 | 114,688 | 16,384 | text+image in, text out |
-| llama.cpp (local) | `localhost:8080` | jzaleski/high | 262,144 | 229,376 | 32,768 | text in, text out |
-| llama.cpp (local) | `localhost:8080` | jzaleski/high-multimodal | 262,144 | 229,376 | 32,768 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/low | 65,536 | 57,344 | 8,192 | text in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/low-multimodal | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/medium | 131,072 | 114,688 | 16,384 | text in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/medium-multimodal | 131,072 | 114,688 | 16,384 | text+image in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high | 262,144 | 229,376 | 32,768 | text in, text out |
-| llama.cpp (server) | `server-hostname-or-ip:8080` | jzaleski/high-multimodal | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/low | 65,536 | 57,344 | 8,192 | text in, text out |
+| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/low-multimodal | 65,536 | 57,344 | 8,192 | text+image in, text out |
+| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/medium | 131,072 | 114,688 | 16,384 | text in, text out |
+| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/medium-multimodal | 131,072 | 114,688 | 16,384 | text+image in, text out |
+| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/high | 262,144 | 229,376 | 32,768 | text in, text out |
+| llama.cpp (local) (default) | `localhost:8080` | jzaleski/default/high-multimodal | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/low | 65,536 | 57,344 | 8,192 | text in, text out |
+| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/low-multimodal | 65,536 | 57,344 | 8,192 | text+image in, text out |
+| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/medium | 131,072 | 114,688 | 16,384 | text in, text out |
+| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/medium-multimodal | 131,072 | 114,688 | 16,384 | text+image in, text out |
+| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/high | 262,144 | 229,376 | 32,768 | text in, text out |
+| llama.cpp (server) (default) | `server-hostname-or-ip:8080` | jzaleski/default/high-multimodal | 262,144 | 229,376 | 32,768 | text+image in, text out |
+| llama.cpp (local) (experimental) | `localhost:8081` | jzaleski/experimental/quark | 1,048,576 | 917,504 | 131,072 | text in, text out |
+| llama.cpp (local) (experimental) | `localhost:8081` | jzaleski/experimental/boson | 262,144 | 229,376 | 32,768 | text in, text out |
 
 ### Agent Roles
 
@@ -417,7 +443,7 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
 
 ```json
 {
-  "model": "jzaleski/high",
+  "model": "jzaleski/default/high",
   "agent": "engineer"
 }
 ```
@@ -443,15 +469,15 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
 ## Performance Tips
 
 - GPU acceleration enabled with flash attention by default
-- Each tier has a fast/no-vision variant (`jzaleski/<tier>`, MTP + speculative decoding) and a vision-capable variant (`jzaleski/<tier>-multimodal`, no speculative decoding); `--mmproj` and `--spec-type draft-mtp` are not yet supported together in llama.cpp
-- KV cache quantization is tier-specific (same for a tier and its `-multimodal` counterpart): low=q8_0/q4_0 (K/V), medium=q8_0/q8_0 (K/V), high=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces; V-cache moves to q8_0 at 128K+ context (medium and high) to preserve quality at longer context lengths
-- Context size is tier-specific: low=64K, medium=128K, high=256K
-- Batch/ubatch scales inversely with context for steady latency on Apple Silicon: low=2048/512, medium & high=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.8-27B family
+- Each tier has a fast/no-vision variant (`jzaleski/default/<tier>`, MTP + speculative decoding) and a vision-capable variant (`jzaleski/default/<tier>-multimodal`, no speculative decoding); `--mmproj` and `--spec-type draft-mtp` are not yet supported together in llama.cpp
+- KV cache quantization is tier-specific (same for a tier and its `-multimodal` counterpart): `default/low`=q8_0/q4_0 (K/V), `default/medium`=q8_0/q8_0 (K/V), `default/high`=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces; V-cache moves to q8_0 at 128K+ context (medium and high) to preserve quality at longer context lengths
+- Context size is tier-specific: `default/low`=64K, `default/medium`=128K, `default/high`=256K; `experimental/quark`=1M, `experimental/boson`=256K
+- Batch/ubatch scales inversely with context for steady latency on Apple Silicon: `default/low`=2048/512, `default/medium` & `default/high`=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.8-27B family
 - Sampling defaults are tuned for coding and tool-calling per Qwen3.8's thinking/coding profile: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`; server-side `predict=262144` caps default output length
-- `--reasoning-preserve` is set on all 6 tiers, preserving full reasoning traces across turns server-wide (matches Qwen3.8's agentic-use recommendation) — trades a larger accumulated context per turn for better multi-turn decision consistency; worth it with RAM/context to spare, worth reconsidering on the smaller tiers if you're context-constrained
+- `--reasoning-preserve` is set on all 8 tiers, preserving full reasoning traces across turns server-wide (matches Qwen3.8's agentic-use recommendation) — trades a larger accumulated context per turn for better multi-turn decision consistency; worth it with RAM/context to spare, worth reconsidering on the smaller tiers if you're context-constrained
 - `--image-min-tokens 1024` is set on all `-multimodal` tiers to preserve grounding/bbox accuracy on Qwen-VL models (see [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842))
-- `--cache-reuse 256` + `--cache-ram -1` are set on all 6 tiers to reuse KV cache across turns that extend a previous prompt (the common shape of an agent loop) instead of reprocessing from scratch, with the idle-slot cache's default 8GiB budget removed — tuned for hosts with RAM to spare
-- `--load-mode mlock` is set on all 6 tiers to keep model weights pinned in RAM rather than subject to macOS's background memory compression, avoiding a decompression stall on the first request after an idle period
+- `--cache-reuse 256` + `--cache-ram -1` are set on all 8 tiers to reuse KV cache across turns that extend a previous prompt (the common shape of an agent loop) instead of reprocessing from scratch, with the idle-slot cache's default 8GiB budget removed — tuned for hosts with RAM to spare
+- `--load-mode mlock` is set on all 8 tiers to keep model weights pinned in RAM rather than subject to macOS's background memory compression, avoiding a decompression stall on the first request after an idle period
 
 ## Troubleshooting
 
