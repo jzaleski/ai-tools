@@ -281,9 +281,9 @@ run_high_multimodal() {
 # Settings below follow Unsloth's DeepSeek-V4-Flash-0731 guide
 # (https://unsloth.ai/docs/models/deepseek-v4):
 # - Context is set to the model's stated maximum (1,048,576 / "1M"). Sized for
-#   a dedicated M3 Ultra Mac Studio (512GB unified memory): UD-Q8_K_XL + the
-#   DSpark drafter total ~179GB per Unsloth's own hardware table, leaving
-#   ~333GB of headroom for the KV cache. DeepSeek-V4 uses MLA (Multi-head
+#   a dedicated M3 Ultra Mac Studio (512GB unified memory): UD-Q4_K_XL + the
+#   DSpark drafter total ~172GB per Unsloth's own hardware table, leaving
+#   ~340GB of headroom for the KV cache. DeepSeek-V4 uses MLA (Multi-head
 #   Latent Attention), which compresses the per-token KV cache footprint far
 #   below a standard dense-attention model, so even 1M tokens of context fits
 #   comfortably in that headroom without needing hundreds more GB of RAM.
@@ -299,10 +299,10 @@ run_high_multimodal() {
 # - `--spec-draft-n-max 3` is already Unsloth's documented "good default" for
 #   DSpark (~1.9x faster; larger values measured slower) — unchanged here.
 run_experimental_quark() {
-  local base_model="${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q8_K_XL.gguf";
+  local base_model="${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q4_K_XL.gguf";
   local drafter_model="${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
 
-  require_split_model "${base_model}" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "UD-Q8_K_XL/DeepSeek-V4-Flash-0731-UD-Q8_K_XL.gguf" 5;
+  require_split_model "${base_model}" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL.gguf" 5;
   require_model "${drafter_model}" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
 
   local first_part="${base_model%.gguf}-00001-of-00005.gguf";

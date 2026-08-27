@@ -77,7 +77,7 @@ render_preset() {
 
 require_experimental_models() {
   # quark: DeepSeek-V4-Flash
-  require_split_model "${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q8_K_XL.gguf" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "UD-Q8_K_XL/DeepSeek-V4-Flash-0731-UD-Q8_K_XL.gguf" 5;
+  require_split_model "${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q4_K_XL.gguf" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL.gguf" 5;
   require_model "${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
 
   # boson: Qwen3.8-Flash-Next

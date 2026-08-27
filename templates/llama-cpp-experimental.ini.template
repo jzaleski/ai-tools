@@ -16,7 +16,7 @@ repeat-penalty     = 1.0
 min-p              = 0.0
 
 [jzaleski/experimental/quark]
-model             = MODELS_DIR/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q8_K_XL-00001-of-00005.gguf
+model             = MODELS_DIR/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q4_K_XL-00001-of-00005.gguf
 spec-draft-model  = MODELS_DIR/unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf
 ctx-size          = 1048576
 batch-size        = 1024
