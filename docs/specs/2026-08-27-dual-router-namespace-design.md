@@ -26,8 +26,8 @@ Migrate the existing flat model namespace (`jzaleski/low`, `jzaleski/experimenta
 ## Architecture
 
 ### The Router (`bin/run-router`)
-*   **Default Mode:** Runs on Port 8080. Serves the 6 standard Qwen aliases using `llama-cpp-default.ini.template`.
-*   **Experimental Mode:** Runs on Port 8081. Triggered via a flag (e.g. `--experimental`). Serves the experimental particle aliases using `llama-cpp-experimental.ini.template`.
+*   **Default Mode:** Runs on Port 8080. Serves the 6 standard Qwen aliases using `llama-cpp-default.ini.template`. Triggered by default, or explicitly via the `--default` flag.
+*   **Experimental Mode:** Runs on Port 8081. Triggered via the `--experimental` flag. Serves the experimental particle aliases using `llama-cpp-experimental.ini.template`.
 
 ### Single Model Launcher
 *   **Script:** `bin/run-model`
@@ -41,8 +41,8 @@ Migrate the existing flat model namespace (`jzaleski/low`, `jzaleski/experimenta
 
 2.  **Script Updates:**
     *   Update `bin/run-model` to parse `default/*` and `experimental/*` tiers. Add the download/execution logic for `Qwen3.8-Flash-Next` under the `boson` tier.
-    *   Update `bin/run-router` to accept an `--experimental` flag. When present, it switches to port 8081 (unless overridden) and loads `llama-cpp-experimental.ini.template`.
+    *   Update `bin/run-router` to accept `--experimental` and `--default` flags. When `--experimental` is present, it switches to port 8081 (unless overridden) and loads `llama-cpp-experimental.ini.template`. When `--default` is present (or no flag is provided), it uses port 8080 and `llama-cpp-default.ini.template`.
 
 3.  **Config & Docs:**
     *   Update `home/.config/opencode/opencode.json` to define the new `default/` and `experimental/` models across the local and server providers. Add a new local provider for the experimental router on port 8081.
-    *   Update `AGENTS.md` and `README.md` to reflect the new architecture, namespaces, and the `--experimental` router flag.
+    *   Update `AGENTS.md` and `README.md` to reflect the new architecture, namespaces, and the `--experimental`/`--default` router flags.
