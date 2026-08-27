@@ -322,7 +322,7 @@ run_experimental_quark() {
     --cache-type-v     q8_0 \
     --spec-type        draft-dspark \
     --spec-draft-n-max 3 \
-    --chat-template-kwargs '{"reasoning_effort":"xhigh"}' \
+    --chat-template-kwargs '{"reasoning_effort":"high"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \
