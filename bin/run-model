@@ -312,7 +312,7 @@ run_experimental_quark() {
     --spec-draft-model "${drafter_model}" \
     --alias            jzaleski/experimental/quark \
     --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
+    --port             "${PORT:-"8081"}" \
     --flash-attn       on \
     --n-gpu-layers     -1 \
     --batch-size       1024 \
@@ -336,13 +336,16 @@ run_experimental_quark() {
 }
 
 run_experimental_boson() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/Qwen3.8-Flash-Next-UD-Q8_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.8-Flash-Next-GGUF" "Qwen3.8-Flash-Next-UD-Q8_K_XL.gguf";
+  local base_model="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf";
+  require_split_model "${base_model}" "unsloth/Qwen3.8-Flash-Next-GGUF" "UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf" 4;
+  
+  local first_part="${base_model%.gguf}-00001-of-00004.gguf";
+
   exec llama-server \
-    --model            "${model}" \
+    --model            "${first_part}" \
     --alias            jzaleski/experimental/boson \
     --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
+    --port             "${PORT:-"8081"}" \
     --flash-attn       on \
     --n-gpu-layers     -1 \
     --batch-size       1024 \
@@ -352,7 +355,7 @@ run_experimental_boson() {
     --cache-type-v     q8_0 \
     --spec-type        draft-mtp \
     --spec-draft-n-max 3 \
-    --chat-template-kwargs '{"reasoning_effort":"high"}' \
+    --chat-template-kwargs '{"reasoning_effort":"xhigh"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
     --cache-ram        -1 \

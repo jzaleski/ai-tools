@@ -81,7 +81,7 @@ require_experimental_models() {
   require_model "${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
 
   # boson: Qwen3.8-Flash-Next
-  require_model "${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/Qwen3.8-Flash-Next-UD-Q8_K_XL.gguf" "unsloth/Qwen3.8-Flash-Next-GGUF" "Qwen3.8-Flash-Next-UD-Q8_K_XL.gguf";
+  require_split_model "${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf" "unsloth/Qwen3.8-Flash-Next-GGUF" "UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf" 4;
 }
 
 # Ensure all parts of a split GGUF model exist, downloading them if missing.
