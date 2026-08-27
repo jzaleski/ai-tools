@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-Supports three model tiers — low (64K ctx), medium (128K ctx), high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases (low/medium/high and their `-multimodal` counterparts) are served by the router. There is also an `experimental` tier (DeepSeek-V4-Flash, 1M ctx) available standalone via `run-model --tier experimental`. Like the other tiers it binds port `8080` by default; set `PORT` to run it on another port (e.g. `8081`) so it can coexist with the router. Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+The default router (`--default`) binds to port 8080 and supports three model tiers — low (64K ctx), medium (128K ctx), high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/default/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/default/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases (low/medium/high and their `-multimodal` counterparts) are served by the default router. The experimental router (`--experimental`) binds to port 8081 by default so it can coexist with the default router, and serves DeepSeek-V4-Flash under the namespace `jzaleski/experimental/<particle>` (e.g. `quark` for 1M ctx, `boson` for 2M ctx). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -54,20 +54,23 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ## Build/Test Commands
 
-Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose on the LAN. `run-model` takes an optional `--tier` flag (low/medium/high, or their `-multimodal` counterparts; default medium):
+Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose on the LAN. `run-model` takes an optional `--tier` flag (e.g. `default/low`, `default/medium`, `default/high`, or their `-multimodal` counterparts; default `default/medium`):
 
 ```bash
-./bin/run-router                           # multi-model router, localhost (8080)
-HOST=0.0.0.0 ./bin/run-router              # multi-model router, exposed on LAN
-# Clients select tier via: ?model=jzaleski/low  jzaleski/medium  jzaleski/high
-#                          jzaleski/low-multimodal  jzaleski/medium-multimodal  jzaleski/high-multimodal
+./bin/run-router --default                 # default multi-model router, localhost (8080)
+./bin/run-router --experimental            # experimental multi-model router, localhost (8081)
+HOST=0.0.0.0 ./bin/run-router --default    # default multi-model router, exposed on LAN
+# Clients select tier via: ?model=jzaleski/default/low  jzaleski/default/medium  jzaleski/default/high
+#                          jzaleski/default/low-multimodal  jzaleski/default/medium-multimodal  jzaleski/default/high-multimodal
+# Or via experimental:     ?model=jzaleski/experimental/quark  jzaleski/experimental/boson
 
-./bin/run-model                            # single model, medium tier, localhost (8080)
-./bin/run-model --tier low                 # single model, low tier (fast, no vision)
-./bin/run-model --tier high                # single model, high tier (fast, no vision)
-./bin/run-model --tier experimental        # single model, experimental tier (DeepSeek-V4-Flash)
-./bin/run-model --tier high-multimodal     # single model, high tier (vision-capable)
-HOST=0.0.0.0 ./bin/run-model --tier high   # single model, high tier, exposed on LAN
+./bin/run-model                            # single model, default medium tier, localhost (8080)
+./bin/run-model --tier default/low         # single model, low tier (fast, no vision)
+./bin/run-model --tier default/high        # single model, high tier (fast, no vision)
+./bin/run-model --tier experimental/quark  # single model, experimental tier (DeepSeek-V4-Flash, 1M ctx)
+./bin/run-model --tier experimental/boson  # single model, experimental tier (DeepSeek-V4-Flash, 2M ctx)
+./bin/run-model --tier default/high-multimodal # single model, high tier (vision-capable)
+HOST=0.0.0.0 ./bin/run-model --tier default/high # single model, high tier, exposed on LAN
 ```
 
 Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-model`
@@ -98,8 +101,9 @@ Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-model`
 
 - Scripts: `run-{component}`
 - Bind toggle: `HOST` env var (`127.0.0.1` default / `0.0.0.0` for LAN)
-- Ports: 8080 (all scripts)
-- Aliases: `jzaleski/{tier}` (fast, no vision) / `jzaleski/{tier}-multimodal` (vision-capable)
+- Ports: 8080 (default router), 8081 (experimental router)
+- Aliases: `jzaleski/default/{tier}` (fast, no vision) / `jzaleski/default/{tier}-multimodal` (vision-capable)
+- Experimental: `jzaleski/experimental/{particle}` (e.g. quark, boson)
 
 ---
 
@@ -118,20 +122,30 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 
 ```
 ┌──────────────────────────────────┐
-│         Router Server            │ (Port 8080)
+│     Default Router (--default)   │ (Port 8080)
 │        --models-preset           │
 │                                  │
 │       ┌───────────────────────┐  │
-│       │ jzaleski/low          │  │
-│       │ jzaleski/low-multimodal│ │
-│       │ jzaleski/medium        │ │
-│       │ jzaleski/medium-multimodal│
-│       │ jzaleski/high          │ │
-│       │ jzaleski/high-multimodal│ │
+│       │ jzaleski/default/low  │  │
+│       │ jzaleski/default/low-multimodal│
+│       │ jzaleski/default/medium│ │
+│       │ jzaleski/default/medium-multimodal│
+│       │ jzaleski/default/high │  │
+│       │ jzaleski/default/high-multimodal│
+│       └───────────────────────┘  │
+└──────────────────────────────────┘
+
+┌──────────────────────────────────┐
+│Experimental Router (--experimental)│ (Port 8081)
+│        --models-preset           │
+│                                  │
+│       ┌───────────────────────┐  │
+│       │ jzaleski/experimental/quark│
+│       │ jzaleski/experimental/boson│
 │       └───────────────────────┘  │
 └──────────────────────────────────┘
 ```
-(`jzaleski/experimental` is standalone-only, via `run-model --tier <tier>`.)
+(`jzaleski/experimental/<particle>` is available via router, or standalone via `run-model --tier experimental/<particle>`.)
 
 ---
 
@@ -180,10 +194,10 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 ```
 
 The opencode configuration defines 2 provider endpoints:
-- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 64K, medium: 128K, high: 256K); 6 models: `jzaleski/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.8-27B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively.
+- **llama.cpp (local)**: `localhost:8080` — per-tier context (low: 64K, medium: 128K, high: 256K); 6 models: `jzaleski/default/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/default/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.8-27B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively.
 - **llama.cpp (server)**: `server-hostname-or-ip:8080` — same 6 aliases and contexts; reach this endpoint by launching with `HOST=0.0.0.0`
 
-Each provider specifies model limits for context window, input tokens, and output tokens, plus per-model `modalities` (`jzaleski/<tier>` is text-only input; `jzaleski/<tier>-multimodal` is text+image input). Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
+Each provider specifies model limits for context window, input tokens, and output tokens, plus per-model `modalities` (`jzaleski/default/<tier>` is text-only input; `jzaleski/default/<tier>-multimodal` is text+image input). Users should replace `server-hostname-or-ip` with their actual server hostname or IP address.
 
 ### Disabled Providers & Built-in Agents
 
@@ -252,7 +266,7 @@ BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
 - Context size is tier-specific: low=64K, medium=128K, high=256K
 - Batch/ubatch is tier-specific and scales inversely with context for steady latency on Apple Silicon: low=2048/512, medium & high=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.8-27B family (no architecture change to drive retuning)
 - Sampling defaults are tuned for coding and tool-calling per Qwen3.8's thinking/coding profile: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`. Server-side `predict=262144` caps default output length (clients may override via `max_tokens`).
-- MTP speculative decoding (`jzaleski/low|medium|high`): `--spec-type draft-mtp --spec-draft-n-max 3`, for ~1.5-2x faster inference; Unsloth's MTP guide documents `2` as the "best starting point" but states 1-6 are all valid and the optimal value is hardware-dependent — `3` was chosen empirically for this hardware, re-benchmark if it changes; llama.cpp does not yet support combining this with `--mmproj`, so these tiers are text-only
+- MTP speculative decoding (`jzaleski/default/low|medium|high`): `--spec-type draft-mtp --spec-draft-n-max 3`, for ~1.5-2x faster inference; Unsloth's MTP guide documents `2` as the "best starting point" but states 1-6 are all valid and the optimal value is hardware-dependent — `3` was chosen empirically for this hardware, re-benchmark if it changes; llama.cpp does not yet support combining this with `--mmproj`, so these tiers are text-only
 - `--reasoning-preserve` is set on all 6 tiers (server-wide default for the chat template's `preserve_reasoning` kwarg, matching Qwen3.8's agentic-use recommendation) — preserves full reasoning traces across turns at the cost of larger accumulated per-turn context; reconsider on the smaller tiers if context-constrained
 - `--image-min-tokens 1024` is set on all `-multimodal` tiers to preserve grounding/bbox accuracy on Qwen-VL models (see [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842))
 - `--cache-reuse 256` + `--cache-ram -1` are set on all 6 tiers — reuses KV cache for the shared prefix when a request extends a previous prompt (the common shape of an agent loop), with the idle-slot cache's default 8GiB budget removed given RAM to spare; pairs well with `--reasoning-preserve` making prompts grow faster
