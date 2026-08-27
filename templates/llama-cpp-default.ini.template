@@ -29,7 +29,7 @@ temp               = 1.0
 top-k              = 20
 top-p              = 0.95
 
-[jzaleski/low]
+[jzaleski/default/low]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf
 ctx-size          = 65536
 batch-size        = 2048
@@ -40,7 +40,7 @@ spec-type         = draft-mtp
 spec-draft-n-max  = 3
 chat-template-kwargs = {"reasoning_effort":"low"}
 
-[jzaleski/medium]
+[jzaleski/default/medium]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf
 ctx-size          = 131072
 batch-size        = 1024
@@ -51,7 +51,7 @@ spec-type         = draft-mtp
 spec-draft-n-max  = 3
 chat-template-kwargs = {"reasoning_effort":"medium"}
 
-[jzaleski/high]
+[jzaleski/default/high]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf
 ctx-size          = 262144
 batch-size        = 1024
@@ -62,7 +62,7 @@ spec-type         = draft-mtp
 spec-draft-n-max  = 3
 chat-template-kwargs = {"reasoning_effort":"high"}
 
-[jzaleski/low-multimodal]
+[jzaleski/default/low-multimodal]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf
 mmproj            = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q4_K_XL.mmproj
 image-min-tokens  = 1024
@@ -73,7 +73,7 @@ cache-type-k      = q8_0
 cache-type-v      = q4_0
 chat-template-kwargs = {"reasoning_effort":"low"}
 
-[jzaleski/medium-multimodal]
+[jzaleski/default/medium-multimodal]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf
 mmproj            = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q6_K_XL.mmproj
 image-min-tokens  = 1024
@@ -84,7 +84,7 @@ cache-type-k      = q8_0
 cache-type-v      = q8_0
 chat-template-kwargs = {"reasoning_effort":"medium"}
 
-[jzaleski/high-multimodal]
+[jzaleski/default/high-multimodal]
 model             = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf
 mmproj            = MODELS_DIR/unsloth/Qwen3.8-27B-UD-Q8_K_XL.mmproj
 image-min-tokens  = 1024
