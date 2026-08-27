@@ -1,8 +1,11 @@
 .DS_Store
 
-docs
+docs/*
+!docs/specs/
+!docs/plans/
 
 tmp/*
 !tmp/.keep
 
 .bootstrapignore
+
