@@ -15,164 +15,259 @@
     "openai"
   ],
   "provider": {
-    "llama.cpp (local)": {
+    "llama.cpp (local) (default)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (local)",
+      "name": "llama.cpp (local) (default)",
       "options": {
         "baseURL": "http://localhost:8080/v1"
       },
       "models": {
-        "jzaleski/low": {
-          "name": "jzaleski/low",
+        "jzaleski/default/low": {
+          "name": "jzaleski/default/low",
           "limit": {
             "context": 65536,
             "input": 57344,
             "output": 8192
           },
           "modalities": {
-            "input": ["text"],
-            "output": ["text"]
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/low-multimodal": {
-          "name": "jzaleski/low-multimodal",
+        "jzaleski/default/low-multimodal": {
+          "name": "jzaleski/default/low-multimodal",
           "limit": {
             "context": 65536,
             "input": 57344,
             "output": 8192
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/medium": {
-          "name": "jzaleski/medium",
+        "jzaleski/default/medium": {
+          "name": "jzaleski/default/medium",
           "limit": {
             "context": 131072,
             "input": 114688,
             "output": 16384
           },
           "modalities": {
-            "input": ["text"],
-            "output": ["text"]
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/medium-multimodal": {
-          "name": "jzaleski/medium-multimodal",
+        "jzaleski/default/medium-multimodal": {
+          "name": "jzaleski/default/medium-multimodal",
           "limit": {
             "context": 131072,
             "input": 114688,
             "output": 16384
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/high": {
-          "name": "jzaleski/high",
+        "jzaleski/default/high": {
+          "name": "jzaleski/default/high",
           "limit": {
             "context": 262144,
             "input": 229376,
             "output": 32768
           },
           "modalities": {
-            "input": ["text"],
-            "output": ["text"]
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/high-multimodal": {
-          "name": "jzaleski/high-multimodal",
+        "jzaleski/default/high-multimodal": {
+          "name": "jzaleski/default/high-multimodal",
           "limit": {
             "context": 262144,
             "input": 229376,
             "output": 32768
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         }
       }
     },
-    "llama.cpp (server)": {
+    "llama.cpp (server) (default)": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "llama.cpp (server)",
+      "name": "llama.cpp (server) (default)",
       "options": {
         "baseURL": "http://server-hostname-or-ip:8080/v1"
       },
       "models": {
-        "jzaleski/low": {
-          "name": "jzaleski/low",
+        "jzaleski/default/low": {
+          "name": "jzaleski/default/low",
           "limit": {
             "context": 65536,
             "input": 57344,
             "output": 8192
           },
           "modalities": {
-            "input": ["text"],
-            "output": ["text"]
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/low-multimodal": {
-          "name": "jzaleski/low-multimodal",
+        "jzaleski/default/low-multimodal": {
+          "name": "jzaleski/default/low-multimodal",
           "limit": {
             "context": 65536,
             "input": 57344,
             "output": 8192
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/medium": {
-          "name": "jzaleski/medium",
+        "jzaleski/default/medium": {
+          "name": "jzaleski/default/medium",
           "limit": {
             "context": 131072,
             "input": 114688,
             "output": 16384
           },
           "modalities": {
-            "input": ["text"],
-            "output": ["text"]
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/medium-multimodal": {
-          "name": "jzaleski/medium-multimodal",
+        "jzaleski/default/medium-multimodal": {
+          "name": "jzaleski/default/medium-multimodal",
           "limit": {
             "context": 131072,
             "input": 114688,
             "output": 16384
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/high": {
-          "name": "jzaleski/high",
+        "jzaleski/default/high": {
+          "name": "jzaleski/default/high",
           "limit": {
             "context": 262144,
             "input": 229376,
             "output": 32768
           },
           "modalities": {
-            "input": ["text"],
-            "output": ["text"]
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
           }
         },
-        "jzaleski/high-multimodal": {
-          "name": "jzaleski/high-multimodal",
+        "jzaleski/default/high-multimodal": {
+          "name": "jzaleski/default/high-multimodal",
           "limit": {
             "context": 262144,
             "input": 229376,
             "output": 32768
           },
           "modalities": {
-            "input": ["text", "image"],
-            "output": ["text"]
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          }
+        }
+      }
+    },
+    "llama.cpp (local) (experimental)": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "llama.cpp (local) (experimental)",
+      "options": {
+        "baseURL": "http://localhost:8081/v1"
+      },
+      "models": {
+        "jzaleski/experimental/quark": {
+          "name": "jzaleski/experimental/quark",
+          "limit": {
+            "context": 1048576,
+            "input": 917504,
+            "output": 131072
+          },
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          }
+        },
+        "jzaleski/experimental/boson": {
+          "name": "jzaleski/experimental/boson",
+          "limit": {
+            "context": 262144,
+            "input": 229376,
+            "output": 32768
+          },
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
           }
         }
       }
@@ -191,7 +286,11 @@
     },
     "gcloud": {
       "type": "local",
-      "command": ["npx", "-y", "@google-cloud/gcloud-mcp"],
+      "command": [
+        "npx",
+        "-y",
+        "@google-cloud/gcloud-mcp"
+      ],
       "enabled": false
     },
     "github": {
@@ -211,7 +310,10 @@
     },
     "playwright": {
       "type": "local",
-      "command": ["npx", "@playwright/mcp@latest"],
+      "command": [
+        "npx",
+        "@playwright/mcp@latest"
+      ],
       "enabled": false
     },
     "vercel": {
