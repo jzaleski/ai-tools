@@ -37,7 +37,7 @@ ubatch-size       = 512
 cache-type-k      = q8_0
 cache-type-v      = q4_0
 spec-type         = draft-mtp
-spec-draft-n-max  = 2
+spec-draft-n-max  = 3
 chat-template-kwargs = {"reasoning_effort":"low"}
 
 [jzaleski/medium]
@@ -48,7 +48,7 @@ ubatch-size       = 256
 cache-type-k      = q8_0
 cache-type-v      = q8_0
 spec-type         = draft-mtp
-spec-draft-n-max  = 2
+spec-draft-n-max  = 3
 chat-template-kwargs = {"reasoning_effort":"medium"}
 
 [jzaleski/high]
@@ -59,7 +59,7 @@ ubatch-size       = 256
 cache-type-k      = q8_0
 cache-type-v      = q8_0
 spec-type         = draft-mtp
-spec-draft-n-max  = 2
+spec-draft-n-max  = 3
 chat-template-kwargs = {"reasoning_effort":"high"}
 
 [jzaleski/low-multimodal]

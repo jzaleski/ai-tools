@@ -155,7 +155,7 @@ Starts a single llama-server directly (no router). Accepts `--tier low|medium|hi
 - Output: `predict=262144` default (clients may override via `max_tokens`)
 - GPU: `n-gpu-layers=-1` (all), flash-attn on
 
-**Fast/no-vision tiers** — `unsloth/Qwen3.8-27B-GGUF`, run with `--spec-type draft-mtp --spec-draft-n-max 2`:
+**Fast/no-vision tiers** — `unsloth/Qwen3.8-27B-GGUF`, run with `--spec-type draft-mtp --spec-draft-n-max 3`:
 
 | Tier | Quant | KV Cache | Context | Batch/Ubatch |
 |---|---|---|---|---|
@@ -181,7 +181,7 @@ Batch/ubatch are identical between a tier and its `-multimodal` counterpart — 
 
 Sampling for `experimental` follows [Unsloth's DeepSeek-V4-Flash-0731 guide](https://unsloth.ai/docs/models/deepseek-v4) rather than the Qwen shared defaults above, and diverges from them in three ways: `min-p=0.01` (matches every llama.cpp example in Unsloth's guide, though not called out in their prose recommendations), no `top-k` override (Unsloth's examples never pass one, so llama-server's built-in default applies instead of the `20` tuned for Qwen3.8), and `top-p=0.95` for the agentic/tool-calling use case this tier targets (Unsloth recommends `1.0` for non-agentic use instead). `temp=1.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`, and `predict=262144` are unchanged from the shared defaults. Context is set to the model's stated 1,048,576-token ("1M") maximum — sized for a dedicated M3 Ultra Mac Studio (512GB unified memory), where the `UD-Q8_K_XL` weights plus the DSpark drafter total ~179GB per Unsloth's own hardware table, leaving ~333GB of headroom for the KV cache; DeepSeek-V4's MLA (Multi-head Latent Attention) architecture keeps the per-token KV cache footprint small enough that even 1M tokens of context fits comfortably within that headroom. `--spec-draft-n-max 3` is Unsloth's documented "good default" for DSpark (~1.9x faster; larger values measured slower).
 
-**MTP speculative decoding:** The fast tiers run with `--spec-type draft-mtp --spec-draft-n-max 2`, per the model card's recommended settings, for ~1.5-2x faster inference. Qwen3.8-27B ships with MTP tensors natively in the main repo, so there is no need to disambiguate local filenames or download a separate model file.
+**MTP speculative decoding:** The fast tiers run with `--spec-type draft-mtp --spec-draft-n-max 3`, for ~1.5-2x faster inference. Unsloth's MTP guide documents `2` as the "best starting point" but states 1-6 are all valid and the optimal value is hardware-dependent — `3` was chosen empirically for this hardware, re-benchmark if it changes. Qwen3.8-27B ships with MTP tensors natively in the main repo, so there is no need to disambiguate local filenames or download a separate model file.
 
 **Vision (multimodal):** Only the `-multimodal` tiers load a multimodal projector (`--mmproj`); the fast tiers are text-only because llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding. The `F16` projector is downloaded from the same Hugging Face repo as the model (remote filename `mmproj-F16.gguf`) and stored alongside each model with a matching name — the model's filename with a `.mmproj` extension instead of `.gguf` (e.g. `Qwen3.8-27B-UD-Q4_K_XL.gguf` → `Qwen3.8-27B-UD-Q4_K_XL.mmproj`). All `-multimodal` tiers also set `--image-min-tokens 1024`, per [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842) — Qwen-VL models need at least 1024 image tokens to keep grounding/bbox accuracy correct.
 
@@ -205,7 +205,7 @@ Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.
 - Port: 8080
 - Sampling: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
 - Output: `predict=262144` default (clients may override via `max_tokens`)
-- Per-tier context/KV/batch as in the run-model tables above. `low`/`medium`/`high` additionally set `spec-type=draft-mtp`/`spec-draft-n-max=2` and omit `mmproj`; the `-multimodal` sections set `mmproj` and omit the spec-decoding keys.
+- Per-tier context/KV/batch as in the run-model tables above. `low`/`medium`/`high` additionally set `spec-type=draft-mtp`/`spec-draft-n-max=3` and omit `mmproj`; the `-multimodal` sections set `mmproj` and omit the spec-decoding keys.
 
 **Environment Variables:**
 - `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)

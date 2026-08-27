@@ -93,7 +93,7 @@ run_low() {
     --cache-type-k     q8_0 \
     --cache-type-v     q4_0 \
     --spec-type        draft-mtp \
-    --spec-draft-n-max 2 \
+    --spec-draft-n-max 3 \
     --chat-template-kwargs '{"reasoning_effort":"low"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
@@ -124,7 +124,7 @@ run_medium() {
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
     --spec-type        draft-mtp \
-    --spec-draft-n-max 2 \
+    --spec-draft-n-max 3 \
     --chat-template-kwargs '{"reasoning_effort":"medium"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
@@ -155,7 +155,7 @@ run_high() {
     --cache-type-k     q8_0 \
     --cache-type-v     q8_0 \
     --spec-type        draft-mtp \
-    --spec-draft-n-max 2 \
+    --spec-draft-n-max 3 \
     --chat-template-kwargs '{"reasoning_effort":"high"}' \
     --reasoning-preserve \
     --cache-reuse      256 \
