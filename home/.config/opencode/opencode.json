@@ -167,12 +167,14 @@
   },
   "plugin": [],
   "mcp": {
-    "aws-api": {
+    "aws": {
       "type": "local",
       "command": [
-        "sh",
-        "-c",
-        "AWS_PROFILE=YOUR_AWS_PROFILE AWS_REGION=YOUR_AWS_REGION exec uvx awslabs.aws-api-mcp-server@latest"
+        "uvx",
+        "mcp-proxy-for-aws@latest",
+        "https://aws-mcp.YOUR_AWS_REGION.api.aws/mcp",
+        "--metadata", "AWS_REGION=YOUR_AWS_REGION",
+        "--profile", "YOUR_AWS_PROFILE"
       ],
       "enabled": false
     },
