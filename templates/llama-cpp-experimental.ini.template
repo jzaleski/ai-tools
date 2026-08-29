@@ -46,3 +46,21 @@ top-p             = 0.95
 min-p             = 0.0
 presence-penalty  = 0.0
 repeat-penalty    = 1.0
+
+# gluon: GLM-5.3-Flash, text-only. No speculative decoding yet (GLM-5.3-Flash
+# support is still on an unmerged llama.cpp PR — see
+# docs/specs/2026-08-29-gluon-glm-5.3-flash-experimental-tier-design.md). No
+# top-k override — Unsloth's GLM-5.3-Flash examples never pass one.
+[jzaleski/experimental/gluon]
+model             = MODELS_DIR/unsloth/GLM-5.3-Flash-GGUF/UD-Q4_K_XL/GLM-5.3-Flash-UD-Q4_K_XL-00001-of-00006.gguf
+ctx-size          = 1048576
+batch-size        = 1024
+ubatch-size       = 256
+cache-type-k      = q8_0
+cache-type-v      = q8_0
+chat-template-kwargs = {"reasoning_effort":"max"}
+temp              = 1.0
+top-p             = 0.95
+min-p             = 0.0
+presence-penalty  = 0.0
+repeat-penalty    = 1.0
