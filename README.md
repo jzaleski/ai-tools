@@ -300,8 +300,8 @@ There are two routers, each serving a fixed set of aliases, plus `run-model` for
     │                        │              │                          │    └──────────────────────┘
     │ jzaleski/default/low          │      │ jzaleski/experimental/quark │
     │ jzaleski/default/low-multimodal│     │ jzaleski/experimental/boson │
-    │ jzaleski/default/medium        │      │ jzaleski/experimental/gluon │
-    │ jzaleski/default/medium-multimodal│   └──────────────────────────┘
+    │ jzaleski/default/medium        │     │ jzaleski/experimental/gluon │
+    │ jzaleski/default/medium-multimodal│  └──────────────────────────┘
     │ jzaleski/default/high             │
     │ jzaleski/default/high-multimodal  │
     └────────────────────────────────────┘
@@ -347,13 +347,13 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
            ▼
 ┌────────────────────────────────────────────────────────────┐
 │                     LLM Providers                          │
-│                                                              │
+│                                                            │
 │ ┌───────────────────────┐  ┌────────────────────────────┐  │
 │ │ jzaleski/default      │  │ jzaleski/experimental      │  │
 │ │ server-hostname-or-ip │  │ server-hostname-or-ip      │  │
 │ │ :8080, per-tier ctx   │  │ :8081, quark/boson/gluon   │  │
 │ └───────────────────────┘  └────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────┘
 ```
 
 ### Provider Configuration
