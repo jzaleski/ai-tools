@@ -4,6 +4,20 @@ set -e;
 
 MODELS_DIR="${MODELS_DIR:-"$HOME/.cache/models"}";
 
+find_binary() {
+  local bin_name="${1}";
+  local local_bin="${HOME}/src/ggml-org/llama.cpp/build/bin/${bin_name}";
+  if [[ -x "${local_bin}" ]]; then
+    echo "${local_bin}";
+  elif command -v "${bin_name}" >/dev/null 2>&1; then
+    command -v "${bin_name}";
+  else
+    echo "${bin_name}";
+  fi
+}
+
+LLAMA_SERVER="${LLAMA_SERVER:-"$(find_binary llama-server)"}";
+
 require_model() {
   local model_file="${1}";
   local hf_repo="${2}";
@@ -80,7 +94,7 @@ require_mmproj() {
 run_low() {
   local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf";
   require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q4_K_XL.gguf";
-  exec llama-server \
+  exec "${LLAMA_SERVER}" \
     --model            "${model}" \
     --alias            jzaleski/default/low \
     --host             "${HOST:-"127.0.0.1"}" \
@@ -111,7 +125,7 @@ run_low() {
 run_medium() {
   local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf";
   require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q6_K_XL.gguf";
-  exec llama-server \
+  exec "${LLAMA_SERVER}" \
     --model            "${model}" \
     --alias            jzaleski/default/medium \
     --host             "${HOST:-"127.0.0.1"}" \
@@ -142,7 +156,7 @@ run_medium() {
 run_high() {
   local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf";
   require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q8_K_XL.gguf";
-  exec llama-server \
+  exec "${LLAMA_SERVER}" \
     --model            "${model}" \
     --alias            jzaleski/default/high \
     --host             "${HOST:-"127.0.0.1"}" \
@@ -179,7 +193,7 @@ run_low_multimodal() {
   local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
   require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  exec llama-server \
+  exec "${LLAMA_SERVER}" \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
     --image-min-tokens 1024 \
@@ -212,7 +226,7 @@ run_medium_multimodal() {
   local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
   require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  exec llama-server \
+  exec "${LLAMA_SERVER}" \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
     --image-min-tokens 1024 \
@@ -245,7 +259,7 @@ run_high_multimodal() {
   local mmproj="${model%.gguf}.mmproj";
   require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
   require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  exec llama-server \
+  exec "${LLAMA_SERVER}" \
     --model            "${model}" \
     --mmproj           "${mmproj}" \
     --image-min-tokens 1024 \
@@ -307,7 +321,7 @@ run_experimental_quark() {
 
   local first_part="${base_model%.gguf}-00001-of-00005.gguf";
 
-  exec llama-server \
+  exec "${LLAMA_SERVER}" \
     --model            "${first_part}" \
     --spec-draft-model "${drafter_model}" \
     --alias            jzaleski/experimental/quark \
@@ -341,7 +355,7 @@ run_experimental_boson() {
   
   local first_part="${base_model%.gguf}-00001-of-00004.gguf";
 
-  exec llama-server \
+  exec "${LLAMA_SERVER}" \
     --model            "${first_part}" \
     --alias            jzaleski/experimental/boson \
     --host             "${HOST:-"127.0.0.1"}" \
@@ -409,7 +423,7 @@ run_experimental_gluon() {
 
   local first_part="${base_model%.gguf}-00001-of-00006.gguf";
 
-  exec llama-server \
+  exec "${LLAMA_SERVER}" \
     --model            "${first_part}" \
     --alias            jzaleski/experimental/gluon \
     --host             "${HOST:-"127.0.0.1"}" \
