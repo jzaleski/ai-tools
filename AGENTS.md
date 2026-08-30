@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-The default router (`--default`) binds to port 8080 and supports three model tiers — low (64K ctx), medium (128K ctx), high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/default/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/default/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases (low/medium/high and their `-multimodal` counterparts) are served by the default router. The experimental router (`--experimental`) binds to port 8081 by default so it can coexist with the default router, and serves two additional aliases under the `jzaleski/experimental/<particle>` namespace: `quark` (DeepSeek-V4-Flash-0731, 1M ctx, DSpark speculative decoding) and `boson` (Qwen3.8-Flash-Next, 256K ctx, MTP speculative decoding). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+The default router (`--default`) binds to port 8080 and supports three model tiers — low (64K ctx), medium (128K ctx), high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/default/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/default/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases (low/medium/high and their `-multimodal` counterparts) are served by the default router. The experimental router (`--experimental`) binds to port 8081 by default so it can coexist with the default router, and serves two additional aliases under the `jzaleski/experimental/<particle>` namespace: `quark` (DeepSeek-V4-Flash-0731, 1M ctx, DSpark speculative decoding) and `boson` (Qwen3.8-Flash-Next, 256K ctx). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -69,7 +69,7 @@ HOST=0.0.0.0 ./bin/run-router --default    # default multi-model router, exposed
 ./bin/run-model --tier default/low         # single model, low tier (fast, no vision)
 ./bin/run-model --tier default/high        # single model, high tier (fast, no vision)
 ./bin/run-model --tier experimental/quark  # single model, experimental tier (DeepSeek-V4-Flash-0731, 1M ctx, DSpark)
-./bin/run-model --tier experimental/boson  # single model, experimental tier (Qwen3.8-Flash-Next, 256K ctx, MTP)
+./bin/run-model --tier experimental/boson  # single model, experimental tier (Qwen3.8-Flash-Next, 256K ctx)
 ./bin/run-model --tier default/high-multimodal # single model, high tier (vision-capable)
 HOST=0.0.0.0 ./bin/run-model --tier default/high # single model, high tier, exposed on LAN
 ```
