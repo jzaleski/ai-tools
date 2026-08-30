@@ -383,71 +383,6 @@ run_experimental_boson() {
     --top-p            0.95;
 }
 
-# Experimental tier: GLM-5.3-Flash (Z.ai/GLM-5 series), text-only.
-#
-# Note: GLM-5.3-Flash support in llama.cpp is currently only available via
-# Unsloth's llama.cpp fork/PR (https://github.com/ggml-org/llama.cpp/pull/27754
-# or unslothai/llama.cpp@glm5next/upstream) — not yet merged into mainline
-# llama.cpp, i.e. not yet in the Homebrew `llama.cpp` package this repo's
-# bin/install-dependencies installs. Building/installing that fork is left
-# to the operator; this script only constructs the llama-server invocation.
-#
-# No speculative decoding: the GGUF's commit metadata references
-# glm5-next.attention.indexer.index_share_mtp=true, suggesting MTP draft
-# tensors may be present, but Unsloth's own documented llama-cli invocation
-# for GLM-5.3-Flash does not pass --spec-type draft-mtp, and GLM-5.3-Flash
-# support itself is still on an unmerged PR. Revisit once MTP support for
-# GLM-5.3-Flash is officially confirmed upstream.
-#
-# No multimodal variant yet: GLM-5.3-Flash is natively multimodal and ships
-# a root-level mmproj-F16.gguf, but a `-multimodal` sibling alias is
-# deferred — see docs/specs/2026-08-29-gluon-glm-5.3-flash-experimental-tier-design.md
-# ("Future Work") for the planned default/<tier>-multimodal-style pattern.
-#
-# Settings below follow Unsloth's GLM-5.3-Flash guide
-# (https://unsloth.ai/docs/models/glm-5.3-flash):
-# - Context is set to the model's stated maximum (1,048,576 / "1M"), same
-#   treatment as experimental/quark.
-# - `temp 1.0` / `top-p 0.95` matches Unsloth's "Default Settings (Most
-#   Tasks)" profile rather than their "DeepSWE" agentic-benchmark profile
-#   (temp 0.95 / top-p 1.0), to stay consistent with every other tier in
-#   this repo.
-# - `top-k` is intentionally omitted: Unsloth's GLM-5.3-Flash examples never
-#   pass it, matching the same omission already applied to
-#   experimental/quark.
-# - `reasoning_effort` is set to "max", GLM-5.3-Flash's highest available
-#   effort (its only options are low/high/max).
-run_experimental_gluon() {
-  local base_model="${MODELS_DIR}/unsloth/GLM-5.3-Flash-GGUF/UD-Q4_K_XL/GLM-5.3-Flash-UD-Q4_K_XL.gguf";
-  require_split_model "${base_model}" "unsloth/GLM-5.3-Flash-GGUF" "UD-Q4_K_XL/GLM-5.3-Flash-UD-Q4_K_XL.gguf" 6;
-
-  local first_part="${base_model%.gguf}-00001-of-00006.gguf";
-
-  exec "${LLAMA_SERVER}" \
-    --model            "${first_part}" \
-    --alias            jzaleski/experimental/gluon \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8081"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       1024 \
-    --ubatch-size      256 \
-    --ctx-size         1048576 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
-    --chat-template-kwargs '{"reasoning_effort":"max"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-p            0.95;
-}
-
 tier="default/medium";
 for arg in "$@"; do
   case "${arg}" in
@@ -470,14 +405,13 @@ case "${tier}" in
   default/high-multimodal)   run_high_multimodal;;
   experimental/quark)        run_experimental_quark;;
   experimental/boson)        run_experimental_boson;;
-  experimental/gluon)        run_experimental_gluon;;
   experimental)
-    echo "Error: the 'experimental' tier has been removed. Use experimental/quark, experimental/boson, or experimental/gluon." >&2;
+    echo "Error: the 'experimental' tier has been removed. Use experimental/quark or experimental/boson." >&2;
     exit 1;;
   low|medium|high|low-multimodal|medium-multimodal|high-multimodal)
     echo "Error: standard tiers have moved to the default/ namespace (e.g. default/${tier})." >&2;
     exit 1;;
   *)
-    echo "Error: unknown tier '${tier}'. Use: default/low, default/medium, default/high, default/low-multimodal, default/medium-multimodal, default/high-multimodal, experimental/quark, experimental/boson, experimental/gluon" >&2;
+    echo "Error: unknown tier '${tier}'. Use: default/low, default/medium, default/high, default/low-multimodal, default/medium-multimodal, default/high-multimodal, experimental/quark, experimental/boson" >&2;
     exit 1;;
 esac

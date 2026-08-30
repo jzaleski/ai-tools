@@ -96,10 +96,6 @@ require_experimental_models() {
 
   # boson: Qwen3.8-Flash-Next
   require_split_model "${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf" "unsloth/Qwen3.8-Flash-Next-GGUF" "UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf" 4;
-
-  # gluon: GLM-5.3-Flash (text-only; see bin/run-model's run_experimental_gluon
-  # comment for the llama.cpp-fork caveat and omitted-speculative-decoding rationale)
-  require_split_model "${MODELS_DIR}/unsloth/GLM-5.3-Flash-GGUF/UD-Q4_K_XL/GLM-5.3-Flash-UD-Q4_K_XL.gguf" "unsloth/GLM-5.3-Flash-GGUF" "UD-Q4_K_XL/GLM-5.3-Flash-UD-Q4_K_XL.gguf" 6;
 }
 
 # Ensure all parts of a split GGUF model exist, downloading them if missing.

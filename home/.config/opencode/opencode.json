@@ -161,22 +161,6 @@
               "text"
             ]
           }
-        },
-        "jzaleski/experimental/gluon": {
-          "name": "Gluon",
-          "limit": {
-            "context": 1048576,
-            "input": 917504,
-            "output": 131072
-          },
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          }
         }
       }
     }

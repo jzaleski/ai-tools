@@ -5,7 +5,7 @@ Guidelines for agentic coding tools in this repository.
 ## Project Overview
 
 Shell scripts for running local LLMs using `llama-server`.
-The default router (`--default`) binds to port 8080 and supports three model tiers — low (64K ctx), medium (128K ctx), high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/default/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/default/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases (low/medium/high and their `-multimodal` counterparts) are served by the default router. The experimental router (`--experimental`) binds to port 8081 by default so it can coexist with the default router, and serves three additional aliases under the `jzaleski/experimental/<particle>` namespace: `quark` (DeepSeek-V4-Flash-0731, 1M ctx, DSpark speculative decoding), `boson` (Qwen3.8-Flash-Next, 256K ctx, MTP speculative decoding), and `gluon` (GLM-5.3-Flash, 1M ctx, text-only, no speculative decoding yet — see Performance below). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
+The default router (`--default`) binds to port 8080 and supports three model tiers — low (64K ctx), medium (128K ctx), high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/default/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/default/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases (low/medium/high and their `-multimodal` counterparts) are served by the default router. The experimental router (`--experimental`) binds to port 8081 by default so it can coexist with the default router, and serves two additional aliases under the `jzaleski/experimental/<particle>` namespace: `quark` (DeepSeek-V4-Flash-0731, 1M ctx, DSpark speculative decoding) and `boson` (Qwen3.8-Flash-Next, 256K ctx, MTP speculative decoding). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN).
 
 **No code repositories** - utilities/config only.
 
@@ -41,7 +41,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   └── run-router                         # Router server (llama.cpp, multi-model; HOST env toggles bind)
 ├── templates/                             # llama-server INI preset templates
 │   ├── llama-cpp-default.ini.template     # Default router preset (6 aliases: low/medium/high + -multimodal counterparts; ctx 64K/128K/256K)
-│   └── llama-cpp-experimental.ini.template # Experimental router preset (3 aliases: quark, boson, gluon)
+│   └── llama-cpp-experimental.ini.template # Experimental router preset (2 aliases: quark, boson)
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (data, engineer, product)
@@ -63,14 +63,13 @@ Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose o
 HOST=0.0.0.0 ./bin/run-router --default    # default multi-model router, exposed on LAN
 # Clients select tier via: ?model=jzaleski/default/low  jzaleski/default/medium  jzaleski/default/high
 #                          jzaleski/default/low-multimodal  jzaleski/default/medium-multimodal  jzaleski/default/high-multimodal
-# Or via experimental:     ?model=jzaleski/experimental/quark  jzaleski/experimental/boson  jzaleski/experimental/gluon
+# Or via experimental:     ?model=jzaleski/experimental/quark  jzaleski/experimental/boson
 
 ./bin/run-model                            # single model, default medium tier, localhost (8080)
 ./bin/run-model --tier default/low         # single model, low tier (fast, no vision)
 ./bin/run-model --tier default/high        # single model, high tier (fast, no vision)
 ./bin/run-model --tier experimental/quark  # single model, experimental tier (DeepSeek-V4-Flash-0731, 1M ctx, DSpark)
 ./bin/run-model --tier experimental/boson  # single model, experimental tier (Qwen3.8-Flash-Next, 256K ctx, MTP)
-./bin/run-model --tier experimental/gluon  # single model, experimental tier (GLM-5.3-Flash, 1M ctx, text-only)
 ./bin/run-model --tier default/high-multimodal # single model, high tier (vision-capable)
 HOST=0.0.0.0 ./bin/run-model --tier default/high # single model, high tier, exposed on LAN
 ```
@@ -105,7 +104,7 @@ Test with: `bash -x ./bin/run-router` or `bash -x ./bin/run-model`
 - Bind toggle: `HOST` env var (`127.0.0.1` default / `0.0.0.0` for LAN)
 - Ports: 8080 (default router), 8081 (experimental router)
 - Aliases: `jzaleski/default/{tier}` (fast, no vision) / `jzaleski/default/{tier}-multimodal` (vision-capable)
-- Experimental: `jzaleski/experimental/{particle}` (e.g. quark, boson, gluon)
+- Experimental: `jzaleski/experimental/{particle}` (e.g. quark, boson)
 
 ---
 
@@ -144,7 +143,6 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 │       ┌───────────────────────┐  │
 │       │ jzaleski/experimental/quark│
 │       │ jzaleski/experimental/boson│
-│       │ jzaleski/experimental/gluon│
 │       └───────────────────────┘  │
 └──────────────────────────────────┘
 ```
@@ -198,7 +196,7 @@ Model-specific parameters (quantization, context size, sampling settings, etc.) 
 
 The opencode configuration defines 2 provider endpoints, one per router namespace, both templated with a `server-hostname-or-ip` placeholder in their `baseURL` (replace with `localhost` or an actual hostname/IP):
 - **jzaleski/default**: `server-hostname-or-ip:8080` — per-tier context (low: 64K, medium: 128K, high: 256K); 6 models: `jzaleski/default/low|medium|high` (fast, text-only, MTP + speculative decoding) and `jzaleski/default/low-multimodal|medium-multimodal|high-multimodal` (vision-capable, no speculative decoding), all in the Qwen3.8-27B family at Q4_K_XL/Q6_K_XL/Q8_K_XL respectively. Each model's display `name` is a short human-readable label (`Low`, `Medium`, `High`, and their `(Multimodal)` counterparts).
-- **jzaleski/experimental**: `server-hostname-or-ip:8081` — 3 models: `jzaleski/experimental/quark` (DeepSeek-V4-Flash-0731, 1M ctx, text-only, display name `Quark`), `jzaleski/experimental/boson` (Qwen3.8-Flash-Next, 256K ctx, text-only, display name `Boson`), and `jzaleski/experimental/gluon` (GLM-5.3-Flash, 1M ctx, text-only, no speculative decoding yet, display name `Gluon`).
+- **jzaleski/experimental**: `server-hostname-or-ip:8081` — 2 models: `jzaleski/experimental/quark` (DeepSeek-V4-Flash-0731, 1M ctx, text-only, display name `Quark`) and `jzaleski/experimental/boson` (Qwen3.8-Flash-Next, 256K ctx, text-only, display name `Boson`).
 
 Neither provider is opinionated about network topology — the `HOST` env var already governs whether the underlying router/model binds to `127.0.0.1` (local-only) or `0.0.0.0` (LAN-reachable). If opencode runs on a different machine than the llama-server, edit the relevant provider's `baseURL` directly in your own `opencode.json` (e.g. `http://192.168.1.50:8080/v1`) instead of maintaining a separate checked-in provider.
 
@@ -276,7 +274,6 @@ BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
 - `--image-min-tokens 1024` is set on all `-multimodal` tiers to preserve grounding/bbox accuracy on Qwen-VL models (see [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842))
 - `--cache-reuse 256` + `--cache-ram -1` are set on all 6 tiers — reuses KV cache for the shared prefix when a request extends a previous prompt (the common shape of an agent loop), with the idle-slot cache's default 8GiB budget removed given RAM to spare; pairs well with `--reasoning-preserve` making prompts grow faster
 - `--load-mode mlock` is set on all 6 tiers to pin model weights in RAM, avoiding macOS's background memory compression and the decompression stall it would otherwise cause on the first request after an idle period
-- `jzaleski/experimental/gluon` (GLM-5.3-Flash) runs without speculative decoding for now — Unsloth's own documented invocation doesn't pass `--spec-type draft-mtp` yet, even though the GGUF's metadata hints MTP tensors may be present; revisit once officially confirmed. It also currently requires Unsloth's llama.cpp fork/PR (not yet in the Homebrew `llama.cpp` package `bin/install-dependencies` installs) — see the [GLM-5.3-Flash guide](https://unsloth.ai/docs/models/glm-5.3-flash) and [llama.cpp PR #27754](https://github.com/ggml-org/llama.cpp/pull/27754).
 
 ## Troubleshooting
 
