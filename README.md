@@ -104,6 +104,8 @@ The project includes `opencode` agent configurations in `home/.config/opencode/`
 
 Agent configurations are managed via the bootstrap system and integrate with the local llama-server (llama.cpp) instance. The default agent is `engineer`.
 
+> **See [`docs/agents-and-skills.md`](docs/agents-and-skills.md) for a comprehensive reference** describing every agent and every skill — their responsibilities, execution model (inline vs. dispatched sub-agent), hard gates, persistence, and how the three workflows fit together.
+
 ### Local Skills
 
 Workflow skills are vendored locally under `home/.config/opencode/skills/` — no external plugin dependencies.
