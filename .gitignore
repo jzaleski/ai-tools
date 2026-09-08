@@ -1,10 +1,5 @@
 .DS_Store
 
-docs/*
-!docs/agents-and-skills.md
-!docs/specs/
-!docs/plans/
-
 tmp/*
 !tmp/.keep
 
