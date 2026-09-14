@@ -7,8 +7,8 @@
 #   2. Resumes sessions via --continue by reading the persisted session ID
 #   3. Resets opencode history/cache on new sessions (configurable via env vars)
 #   4. Reads default --model/--agent values from .opencode-config (JSON) in
-#      the repo root if present, applied only when not already passed on
-#      the command line
+#      the repo root (or home directory as fallback) if present, applied only
+#      when not already passed on the command line
 #
 # The session persistence enables resuming sessions even after moving the repo
 # to a different location on the filesystem, which is useful when working across
@@ -143,13 +143,16 @@ fi
 # DEFAULT MODEL/AGENT CONFIGURATION
 # =============================================================================
 # Read default --model and --agent values from .opencode-config (JSON) in the
-# repo root (or pwd) if it exists, and append them to the opencode arguments
-# for any flag not already specified on the command line. Invalid JSON is
-# reported as a warning to stderr and otherwise ignored (the underlying
-# opencode command still runs normally, falling through to CLI flags and
-# opencode.json defaults).
+# repo root (or pwd) if it exists, falling back to ~/.opencode-config in the home
+# directory, and append them to the opencode arguments for any flag not already
+# specified on the command line. Invalid JSON is reported as a warning to stderr
+# and otherwise ignored (the underlying opencode command still runs normally,
+# falling through to CLI flags and opencode.json defaults).
 
 opencode_config_file="$(${git_cmd} rev-parse --show-toplevel 2> /dev/null || pwd)/.opencode-config";
+if [[ ! -e "$opencode_config_file" ]] && [[ -n "${HOME:-}" ]] && [[ -e "$HOME/.opencode-config" ]]; then
+  opencode_config_file="$HOME/.opencode-config";
+fi
 
 has_model_arg=0;
 has_agent_arg=0;

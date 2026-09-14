@@ -431,11 +431,11 @@ opencode [options] [query]
 - Automatically resets opencode model history on session start (configurable)
 - Clears model cache to ensure fresh model selection
 - Supports `--continue`, `-s`, or `--session` flags to preserve history/cache across invocations
-- Reads default `--model`/`--agent` values from `.opencode-config` (JSON) in the git repo root, applied only when the corresponding flag isn't already passed on the command line
+- Reads default `--model`/`--agent` values from `.opencode-config` (JSON) in the git repo root (falling back to `~/.opencode-config` in the home directory), applied only when the corresponding flag isn't already passed on the command line
 
 **Default Model/Agent Configuration**
 
-Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
+Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults, or place one at `~/.opencode-config` in your home directory to set global user defaults when a repo does not provide one:
 
 ```json
 {
@@ -445,9 +445,9 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults:
 ```
 
 - Both keys are optional — set either, both, or neither.
-- Precedence (highest to lowest): explicit CLI flag (`--model`/`-m`, `--agent`) → `.opencode-config` → `opencode.json`'s `default_agent`/defaults.
+- Precedence (highest to lowest): explicit CLI flag (`--model`/`-m`, `--agent`) → repo-root `.opencode-config` → `~/.opencode-config` → `opencode.json`'s `default_agent`/defaults.
 - Invalid JSON prints a warning to stderr and is otherwise ignored — the underlying `opencode` command still runs.
-- Unlike `.last-opencode-session`, this file is meant to be committed to the repo.
+- Unlike `.last-opencode-session`, repo-root `.opencode-config` is meant to be committed to the repo.
 
 **Required binaries** (all installed via bootstrap): `cat`, `git`, `jq`, `opencode`, `sqlite3`
 
