@@ -1,1 +1,6 @@
 alias opencode='~/.local/lib/opencode.sh';
+
+opencode_bin_dir="$HOME/.opencode/bin";
+if [ -e $opencode_bin_dir ] && [[ ! "$PATH" =~ "$opencode_bin_dir" ]]; then
+  export PATH="$opencode_bin_dir:$PATH";
+fi
