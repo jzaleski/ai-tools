@@ -111,11 +111,15 @@ git merge <feature-branch>
 
 # Verify tests on merged result — run fresh now, don't reuse Step 1's result
 <test command>
-
-# Only after merge succeeds: cleanup (Step 6), then delete branch
 ```
 
-Then proceed to Step 6, then:
+**If tests fail on merged result:**
+- **STOP immediately.**
+- Leave the worktree and branch in place and investigate before deleting anything — nothing has been pushed, so the merge is local and recoverable.
+- Do NOT proceed to Step 6 or delete the branch until the merged result passes all tests.
+
+**Only after merge succeeds and tests pass:**
+Proceed to Step 6 (Cleanup Workspace), then:
 ```bash
 git branch -d <feature-branch>
 ```
@@ -184,10 +188,40 @@ silently skip cleanup of a real worktree.
 
 **If `GIT_DIR == GIT_COMMON`:** Normal repo, no worktree to clean up. Done.
 
-**If `WORKTREE_PATH` is under `.worktrees/` or `worktrees/`:** We created this — we own cleanup.
+**If `WORKTREE_PATH` is under `.worktrees/` or `worktrees/`:** We created this — we own cleanup:
 
 ```bash
 git worktree remove "$WORKTREE_PATH"
+```
+
+**If removal is refused (`contains modified or untracked files`):**
+The worktree holds files that exist nowhere else — uncommitted plans, notes, or scratch work. **Never pass `--force` without explicit user confirmation.** That would destroy untracked work permanently.
+
+1. Inspect uncommitted files:
+```bash
+git -C "$WORKTREE_PATH" status --porcelain -uall
+```
+
+2. Show the uncommitted files to the user and present exactly these 3 options:
+```
+Worktree removal refused — these files were never committed:
+
+<file list>
+
+1. Commit them to <branch> before cleanup
+2. Move them into <main repo root>
+3. Delete them (unrecoverable)
+
+Which option?
+```
+
+3. Carry out the user's choice:
+   - **Option 1 (Commit):** Commit untracked files to `<branch>`, then remove worktree.
+   - **Option 2 (Move):** Move files to `MAIN_ROOT`, then remove worktree.
+   - **Option 3 (Delete):** Run `git worktree remove --force "$WORKTREE_PATH"`.
+
+4. Prune registrations:
+```bash
 git worktree prune  # Self-healing: clean up any stale registrations
 ```
 
@@ -207,6 +241,8 @@ git worktree prune  # Self-healing: clean up any stale registrations
 **Never:**
 - Proceed with failing tests
 - Merge without verifying tests on result — run them fresh, don't reuse an earlier result
+- If tests fail on merged result, proceed with cleanup or branch deletion
+- Run `git worktree remove --force` when removal is refused without user confirmation and presenting options
 - List discarding the work as a numbered option, or infer a discard request from anything short of an explicit, unambiguous ask
 - Delete work without typed confirmation
 - Force-push without explicit request
@@ -217,9 +253,26 @@ git worktree prune  # Self-healing: clean up any stale registrations
 
 **Always:**
 - Verify tests before offering options, and again, fresh, before merging (Step 5, Option 1)
+- If merged tests fail, stop and investigate with worktree and branch intact
 - Detect environment before presenting menu, capturing worktree state before any `cd`
 - Present exactly 3 options (or 2 for detached HEAD) — discard is never listed
 - Get typed confirmation before any discard
 - Cleanup only for Option 1 and a confirmed discard
+- If worktree removal is refused, show uncommitted files and let user choose between commit, move, or delete
 - `cd` to main repo root before any worktree removal
 - Run `git worktree prune` after removal
+
+## Common Rationalizations
+
+| Excuse | Reality |
+|---|---|
+| "Tests passed earlier this session" | Run the suite fresh on the tree you are about to integrate. A green run only proves the tree it ran on. |
+| "The user obviously wants it merged" | Integration is the user's decision. Present the menu and wait. |
+| "They seem done with this feature — I'll offer to discard it" | The menu is complete as written. Discard happens only when the user asks for it in so many words. |
+| "'Yeah, get rid of it' counts as confirmation" | Only the typed word `discard` authorizes deletion. |
+| "The PR is up, so the worktree is clutter now" | PR feedback gets fixed in that worktree. It stays until the work lands. |
+| "This other worktree looks stale — I'll clean it too" | Clean up only worktrees under `.worktrees/` or `worktrees/`. Everything else belongs to the host. |
+| "Removal refused — `--force` is just finishing the cleanup" | The refusal means files exist only in that worktree. `--force` destroys them permanently. Show the user and ask. |
+| "The merged-result failure is probably flaky" | A failing merged result stops everything. Branch and worktree stay put while you investigate. |
+| "The base branch is obviously main" | Confirm the fork point or ask. Merging into the wrong base is expensive to undo. |
+| "The push was rejected — force-push will fix it" | A rejected push means the remote moved. Investigate; force-push only on the user's explicit request. |

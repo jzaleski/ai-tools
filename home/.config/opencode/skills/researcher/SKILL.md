@@ -8,7 +8,7 @@ description: "Use before writing any implementation plan or code — when requir
 Turn vague ideas into approved designs through structured dialogue. This is the mandatory first phase before any implementation planning or coding happens.
 
 <HARD-GATE>
-Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
+Do NOT invoke any implementation skill, write any code, scaffold any project, install dependencies, create projects, or take any implementation action until you have presented a design and the user has approved it (the short doc for small changes, the full design doc for projects). This applies to EVERY project regardless of perceived simplicity.
 </HARD-GATE>
 
 **Always announce at start:** "I'm using the researcher skill to design this before implementing."
@@ -16,98 +16,125 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 ## Scope Detection
 
 Before asking questions, assess whether the request describes multiple independent subsystems (e.g., "build a platform with chat, file storage, billing, and analytics"). If so:
-- Flag this immediately — don't refine details of something that needs decomposing first
-- Help the user decompose into sub-projects: independent pieces, relationships, build order
-- Brainstorm the FIRST sub-project through the normal flow. Each sub-project gets its own design → plan → implement cycle.
+- Flag this immediately — don't refine details of something that needs decomposing first.
+- Help the user decompose into sub-projects: independent pieces, relationships, build order.
+- Design the FIRST sub-project through the normal flow. Each sub-project gets its own design → plan → implement cycle.
 
-## Process Checklist
+## Look Before You Ask
 
-Complete these items in order. Don't skip steps:
+In an existing project, or when context has been provided (a spec, a plan, a handoff, files pointed at, earlier conversation), dig in before your first message:
+- Read what was referenced and the code or material it connects to.
+- Keep reading until you can explain how the relevant parts work today and what this change would touch.
+- Follow established project conventions and architectural boundaries.
+- **Never ask what the project or context already answers.**
 
-1. **Explore project context** — read files, docs, recent commits, existing patterns
-2. **Ask clarifying questions** — one at a time (purpose, constraints, success criteria)
-3. **Propose 2-3 approaches** — with trade-offs and your recommendation
-4. **Present design** — in sections scaled to complexity, get user approval after each section
-5. **Write design doc** — save to `docs/specs/YYYY-MM-DD-<topic>-design.md`
-6. **Spec self-review** — fix placeholders, contradictions, ambiguity, scope issues inline
-7. **User reviews written spec** — ask user to review before proceeding
-8. **Transition to planning** — invoke the planner skill (this is the only skill you hand off to)
+## Your First Message
 
-## The Process
+Move the work forward with a structured first message (~200 words total):
+- **Echo the request back:** Restate what they want, who it's for, and why in your own words so they can see whether you've grasped its shape.
+- **Highlight project connections & constraints:** State what you found in the codebase that bears on it — how relevant parts work today, existing patterns, and what the change would touch.
+- **Surface non-obvious factors:** If you found a constraint, conflict, or cheaper path that changes what they're asking for or how it must be built, say so plainly.
+- **Close cleanly:** End with one line inviting corrections, followed by **ONE open question** addressing the biggest unsettled requirement whose answer would most change what gets built.
 
-### 1. Explore Project Context
+## The Conversation & Socratic Probing
 
-Check out current project state first:
-- Files, docs, recent commits, existing patterns
-- If working in an existing codebase: follow established patterns
-- Where existing code has problems that affect the work (large files, unclear boundaries), include targeted improvements as part of the design — but don't propose unrelated refactoring
+Each subsequent message should advance understanding through disciplined dialogue:
 
-### 2. Ask Clarifying Questions
+- **One question per message.** A single sentence with no sprawling list of example answers hanging off it.
+- **Get them describing.** Open questions come first. Their own words carry intent that pre-packaged options cannot. Offer a short menu only when they are stuck. When they say "what do you think?", propose something concrete with rationale.
+- **How it gets made.** Every project rests on choices about platform, programming language, tools, and libraries. Probe early on which choices the user wants to own vs. which they want to delegate to sensible defaults:
+  - Strong views or constraints: talk them through.
+  - Relying on you: provide sensible defaults in plain words.
+  - Existing work: build on what the project already uses.
+  - Any choice you make goes into the design as your call, never as something the user mandated.
+- **Ground to cover:**
+  - Intent, purpose, and what makes it special
+  - Success criteria and why now
+  - Goals, non-goals, and anti-goals (what would make this a failure even if it technically works)
+  - Prior art: what they've seen elsewhere, loved or hated
+  - Current state and technical constraints
+- **Propose 2-3 approaches.** Once you understand what they want, lay out approaches in a message of their own before writing the spec:
+  - Ground each option in what the project actually does and state tradeoffs.
+  - Lead with your recommended option and explain why.
+  - Ask which direction they want to pursue.
 
-- **One question per message.** If a topic needs more exploration, break it into multiple questions.
-- Prefer multiple choice when possible; open-ended is fine too.
-- Focus on: purpose, constraints, success criteria, any non-negotiables.
-- Don't overwhelm — the user should always know what you're asking about before moving to the next topic.
+## Size the Work
 
-### 3. Propose Approaches
+Once requirements are clear and an approach is chosen, size the work in plain words:
 
-Propose 2-3 different approaches with trade-offs:
-- Lead with your recommended option and explain why
-- Present options conversationally, not as a rigid list
-- Be ready to modify or combine approaches based on user feedback
+| Size | The Design Doc |
+|---|---|
+| A small change | A short design doc: intent, why, constraints, and approach in a few concise lines. Goes straight to user review without builder check. |
+| A project | Full written design doc (see structure below), validated with the builder check before user review. |
 
-### 4. Present the Design
+Both short and full designs must include the **Approaches** considered, their tradeoffs, which one was chosen, and why.
+If the work grows mid-task, stop, say so, and step up a size.
 
-Present the design in sections scaled to their complexity:
-- A few sentences for straightforward items; up to 200-300 words for nuanced topics
-- Cover: architecture, components, data flow, error handling, testing approach
-- Ask after each section whether it looks right so far before moving on
-- Be ready to iterate — if something doesn't make sense, go back and clarify
+## The Written Design
 
-**Design principles to enforce:**
-- Break the system into smaller units with one clear purpose
-- Each unit should communicate through well-defined interfaces
-- Smaller, well-bounded units are easier for sub-agents to reason about
-- A file growing large is often a signal it's doing too much — include splits where appropriate
+Save the validated design to `docs/specs/YYYY-MM-DD-<topic>-design.md` (or user's preferred path):
+- Intent and the why
+- Goals, non-goals, anti-goals
+- Constraints (version floors, platform limits, dependencies)
+- Approaches considered, tradeoffs, and rationale for selected approach
+- Architecture, components, and data flow
+- Error handling and testing approach
+- What was decided vs. what is left to the builder
 
-### 5. Write Design Doc
+## Builder Check (For Projects)
 
-Save the validated design to `docs/specs/YYYY-MM-DD-<topic>-design.md`:
-- Use clear, concise language (avoid jargon when a simple word works)
-- Commit the document to git after writing
+Before presenting the spec for final user approval, run an internal builder perspective check:
+1. Read the document as a talented engineer who must plan and build it without talking to the author.
+2. Identify places where a builder would have to guess and a wrong guess would matter.
+3. Sort open items into three categories:
+   - **Already Answered:** Answered by conversation or project context — add directly to the document.
+   - **Minor (Author's Call):** Sensible builder could settle without changing what gets built — settle it yourself and mark in the document as your call.
+   - **Theirs:** Only the user can answer, and the answer changes what gets built.
+4. If any items fall into "Theirs", bring them to the user in a single, focused round of questions (most important first). Update the document with their answers and list your calls.
 
-### 6. Spec Self-Review
+## Spec Self-Review
 
-After writing the spec, review it yourself:
-
+After writing the spec (and completing the builder check if a project), check it yourself:
 1. **Placeholder scan:** Any "TBD", "TODO", incomplete sections, or vague requirements? Fix them.
-2. **Internal consistency:** Do any sections contradict each other? Does the architecture match the feature descriptions?
+2. **Internal consistency:** Do any sections contradict each other? Does the architecture match feature descriptions?
 3. **Scope check:** Is this focused enough for a single implementation plan, or does it need decomposition?
-4. **Ambiguity check:** Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
+4. **Ambiguity check:** Could any requirement be interpreted two different ways? Pick one and make it explicit.
 
-Fix issues inline. No need to re-review — just fix and move on.
+Fix issues inline before proceeding.
 
-### 7. User Review Gate
+## User Review Gate
 
-After the self-review loop passes, ask the user:
+Ask the user for review and approval:
 
 > "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start planning the implementation."
 
-Wait for approval. If they request changes, make them and re-run the self-review loop. Only proceed once approved.
+Wait for approval. If they request changes, update the spec and re-verify. Only proceed once approved.
 
-### 8. Transition to Planning
+## Transition to Planning
 
-The terminal state is invoking the **planner** skill. Do NOT invoke any other skill or step into implementation directly.
+The terminal state is invoking the **planner** skill. Do NOT invoke any other skill or step into implementation directly:
 
 > "Design approved. Switching to planning — I'll decompose this into executable tasks next."
 
 Load: `skills/planner`
 
-## Key Principles
+## Red Flags
 
-- **One question at a time** — don't overwhelm
-- **Multiple choice preferred** — easier to answer than open-ended
-- **YAGNI ruthlessly** — remove unnecessary features from all designs
-- **Explore alternatives** — always propose 2-3 approaches before settling
-- **Incremental validation** — present design, get approval before moving on
-- **Be flexible** — go back and clarify when something doesn't make sense
+| Thought | Reality |
+|---|---|
+| "I'll offer a menu of what they might want" | Options steer. Ask them to describe it first in their own words. |
+| "I'll fill in sensible defaults silently" | Say them out loud. A default they never heard is one they couldn't reject. |
+| "I've answered their questions, so I'll write the doc" | Lay out the approaches first, in a message of their own with tradeoffs and recommendations. |
+| "I should explain the process first" | Ask your question. The process shows itself. |
+| "They said 'sounds good' to the idea" | Approval covers what you showed them. A design doc you haven't written isn't approved. |
+| "The request looks small, so I can skip the design doc" | Even small changes get a short design doc approved before planning or coding. |
+
+## Common Rationalizations
+
+| Rationalization | Reality |
+|---|---|
+| "The user gave a detailed prompt, so requirements are already clear" | Prompts often specify solutions, not intent or constraints. Read context first, echo understanding, and confirm. |
+| "I already know what files to edit, so I can start coding" | Knowing files is not having an approved design. Code without an approved design violates the hard gate. |
+| "I'll ask 5 questions at once to save round-trips" | Overwhelms the user and leads to shallow answers. Ask one focused question at a time. |
+| "I'll assume standard libraries without asking" | Probe technical ownership early. The user may have strict constraints on dependencies or stack. |
+| "I don't need a builder check because my spec is thorough" | Authors miss their own blind spots. Reading from a builder's perspective catches ambiguities before planning. |

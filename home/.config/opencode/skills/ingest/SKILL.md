@@ -46,6 +46,7 @@ disk changes.
 ## Non-Negotiable Rules
 
 - **Never mutate source files.** Raw inputs are read-only. Every output goes to a new file.
+- **Evidence before completion.** Never declare normalization complete without running the normalization evidence gates (row count reconciliation, schema conformity, and null-rate audit).
 - **No silent installs.** If a required package isn't available, surface it to the user — don't install it silently.
 - **Document judgment calls.** Anything that required interpretation (ambiguous columns, how missing values were handled) gets noted so the analysis stage and the user can see it.
 - **Cache, don't reprocess.** If a normalized artifact already exists from earlier in the same session, reuse it.
@@ -118,6 +119,31 @@ stack them here so analysis works from one source.
 **Document every normalization decision that required judgment.** The analysis
 stage and the user both need to trust the clean dataset.
 
+### Data Normalization Evidence Gates
+
+<HARD-GATE>
+Never declare normalization complete without verifiable evidence: row count reconciliation against raw source files, schema conformity across all inputs, and column null-rate verification. No assumptions, estimations, or unverified claims.
+</HARD-GATE>
+
+Before declaring the normalized dataset ready for analysis, execute a verification script and record empirical evidence:
+
+1. **Row Count Reconciliation:**
+   - Sum total rows extracted from all raw sources ($\sum \text{source\_rows}$).
+   - Count normalized rows ($\text{normalized\_rows}$).
+   - Prove the reconciliation equation:
+     $$\sum \text{source\_rows} - \text{dropped\_rows} = \text{normalized\_rows}$$
+   - Any dropped rows must be accounted for with exact counts and documented reasons (e.g. duplicate keys, blank rows, trailing totals). Unexplained dropped rows indicate parser failure or silent record loss.
+
+2. **Schema Conformity:**
+   - Confirm unified column names match the target naming standard across all sources (no accidental variations like `CustomerID` vs `customer_id` or `Date` vs `Timestamp`).
+   - Validate that data types conform across all merged files (numeric fields are strictly numeric, timestamps follow ISO-8601, booleans are normalized).
+   - Check categorical values for consistent casing, whitespace trimming, and uniform representation.
+
+3. **Column Null & Missing Value Rates:**
+   - Calculate the percentage of null/missing values for every column in the normalized output.
+   - Investigate unexpected null spikes: an abrupt surge in nulls often reveals misaligned CSV delimiters, bad column offsets, or regex parsing failures rather than legitimate missing data.
+   - Ensure primary key / entity identifier columns contain exactly 0% nulls.
+
 ## Tooling & Reuse
 
 - **Write scripts freely.** Wrangling data with a script is expected and encouraged.
@@ -151,6 +177,11 @@ Extracted artifacts:
 Normalized output:
 - .pipeline-cache/normalized/<name> (<rows> × <cols>)
 
+Normalization evidence gates:
+- Row count reconciliation: <sum of source rows> source rows in → <normalized rows> output rows (<dropped count> dropped: <reason>)
+- Schema conformity: verified (<column count> columns aligned, types validated)
+- Null rate audit: verified (highest null rate: <col> at <pct>%, zero nulls in ID columns)
+
 Normalization decisions:
 - [judgment calls made, or "none — clean passthrough"]
 
@@ -160,3 +191,23 @@ Concerns:
 
 Hand off to the **analyze** skill (or back to the orchestrating agent) once the
 normalized dataset exists.
+
+## Red Flags
+
+| Thought | Reality |
+|---|---|
+| "The script completed with exit code 0, so normalization is done" | Exit code 0 only means the script didn't crash. Verify row counts and null rates against source data. |
+| "A few missing rows don't matter in a large dataset" | Unaccounted dropped rows indicate silent parsing failures, broken delimiters, or dropped records. Reconcile every row. |
+| "I'll fill missing values with 0 or empty string silently" | Silent imputation corrupts downstream analysis. Document every default or imputation explicitly. |
+| "The columns have similar names, so I'll just concatenate them" | Misaligned columns cause silent null-padding. Explicitly map schemas and check conformity. |
+| "I don't need to check null rates because the source looked clean" | Parsing often silently converts unparseable strings to NaN/null. Verify null rates after ingestion. |
+
+## Common Rationalizations
+
+| Rationalization | Reality |
+|---|---|
+| "The file is CSV so `pd.read_csv` handled everything correctly" | CSV dialects, encoding issues, trailing commas, or embedded newlines silently corrupt rows. Check row counts and sample parsed lines. |
+| "I can skip verification because this is just a quick exploratory analysis" | Downstream findings and decisions depend on normalized truth. Corrupted data leads to false conclusions. |
+| "The row count mismatch is probably just header rows or blanks" | 'Probably' is not evidence. Count header and blank rows explicitly to prove the reconciliation math. |
+| "I can fix schema discrepancies during the analyze stage" | Ingest owns normalization. Leaking unaligned schemas into analyze creates fragile, ad-hoc workarounds. |
+| "The dataset is huge so checking null rates is too slow" | Summary statistics (e.g. `df.isnull().mean()`) take seconds even on millions of rows. Never skip null audits. |

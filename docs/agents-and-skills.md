@@ -15,11 +15,11 @@ tomorrow, these agents and skills continue working identically.
   *inline* (interactive, needs user dialogue) or dispatched as *sub-agents* (via
   the `task` tool with `subagent_type: general`).
 
-There are **3 agents** and **13 skills**, organized into three workflows:
+There are **3 agents** and **15 skills**, organized into three workflows:
 
 | Workflow | Agent | Skills |
 |---|---|---|
-| Engineering lifecycle | `engineer` | `researcher`, `planner`, `coder`, `debugging`, `reviewer`, `finisher` |
+| Engineering lifecycle | `engineer` | `researcher`, `planner`, `coder`, `debugging`, `reviewer`, `finisher`, `test-driven-development`, `verification-before-completion` |
 | Data pipeline | `data` | `ingest`, `analyze`, `report` |
 | Product funnel | `product` | `triage`, `scope`, `refine`, `handoff` |
 
@@ -38,6 +38,8 @@ There are **3 agents** and **13 skills**, organized into three workflows:
   - [debugging](#skill-debugging)
   - [reviewer](#skill-reviewer)
   - [finisher](#skill-finisher)
+  - [test-driven-development](#skill-test-driven-development)
+  - [verification-before-completion](#skill-verification-before-completion)
 - [Data Pipeline Skills](#data-pipeline-skills)
   - [ingest](#skill-ingest)
   - [analyze](#skill-analyze)
@@ -79,12 +81,18 @@ for the full-lifecycle path, create a feature branch if currently on
 |---|---|---|---|
 | **A — Direct** | Single file or same-subsystem trivial change (typo, small bugfix, config tweak) | Edits inline; runs `debugging` first if it's a bugfix; verifies with a fresh test/typecheck run | Working tree (may commit if clearly safe) |
 | **B — Parallel Dispatch** | Multiple disconnected files/subsystems, clear requirements | Groups files by independence, dispatches parallel `coder` sub-agents, then verifies all changes inline | Working tree (no commit) |
-| **C — Full Lifecycle** | Ambiguous, design-required, or large interdependent features | `researcher` → `planner` → parallel `coder` batches → `reviewer` ×2 → `finisher` | Feature branch with commits/PR |
+| **C — Full Lifecycle** | Ambiguous, design-required, or large interdependent features | `researcher` → `planner` → parallel `coder` batches → `reviewer` ×2 → `finisher` (continuous execution without intermediate stalls; rulings, not stalls for minor conflicts) | Feature branch with commits/PR |
 
 **Core principles (all paths):** correctness over cleverness, strict typing
 always, minimal dependency footprint, consistency with existing code, no silent
-TODOs, and — critically — **verification before completion**: never claim
-something passes without running the actual check in the current turn.
+TODOs, **test-driven development** (`skills/test-driven-development`) for all code
+and bugfixes, and — critically — **verification before completion**
+(`skills/verification-before-completion`): never claim something passes without
+running the actual check in the current turn.
+
+**Orchestration discipline (Path C):**
+- **Continuous execution:** Does not pause to check in with the user between tasks; executes all tasks from the plan without stopping unless hitting irreversible/security boundaries or encountering a broken plan.
+- **Rulings, not stalls:** A running plan does not wait on a human for minor conflicts or ambiguities. The spec is binding authority, the plan is its argument, and engineer's judgment settles what neither answers. Every decision is recorded as `Ruling: <what decided> — <why> — <what it costs if wrong>` while work continues.
 
 **Commit discipline:** Path A may commit low-risk self-contained changes; Path B
 always leaves the multi-file diff in the working tree for review; Path C commits
@@ -159,11 +167,13 @@ specs (file paths, task decomposition, implementation detail).
 
 ## Engineering Lifecycle Skills
 
-These six skills implement the `engineer` agent's full lifecycle (Path C) plus
-its bugfix support (Path A/B). Three are **interactive** and loaded inline
-(`researcher`, `planner`, `finisher`); two are **non-interactive** sub-agents
-(`coder`, `reviewer`); and `debugging` runs inline within whichever context is
-fixing a bug.
+These eight skills implement the `engineer` agent's full lifecycle (Path C), its
+bugfix support (Path A/B), and project-wide engineering discipline. Three are
+**interactive** and loaded inline (`researcher`, `planner`, `finisher`); two are
+**non-interactive** sub-agents (`coder`, `reviewer`); `debugging` runs inline
+within whichever context is fixing a bug; and two are **standalone discipline
+skills** (`test-driven-development`, `verification-before-completion`) that govern
+code creation and completion claims across all paths.
 
 <a id="skill-researcher"></a>
 ### `researcher` — Design & Discovery
@@ -176,18 +186,28 @@ or code.
 
 - **Hard gate:** does not write code, scaffold, or take any implementation action
   until it has presented a design and the user has explicitly approved it —
-  regardless of perceived simplicity.
+  regardless of perceived simplicity. Includes explicit anti-rationalization tables.
 - **Scope detection:** if the request spans multiple independent subsystems, it
-  flags this and helps decompose before refining details; each sub-project gets
-  its own design → plan → implement cycle.
-- **Process:** explore project context → ask clarifying questions **one at a
-  time** → propose 2–3 approaches with trade-offs and a recommendation → present
-  the design in complexity-scaled sections with per-section approval → write the
-  design doc to `docs/specs/YYYY-MM-DD-<topic>-design.md` → self-review for
-  placeholders/contradictions/ambiguity → user review gate → transition to the
-  `planner` skill (the only skill it hands off to).
-- **Principles:** one question at a time, multiple-choice preferred, YAGNI
-  ruthlessly, always explore alternatives, incremental validation.
+  flags this immediately and decomposes into sub-projects with distinct build order;
+  each sub-project gets its own design → plan → implement cycle.
+- **Look Before You Ask:** reads referenced files, documentation, recent commits,
+  and surrounding codebase patterns before sending the first message; never asks
+  what the project or context already answers.
+- **First message structure (~200 words):** echoes the request back in own words
+  (what, who, why), highlights project connections and constraints discovered,
+  surfaces non-obvious factors, and closes with **one open question** on the biggest
+  unsettled requirement.
+- **Technical ownership probing ("How it gets made"):** probes early to discover
+  which platform, language, and library choices the user wants to own vs. delegate
+  to sensible defaults (recorded as author's calls).
+- **Size the work:** small change (short design doc: intent, constraints, approach)
+  vs. project (full written design doc validated with the builder check).
+- **Builder check (for projects):** reads the draft spec as an independent builder
+  and sorts open items into *Already Answered* (added to doc), *Minor* (settled as
+  author's call), and *Theirs* (single focused round of questions for the user).
+- **Spec self-review:** scans for placeholders (TODO/TBD), verifies internal
+  consistency, and checks scope before presenting for final approval. Transitions
+  only to `planner`.
 
 <a id="skill-planner"></a>
 ### `planner` — Task Decomposition
@@ -200,20 +220,27 @@ design has been approved by the researcher stage.
 
 - **Output:** saved to `docs/plans/YYYY-MM-DD-<feature-name>.md` with a mandatory
   header (goal, architecture, tech stack).
-- **Bite-sized granularity:** each step is one 2–5 minute action (write the
-  failing test → run it to confirm failure → implement minimal code → run to
-  confirm pass → commit), following TDD.
+- **Decisions, not transcripts:** records decisions (signatures, exact file paths,
+  spec values, test names, assertions) rather than verbatim code implementations.
+  Code bodies appear only for non-obvious algorithms.
+- **Global constraints block:** copied verbatim from spec (dependency floors,
+  naming conventions, platform requirements).
+- **Review focus block:** up to 5 input classes or edge cases the spec implies but
+  no task tests exercise; each pinned to an explicit test in its owning task.
+- **Task interfaces block:** every task declares `Consumes:` and `Produces:`
+  (exact function signatures, parameter and return types) so sub-agents know neighbor
+  contracts without reading surrounding tasks.
+- **Bite-sized granularity:** each step is one 2–5 minute action (write failing
+  test → confirm failure → implement minimal code → confirm pass → commit),
+  following TDD.
 - **No placeholders (enforced):** every step contains the actual code, exact file
-  paths, exact commands, and expected output. "TBD", "add error handling", "write
-  tests for the above" without real code, and references to undefined
-  types/functions are treated as **plan failures**.
-- **Independence analysis (critical):** at the end, groups tasks into parallel
-  dispatch batches — independent tasks that can run together, dependent tasks
-  that must be sequential, and same-shape mechanical work that should be batched
-  into a single coder rather than one-per-file. This is what enables the
-  engineer's parallel dispatch.
-- **Self-review:** checks spec coverage, scans for placeholders, and verifies type
-  consistency across tasks before handing back to the orchestrator.
+  paths, exact commands, and expected output. "TBD", "add error handling", or
+  references to undefined types/functions are treated as plan failures.
+- **Independence analysis (critical):** groups tasks into parallel dispatch batches
+  — independent tasks that run together, dependent tasks that run sequentially,
+  and mechanical batches. Enables the engineer's parallel dispatch.
+- **Proportion self-review:** if plan length is several times longer than the spec,
+  replaces code transcripts with signatures and assertions.
 
 <a id="skill-coder"></a>
 ### `coder` — Implementation Sub-Agent
@@ -226,22 +253,28 @@ reports back with structured status.
 
 - **Before starting:** raises any questions about requirements, approach, or
   assumptions rather than guessing.
-- **Bugfix hard gate:** if the task is a bugfix, it must invoke the `debugging`
-  skill and state the root cause with evidence before editing — even when the fix
+- **Bugfix hard gate:** if the task is a bugfix, it must invoke `skills/debugging`
+  and state the root cause with evidence before editing — even when the fix
   looks obvious.
+- **TDD & verification binding:** explicitly binds to `skills/test-driven-development`
+  (failing test first) and `skills/verification-before-completion` (fresh evidence
+  before reporting).
+- **Suite-wide green verification:** running tests means executing the project's
+  entire test suite (`pytest`, `npm test`, `cargo test`), not just the task's local
+  test file. Pre-existing failures must be reported explicitly by name.
+- **Review reception discipline:** inlined from `receiving-code-review` — restate
+  each finding in own words, verify against actual code before editing, state
+  technical reasoning with evidence if disagreeing, and make zero performative
+  agreement ("You're absolutely right!").
 - **Never dispatches its own sub-agents:** review comes from the orchestrator
   after the report, never from a helper the coder spawns.
 - **Formats changed files before committing** (per `AGENTS.md`), never bypasses
   pre-commit hooks.
 - **Escalation:** stops and reports `BLOCKED` / `NEEDS_CONTEXT` when it hits
-  architectural ambiguity, needs context it can't find, or is uncertain — "bad
-  work is worse than no work."
+  architectural ambiguity, needs context it can't find, or is uncertain.
 - **Self-review checklist** covers completeness, quality, discipline (YAGNI,
   existing patterns, formatting), and testing (tests run *this turn*, not
   remembered).
-- **Responding to review feedback:** restates each finding, verifies it against
-  the actual code, pushes back with evidence if a finding is wrong, and makes no
-  performative agreement.
 - **Report statuses:** `DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`, `NEEDS_CONTEXT`.
 
 <a id="skill-debugging"></a>
@@ -252,19 +285,24 @@ reports back with structured status.
 Finds the **root cause before touching any code**. A fix that addresses a symptom
 instead of its cause tends to resurface later in a harder-to-diagnose form.
 
-- **Hard gate:** no fix proposed or applied until the root cause can be stated
+- **The Iron Law:** no fix proposed or applied until the root cause can be stated
   with evidence (an error message, a reproduction, a traced data flow). "It's
   probably X" is not evidence.
-- **Process:** reproduce the failure (or explicitly state you couldn't) → check
-  recent changes (`git diff`/`git log -p`) → trace to the source (fix where the
-  problem originates, not where it surfaced) → form one hypothesis and test it
-  with the smallest possible change → fix the root cause with a regression test →
-  run the verification check fresh before calling it fixed.
-- **Escalation cap:** after **3 failed fix attempts**, stop — three misses at the
-  same target signal the *approach* is wrong. Inline, it tells the user; as a
-  dispatched sub-agent (via `coder`), it reports `BLOCKED`.
-- Includes a red-flags list and a common-rationalizations table to head off the
-  usual shortcuts ("quick fix for now", "no time to reproduce", etc.).
+- **Multi-boundary diagnostic instrumentation:** systematic pattern for multi-layer
+  bugs (CI/build/signing, API/service/DB) logging inputs and outputs across system
+  boundaries.
+- **Inlined supporting techniques:**
+  - *Root-Cause Tracing:* backward call-stack tracing to identify the original trigger.
+  - *Defense in Depth:* multi-layer validation after fixing the root cause.
+  - *Condition-Based Waiting:* polling for observable conditions rather than arbitrary sleep timeouts.
+- **Process:** reproduce failure → check recent changes (`git diff`/`git log -p`)
+  → trace to source across boundaries → test hypothesis with minimal change →
+  fix root cause with regression test → verify fresh.
+- **Architectural escalation cap:** after **3 failed fix attempts**, stop and
+  diagnose whether the architecture/pattern is fundamentally unsound rather than
+  blindly attempting fix #4. Inline, alerts user; as a dispatched sub-agent,
+  reports `BLOCKED`.
+- Includes red-flags list and common-rationalizations table.
 
 <a id="skill-reviewer"></a>
 ### `reviewer` — Spec Compliance + Code Quality Review
@@ -279,20 +317,23 @@ sequence**, in one of two modes the orchestrator selects:
 2. **code-quality** — is the implementation well-built, clean, and maintainable?
    (**Hard gate:** only runs *after* spec compliance passes.)
 
-- **Does not trust the implementer's report:** reads the actual code, compares to
-  requirements line by line, checks for missing pieces and unrequested extras,
-  and re-runs any cited test command rather than trusting its stated result.
-- **Spec-compliance** looks for missing requirements, over-engineering, and
-  misunderstandings. Reports `✅ PASS` / `❌ FAIL`.
-- **Code-quality** checks structure, unit decomposition, consistency with the
-  plan, naming, strict typing, unnecessary dependencies, real (non-mock) tests,
-  leftover TODOs, and file sizes — categorizing issues as Critical / Important /
-  Minor. Reports `✅ APPROVED` / `❌ NEEDS FIXES`.
-- **Review loop protocol:** the same implementer fixes findings, the same
-  reviewer re-runs with identical inputs, repeat until approved — **capped at 3
-  rounds**. Re-reviews are never skipped even if the implementer says "I fixed
-  it." If round 3 still has open issues, the findings go to the user rather than a
-  4th round.
+- **Spec as vision document:** the spec defines what software must do, not everything
+  it will meet. For unstated behaviors, judges by what a reasonable user would expect;
+  silence is not permission for crashing or data loss.
+- **Declined to judge section:** explicitly lists behaviors considered but set aside
+  as outside the plan/spec with rationale, so nothing is silently dropped.
+- **Read-only review:** strictly prohibited from mutating the working tree or spawning
+  nested reviewer subagents.
+- **Does not trust implementer report:** reads actual code, compares to requirements
+  line by line, checks for missing pieces or unrequested extras, and re-runs cited
+  test commands.
+- **Spec-compliance** reports `✅ PASS` / `❌ FAIL`.
+- **Code-quality** checks structure, unit decomposition, plan consistency, naming,
+  strict typing, minimal dependencies, real tests, leftover TODOs, and file sizes —
+  categorizing issues as Critical / Important / Minor. Reports `✅ APPROVED` / `❌ NEEDS FIXES`.
+- **Review loop protocol:** implementer fixes, same reviewer re-runs with identical
+  inputs, repeat until approved — **capped at 3 rounds**. Round 3 open issues go to
+  user.
 
 <a id="skill-finisher"></a>
 ### `finisher` — Completion & Integration
@@ -302,20 +343,83 @@ sequence**, in one of two modes the orchestrator selects:
 Guides completion of development work once implementation is done and every task
 has passed review, by presenting clear options and handling the chosen workflow.
 
-- **Step 1 — verify tests fresh:** re-runs the project's test suite *right now*; a
-  passing run from earlier in the session doesn't count. Stops if tests fail.
+- **Step 1 — verify tests fresh:** re-runs the project's test suite *right now*;
+  stops if tests fail.
 - **Step 2 — detect environment:** captures `GIT_DIR`, `GIT_COMMON`, and
-  `WORKTREE_PATH` **before any `cd`** to decide which menu to show and how cleanup
-  works (normal repo, named-branch worktree, or detached HEAD).
+  `WORKTREE_PATH` **before any `cd`** to determine menu and cleanup behavior.
 - **Step 3 — determine base branch** (`main`/`master`, asking if ambiguous).
-- **Step 4 — present options:** exactly 3 for a normal repo/named-branch worktree
-  (merge locally / push and open a PR / keep as-is), or 2 for detached HEAD.
-  **Discarding work is never a listed option** — it happens only on an explicit,
-  unambiguous request, and requires typed confirmation.
-- **Step 5–6 — execute & clean up:** merges/pushes/keeps per the choice; cleans up
-  only for a local merge or a confirmed discard, and only for worktrees it
-  created (provenance check). Never force-pushes without an explicit request,
-  never removes a workspace before confirming merge success.
+- **Step 4 — present options:** exactly 3 for normal repo/named worktree (merge
+  locally / push and open PR / keep as-is), or 2 for detached HEAD. Discarding is
+  never a listed default option.
+- **Safe worktree cleanup refusal:** if `git worktree remove` refuses due to
+  untracked or uncommitted files, never `--force`. Presents options to user:
+  (1) commit to branch, (2) move to main repo, or (3) delete.
+- **Merged result verification:** verifies that project tests pass after local merge
+  into base branch before deleting any feature branch or worktree; rolls back on failure.
+
+<a id="skill-test-driven-development"></a>
+### `test-driven-development` — Test-First Discipline & Good Tests
+
+**File:** `skills/test-driven-development/SKILL.md` · **Execution:** inline or sub-agent guide
+
+Enforces strict test-first development and high-quality test design for all new
+features, bugfixes, refactoring, and behavioral changes across all paths.
+
+- **The Iron Law:**
+  ```
+  NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+  ```
+  If code was written before the test, delete it. Implement fresh from tests.
+- **Red-Green-Refactor cycle:**
+  - *RED:* Write one minimal test showing what should happen.
+  - *Verify RED (mandatory):* Run test and watch it fail for the expected reason
+    (feature missing, not syntax errors or typos).
+  - *GREEN:* Write the simplest minimal code to pass the test (YAGNI).
+  - *Verify GREEN (mandatory):* Run test and confirm pass. Enforce the
+    **Suite-Wide Green Rule**: run the project's entire test suite (`pytest`, `npm test`,
+    `cargo test`), not just the local test file. Report any failures by name.
+  - *REFACTOR:* Clean up duplication, improve names, extract helpers while tests stay green.
+- **Inlined Good Test Guidelines:**
+  - *Principle 1 — Name the break:* every test names the specific bug/break it catches;
+    derive expectations independently using hand-checked fixtures or literals (no mirror
+    assertions); avoid change detectors (test behavior, not constant values or wording);
+    test behavior, not source text; test your boundary contract, not framework internals.
+  - *Principle 2 — Exercise the real thing:* the mock earns no assertions (test real
+    behavior); understand dependencies and mock at the right level below real side effects;
+    make doubles specific; mirror real data structures completely; keep test-only helpers
+    out of production classes; prefer real components over complex mocks.
+  - *The Mutation Check:* mentally mutate production code to verify at least one test fails
+    for each realistic mutation.
+- Includes comprehensive Red Flags and Common Rationalizations tables.
+
+<a id="skill-verification-before-completion"></a>
+### `verification-before-completion` — Evidence Before Claims
+
+**File:** `skills/verification-before-completion/SKILL.md` · **Execution:** inline or sub-agent gate
+
+Enforces strict verification evidence before any claim that work is complete, fixed,
+passing, or ready to integrate.
+
+- **The Iron Law:**
+  ```
+  NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
+  ```
+  If you haven't run the verification command in this turn, you cannot claim it passes.
+- **The Gate Function:**
+  1. *IDENTIFY:* What command proves this claim?
+  2. *RUN:* Execute the FULL command fresh and complete.
+  3. *READ:* Read full output, check exit code, count failures.
+  4. *VERIFY:* Does output confirm the claim? (If NO, state actual status with evidence;
+     if YES, state claim WITH evidence).
+  5. *ONLY THEN:* Make the claim.
+- **Common failure modes:** test claims require 0 failures (not previous runs); linter
+  clean requires 0 errors; build requires exit 0; bug fixed requires original symptom
+  passes; regression test requires red-green cycle; agent delegation requires checking
+  VCS diff.
+- **Rationalization prevention table:** counters excuses like "should work now",
+  "I'm confident", "linter passed", "agent said success", "I'm tired", or "partial check is enough".
+- Universal gate applied before committing, opening PRs, reporting task completion,
+  or expressing satisfaction.
 
 ---
 
@@ -338,6 +442,9 @@ pipeline stage: **extract → clean → converge (normalize)**.
 - **Supported formats:** PDF (`pdfplumber`/`pypdf`), XLSX/XLS (`openpyxl`/
   `pandas`), CSV/TSV (`pandas`), JSON, HTML tables (`BeautifulSoup`/
   `pandas.read_html`), Markdown tables, and plain text.
+- **Normalization evidence gates:** never claims a dataset is ingested or normalized
+  without verifying row counts, schema conformity, and column null rates against
+  source files.
 - **Outputs:** per-file extracted artifacts in `.pipeline-cache/extracted/`, one
   or a few normalized artifacts in `.pipeline-cache/normalized/`, and a short
   manifest of what came in, what came out, and any warnings.
@@ -362,6 +469,9 @@ that turns normalized data into findings. Single-pass; no parallelism.
 - **Before starting:** gets clear on *what question is being answered*. If the
   goal is vague ("look at this data"), it asks what decision the analysis informs
   before producing numbers.
+- **Convergence & distribution anomaly checks:** sanity-checks aggregations against
+  raw totals and actively detects and surfaces outliers, data skews, or quality
+  anomalies rather than blindly reporting summaries.
 - **Analysis types:** matches technique to question shape — aggregation/group-by,
   comparison/ratios, trend detection, outlier/anomaly identification, frequency
   distributions, and joins/correlation across datasets.
@@ -391,6 +501,9 @@ pipeline stage.
   question, includes supporting numbers/tables, surfaces caveats honestly, and
   saves deliverable files to a sensible location (not buried in
   `.pipeline-cache/`).
+- **Metric & format verification:** strictly enforces that all reported numbers
+  tie back to analysis artifacts, formats match the user's requested deliverable,
+  and narrative conclusions strictly reflect empirical findings.
 - **Step 3 — Artifacts & Scripts section (mandatory):** every report ends with a
   section documenting outputs delivered, pipeline-cache artifacts, scripts, and
   decisions worth knowing — so the work is reproducible and nothing is a mystery.
@@ -422,6 +535,9 @@ does **not** gather requirements or estimate (that's `scope`'s job).
   Engineering (→ `engineer` agent), Data/analysis (→ `data` agent), Needs more
   info (→ bounce back with specific questions), Not actionable (→ reject/defer
   with a one-line reason).
+- **Anti-rationalization discipline:** includes a Red Flags and Common
+  Rationalizations table preventing premature routing without sufficient evidence
+  or dodging clarification.
 - **Artifact:** a short, inline routing decision — Request Summary,
   Classification, Rationale, Recommended Next Step, Signals & Unknowns, and
   optional Urgency/Notes.
@@ -440,6 +556,10 @@ request into a **right-sized, refinable scope artifact** — the first shaping
 stage. Provides "right-sized friction": enough structure to be actionable and
 honest, light enough that people actually use it.
 
+- **Socratic playback:** echoes stakeholder intent back in plain words with guesses
+  clearly flagged so misunderstandings are caught immediately.
+- **Strict boundary enforcement:** captures the *what* and *why* while keeping
+  technical implementation details out of the stakeholder scope artifact.
 - **Adaptive intake:** if the request is too thin, it asks a capped set of 3–5
   high-leverage questions, one at a time; if too broad, it skips straight to
   draft-and-trim.
@@ -470,11 +590,14 @@ tool used in collaboration with engineering.
   fabricating a stakeholder scope.
 - **Augments the same document in place** — it does not create a parallel
   artifact; git shows the scope → refined maturation as commits to one file.
+- **Spec as vision document:** proactively identifies unstated edge cases,
+  reasonable user expectations, failure modes, and technical constraints before
+  handing off.
 - **What it adds** (authored with a real technical basis): System Considerations,
   authoritative In Scope / Out of Scope (superseding the stakeholder's soft
   boundaries while keeping their framing visible), Complexity/Shape, Resolved Open
   Questions (each marked answered / needs-spike / deferred), and a Ticket
-  Breakdown if a split is warranted.
+  Breakdown sized into single checkable deliverables if a split is warranted.
 - **Self-calibration:** guards against ballooning, unresolved unknowns, scope
   drift, and speculative detail asserted without basis (marked needs-spike
   instead). Ends with a pointer to `handoff`.
@@ -495,6 +618,9 @@ design/research phase.
 - **Produces a separate, self-contained artifact** — distinct from the
   scope/refine document so a human can lift just this package without carrying the
   stakeholder-scope history.
+- **Explicit verification checklist:** verifies no TBDs, confirmed interfaces,
+  explicit acceptance criteria, and zero reliance on external memory before
+  generating the hand-off artifact.
 - **Sections:** Summary, Goal/Outcome, Authoritative Scope, Key Constraints &
   System Considerations, Acceptance Criteria, Open Risks/Spikes, and Suggested
   Ticket(s).
@@ -522,9 +648,10 @@ triage ─┬─→ scope → refine → handoff ──(human lifts)──→ en
         │                                                   │
         ├─→ engineer agent (already-specified / trivial)    ├─ researcher (design, approval-gated)
         ├─→ data agent (analysis / report)                  ├─ planner (task decomposition)
-        └─→ back to requester (needs more info)             ├─ coder ×N (parallel, TDD)   ← debugging (bugfixes)
-                                                            ├─ reviewer ×2 (spec, then quality)
-DATA PIPELINE                                               └─ finisher (verify, merge/PR)
+        └─→ back to requester (needs more info)             ├─ coder ×N (parallel, TDD)   ← test-driven-development
+                                                            ├─ reviewer ×2 (spec, quality) ← verification-before-completion
+                                                            └─ finisher (verify, merge/PR) ← debugging (bugfixes)
+DATA PIPELINE
 ─────────────
 ingest (parallel fan-out) → analyze (single-pass) → report (chosen format)
 ```
@@ -539,6 +666,8 @@ ingest (parallel fan-out) → analyze (single-pass) → report (chosen format)
 | `debugging` | Engineering | Inline (in the fixing context) | — |
 | `reviewer` | Engineering | Sub-agent (`task`) | — |
 | `finisher` | Engineering | Interactive (inline) | merges / PR |
+| `test-driven-development` | Engineering | Inline or sub-agent guide | code & tests |
+| `verification-before-completion` | Engineering | Inline or sub-agent gate | verifier command output |
 | `ingest` | Data | Inline or sub-agent fan-out | `.pipeline-cache/` |
 | `analyze` | Data | Inline (single-pass) | `.pipeline-cache/analysis/` |
 | `report` | Data | Inline (terminal) | deliverable files |

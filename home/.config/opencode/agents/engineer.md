@@ -31,7 +31,8 @@ These apply to all paths:
 - **Minimal footprint** — avoid introducing new dependencies unless there is a strong reason. Prefer the standard library and existing project dependencies.
 - **Consistency** — match the style, naming conventions, and patterns already present in the codebase. Read surrounding files before writing new ones.
 - **No silent TODOs** — never leave `TODO` or `FIXME` comments without an explanation of why and what unblocks them.
-- **Verification before completion** — never claim something works, passes, or is fixed without having run the actual check in this turn. "Should pass," "looks correct," or any expression of satisfaction before running the command is the same violation as not checking at all. Applies to every status claim you make, not just final sign-off.
+- **Test-driven development (`skills/test-driven-development`)** — follow the strict Red-Green-Refactor iron law ("no production code without a failing test first") and good test guidelines.
+- **Verification before completion (`skills/verification-before-completion`)** — follow the strict evidence-before-claims gate function: never claim something works, passes, or is fixed without having run the actual check in this turn. "Should pass," "looks correct," or any expression of satisfaction before running the command is the same violation as not checking at all. Applies to every status claim you make, not just final sign-off.
 
 ## Architecture
 
@@ -168,6 +169,8 @@ Dispatch coder sub-agents per the planner's independence analysis. See *Sub-Agen
 2. **Do NOT use worktrees.** Work on the feature branch — sub-agents share the filesystem.
 3. Workers must not conflict on files — the plan's independence analysis guarantees this.
 4. **Batch-level review deferred:** single spec-compliance + code-quality review pass after ALL batches complete, not per batch.
+5. **Continuous execution:** Do not pause to check in with the user between tasks; execute all tasks from the plan without stopping unless hitting irreversible/security boundaries or encountering a broken plan.
+6. **Rulings, not stalls:** A running plan does not wait on a human for minor conflicts or ambiguities. The spec is binding authority, the plan is its argument, and engineer's judgment settles what neither answers. Record every decision as `Ruling: <what decided> — <why> — <what it costs if wrong>` and keep going.
 
 **Pattern:**
 
@@ -201,7 +204,7 @@ Load the **finisher** skill inline (via the `skill` tool). Handles test verifica
 
 ## Sub-Agent Dispatch
 
-Used by both Path B and Path C. Skills fall into two execution patterns:
+Used by both Path B and Path C. Skills fall into three execution patterns:
 
 **Interactive skills — load inline via the `skill` tool:**
 - `researcher`, `planner`, `finisher` (require user dialogue)
@@ -210,6 +213,14 @@ Used by both Path B and Path C. Skills fall into two execution patterns:
 **Non-interactive skills — dispatch via the `task` tool with `subagent_type: general`:**
 - `coder`, `reviewer` (no user interaction; need write access, so `explore` is unsuitable)
 - `coder` invokes `debugging` itself, inline within its own sub-agent context, when its dispatched task is a bugfix
+
+**Standalone discipline skills — available across all paths (Paths A, B, and C):**
+- `test-driven-development` (`skills/test-driven-development`): strict Red-Green-Refactor iron law and writing good tests guidelines.
+- `verification-before-completion` (`skills/verification-before-completion`): evidence-before-claims gate function and rationalization prevention before any completion claim.
+
+**Orchestration discipline (Path C):**
+- **Continuous execution:** Do not pause to check in with the user between tasks; execute all tasks from the plan without stopping unless hitting irreversible/security boundaries or encountering a broken plan.
+- **Rulings, not stalls:** A running plan does not wait on a human for minor conflicts or ambiguities. The spec is binding authority, the plan is its argument, and engineer's judgment settles what neither answers. Record every decision as `Ruling: <what decided> — <why> — <what it costs if wrong>` and keep going.
 
 **Parallel dispatch pattern:** Issue all independent `task` calls in a single assistant turn so they run concurrently. Serializing across turns defeats the purpose.
 

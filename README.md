@@ -42,7 +42,9 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   │   │   ├── researcher/         # Design & discovery (approval-gated)
 │   │   │   ├── reviewer/           # Spec compliance + code quality review
 │   │   │   ├── scope/              # Stakeholder requirements intake (product stage 1)
-│   │   │   └── triage/             # Classify & route an inbound request (product front door)
+│   │   │   ├── test-driven-development/ # Red-Green-Refactor & good test guidelines
+│   │   │   ├── triage/             # Classify & route an inbound request (product front door)
+│   │   │   └── verification-before-completion/ # Evidence-before-claims gate function
 │   │   └── opencode.json           # Opencode provider and agent configuration
 │   ├── .local/lib/
 │   │   └── opencode.sh             # Opencode wrapper script (session persistence, cache reset)
@@ -108,7 +110,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ### Local Skills
 
-Workflow skills are vendored locally under `home/.config/opencode/skills/` — no external plugin dependencies.
+Workflow skills are vendored locally under `home/.config/opencode/skills/` (15 total: 8 engineering, 3 data, 4 product) — no external plugin dependencies.
 
 **Engineering lifecycle** (orchestrated by `engineer`):
 
@@ -120,6 +122,8 @@ Workflow skills are vendored locally under `home/.config/opencode/skills/` — n
 | `debugging` | Root cause analysis for bugs, test failures, or unexpected behavior |
 | `reviewer` | Dual-mode review — spec compliance (did they build what was asked?) then code quality |
 | `finisher` | Verify tests, detect workspace state, present merge/PR options, execute with cleanup |
+| `test-driven-development` | Red-Green-Refactor iron law and good test guidelines before writing production code |
+| `verification-before-completion` | Evidence-before-claims gate function and rationalization prevention before any completion claim |
 
 **Data pipeline** (orchestrated by `data`):
 
