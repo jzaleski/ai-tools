@@ -15,15 +15,15 @@
     "openai"
   ],
   "provider": {
-    "jzaleski/default": {
+    "jzaleski": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "jzaleski/default",
+      "name": "jzaleski",
       "options": {
         "baseURL": "http://server-hostname-or-ip:8080/v1"
       },
       "models": {
-        "jzaleski/default/low": {
-          "name": "Low",
+        "jzaleski/text": {
+          "name": "Text (Mistral 24B)",
           "limit": {
             "context": 65536,
             "input": 57344,
@@ -38,8 +38,8 @@
             ]
           }
         },
-        "jzaleski/default/low-multimodal": {
-          "name": "Low (Multimodal)",
+        "jzaleski/multimodal": {
+          "name": "Multimodal (Qwen3.8 Flash)",
           "limit": {
             "context": 65536,
             "input": 57344,
@@ -49,113 +49,6 @@
             "input": [
               "text",
               "image"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        },
-        "jzaleski/default/medium": {
-          "name": "Medium",
-          "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
-          },
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        },
-        "jzaleski/default/medium-multimodal": {
-          "name": "Medium (Multimodal)",
-          "limit": {
-            "context": 131072,
-            "input": 114688,
-            "output": 16384
-          },
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        },
-        "jzaleski/default/high": {
-          "name": "High",
-          "limit": {
-            "context": 262144,
-            "input": 229376,
-            "output": 32768
-          },
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        },
-        "jzaleski/default/high-multimodal": {
-          "name": "High (Multimodal)",
-          "limit": {
-            "context": 262144,
-            "input": 229376,
-            "output": 32768
-          },
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        }
-      }
-    },
-    "jzaleski/experimental": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "jzaleski/experimental",
-      "options": {
-        "baseURL": "http://server-hostname-or-ip:8081/v1"
-      },
-      "models": {
-        "jzaleski/experimental/quark": {
-          "name": "Quark",
-          "limit": {
-            "context": 1048576,
-            "input": 917504,
-            "output": 131072
-          },
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        },
-        "jzaleski/experimental/boson": {
-          "name": "Boson",
-          "limit": {
-            "context": 262144,
-            "input": 229376,
-            "output": 32768
-          },
-          "modalities": {
-            "input": [
-              "text"
             ],
             "output": [
               "text"
