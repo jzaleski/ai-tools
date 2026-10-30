@@ -85,7 +85,7 @@ bin/run-model --purpose <purpose> [options]
 - `transcription`: Whisper audio transcription HTTP server.
 
 **Options:**
-- `-q, --quantization <4|6|8>`: Model quantization (default: `6`). Applies to `text` and `multimodal`.
+- `-q, --quantization <4|6|8>`: Model quantization (default: `4`). Applies to `text` and `multimodal`.
 - `-H, --host <host>`: Host to bind (default: `127.0.0.1` or `HOST` env var).
 - `-p, --port <port>`: Port to listen on (defaults: `8080` for text, `8081` for multimodal, `8765` for transcription, or `PORT` env var).
 - `-m, --model <path|name>`: Override model GGUF path (for text/multimodal) or Whisper model name (for transcription, default `turbo`).
@@ -100,17 +100,19 @@ bin/run-model --purpose <purpose> [options]
 - `--dry-run`: Print the underlying command without executing.
 - `-h, --help`: Display help and documentation.
 
-### 5.2 Model Mapping & Quantization Matrix
+### 5.2 Model Mapping, Quantization Matrix & Tuning Defaults
 
-| Purpose | Quant | Local Path / Split Pattern | HF Repo & Filename |
-|---|---|---|---|
-| `text` | `4` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` |
-| `text` | `6` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf` (fallback: `UD-Q5_K_XL.gguf`) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` |
-| `text` | `8` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q8_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` |
-| `multimodal` | `4` | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf` (4 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` |
-| `multimodal` | `6` | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` |
-| `multimodal` | `8` | `unsloth/Qwen3.8-Flash-Next-GGUF/Q8_0/Qwen3.8-Flash-Next-Q8_0-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` |
-| `transcription` | N/A | Downloaded via OpenAI Whisper cache (`~/.cache/whisper`) | `turbo` (or `base`, `small`, `medium`, `large-v3`) |
+All models prioritize Unsloth's Dynamic Quantization (`UD-*_K_XL`) and public Hugging Face repos.
+
+| Purpose | Quant | Local Path / Split Pattern | HF Repo & Filename | Key Tuning Defaults |
+|---|---|---|---|---|
+| `text` (default) | `4` (default) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `512`, cache K/V `q8_0`/`q4_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1` |
+| `text` | `6` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf` (fallback: `UD-Q5_K_XL.gguf`) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1` |
+| `text` | `8` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q8_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1` |
+| `multimodal` | `4` (default) | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf` (4 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `1024`, ubatch `256`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1` |
+| `multimodal` | `6` | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `1024`, ubatch `256`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1` |
+| `multimodal` | `8` | `unsloth/Qwen3.8-Flash-Next-GGUF/Q8_0/Qwen3.8-Flash-Next-Q8_0-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `1024`, ubatch `256`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1` |
+| `transcription` | N/A | Downloaded via OpenAI Whisper cache (`~/.cache/whisper`) | `turbo` (or `base`, `small`, `medium`, `large-v3`) | Auto-detect `cuda` -> `mps` -> `cpu`, disable FP16 on CPU |
 
 ### 5.3 Persistent Whisper Server (`lib/whisper_server.py`)
 - Vendored from `backfill-tools/lib/whisper_server.py`.
@@ -120,18 +122,23 @@ bin/run-model --purpose <purpose> [options]
 - Auto-detects `cuda` -> `mps` -> `cpu`.
 - Uses a mutex lock around model transcription to ensure thread-safe single-instance inference.
 
-### 5.4 Python Environment Integration
-- A top-level `requirements.txt` listing:
+### 5.4 Python Bootstrap (`pyenv` Integration)
+Following the pattern established in `home-dir`, `ibble-bootstrap`, and `alakai-bootstrap`:
+- `.default-python-version`: checked-in file at repo root specifying default Python version (`3.14.3`).
+- `requirements.txt`: top-level requirements specifying:
   ```
   openai-whisper
   torch
   ```
-- `bin/install-dependencies` checks for Python 3 and virtualenv availability.
-- `bin/run-model` probes for Python in order:
-  1. `$repository_root/.venv/bin/python`
-  2. `$VIRTUAL_ENV/bin/python`
-  3. `python3` (verifying `import whisper`)
-  4. `python`
+- `bin/configure-python`: standard bootstrap script that:
+  1. Checks for `USE_EXISTING_PYTHON_MANAGER`.
+  2. Ensures `pyenv` is installed at `~/.pyenv` (cloning or pulling via git).
+  3. Ensures shims and bin directories are in `PATH` via `home/.opencoderc`.
+  4. Installs the version specified in `.default-python-version` via `pyenv install -s`.
+  5. Sets the global or local pyenv version and runs `pyenv rehash`.
+  6. Installs or upgrades dependencies from `requirements.txt`.
+- `bin/bootstrap`: includes `configure-python` in `bin_scripts` sequence.
+- `bin/run-model`: locates Python via pyenv shims, active virtualenv, or python3.
 
 ### 5.5 Opencode Provider Configuration (`home/.config/opencode/opencode.json`)
 Consolidates the provider into a single `jzaleski` provider:
