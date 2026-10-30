@@ -89,7 +89,7 @@ bin/run-model --purpose <purpose> [options]
 - `-H, --host <host>`: Host to bind (default: `127.0.0.1` or `HOST` env var).
 - `-p, --port <port>`: Port to listen on (defaults: `8080` for text, `8081` for multimodal, `8765` for transcription, or `PORT` env var).
 - `-m, --model <path|name>`: Override model GGUF path (for text/multimodal) or Whisper model name (for transcription, default `turbo`).
-- `-c, --ctx-size <size>`: Context window tokens (default: `65536` for text, `262144` for multimodal).
+- `-c, --ctx-size <size>`: Context window tokens (default: `65536` across all models; easily overridden to `262144` or other exact token values matching `llama-server`).
 - `--threads <n>`: CPU threads to use (default: `8` or `THREADS`).
 - `--temp <temp>`: Sampling temperature (default: `0.15` for text, `1.0` for multimodal).
 - `--top-k <k>`: Top-k sampling (default: `-1` for text, `20` for multimodal).
@@ -119,9 +119,9 @@ All models prioritize Unsloth's Dynamic Quantization (`UD-*_K_XL`) and public Hu
 | `text` (default) | `4` (default) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
 | `text` | `6` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf` (fallback: `UD-Q5_K_XL.gguf`) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
 | `text` | `8` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q8_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
-| `multimodal` | `4` (default) | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf` (4 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
-| `multimodal` | `6` | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
-| `multimodal` | `8` | `unsloth/Qwen3.8-Flash-Next-GGUF/Q8_0/Qwen3.8-Flash-Next-Q8_0-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `multimodal` | `4` (default) | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf` (4 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `65536` (overrideable to `262144`), batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `multimodal` | `6` | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `65536` (overrideable to `262144`), batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `multimodal` | `8` | `unsloth/Qwen3.8-Flash-Next-GGUF/Q8_0/Qwen3.8-Flash-Next-Q8_0-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `65536` (overrideable to `262144`), batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
 | `transcription` | N/A | Downloaded via OpenAI Whisper cache (`~/.cache/whisper`) | `turbo` (or `base`, `small`, `medium`, `large-v3`) | Auto-detect `cuda` -> `mps` -> `cpu`, disable FP16 on CPU |
 
 ### 5.3 Persistent Whisper Server (`lib/whisper_server.py`)
@@ -153,7 +153,7 @@ Following the pattern established in `home-dir`, `ibble-bootstrap`, and `alakai-
 ### 5.5 Opencode Provider Configuration (`home/.config/opencode/opencode.json`)
 Consolidates the provider into a single `jzaleski` provider:
 - `jzaleski/text`: baseURL `http://server-hostname-or-ip:8080/v1`, context 65536, text modalities.
-- `jzaleski/multimodal`: baseURL `http://server-hostname-or-ip:8081/v1`, context 262144, text+image modalities.
+- `jzaleski/multimodal`: baseURL `http://server-hostname-or-ip:8081/v1`, context 65536, text+image modalities.
 Removes obsolete `jzaleski/experimental` provider and old tier model blocks (`low`, `medium`, `high`, `quark`, `boson`).
 
 ---
