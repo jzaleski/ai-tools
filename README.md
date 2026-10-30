@@ -1,10 +1,17 @@
 # AI Tools
 
-Utilities for running local LLMs with llama-server
+Utilities for running local LLMs and audio transcription servers
 
 ## Overview
 
-This repository provides scripts and configurations for running local AI models using llama-server. The default router (`run-router --default`) binds to port `8080` and serves three model tiers — low (64K ctx), medium (128K ctx), and high (256K ctx) — each with two variants: a fast, text-only variant (`jzaleski/default/<tier>`) running Qwen3.8-27B with `--spec-type draft-mtp --spec-draft-n-max 3` speculative decoding (MTP), and a vision-capable variant (`jzaleski/default/<tier>-multimodal`) running the same Qwen3.8-27B model with an F16 multimodal projector (`--mmproj`, auto-downloaded) instead. llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding, so the fast variants are text-only and the `-multimodal` variants forgo the speedup — pick per-request based on whether image input is needed. All six aliases are served by the default router. The experimental router (`run-router --experimental`) binds to port `8081` by default so it can coexist with the default router, and serves two more aliases under the `jzaleski/experimental/<particle>` namespace: `quark` (`unsloth/DeepSeek-V4-Flash-0731-GGUF`, 1M ctx, DSpark speculative decoding) and `boson` (`unsloth/Qwen3.8-Flash-Next-GGUF`, 256K ctx). `run-model` bypasses both routers and starts a single llama-server directly for any of the eight tiers via `--tier <namespace>/<tier>` (e.g. `default/high`, `experimental/quark`), defaulting to `default/medium`; its default listen port matches the tier's namespace (`8080` for `default/*`, `8081` for `experimental/*`), mirroring the two routers so a default and an experimental tier can run side by side without a `PORT` override. Bind address for both routers and `run-model` is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Tiers are stable; the models behind them can rotate without changing client-facing aliases.
+This repository provides unified scripts and configurations for hosting local AI models: `llama-server` for text and multimodal LLM inference, and a persistent Python server for OpenAI-compatible Whisper audio transcription.
+
+All model hosting is unified behind a single entrypoint `bin/run-model` with purpose-oriented model aliases:
+- **`jzaleski/text`**: Mistral-Small 3.2 24B Instruct running on port 8080 (default). High-throughput text generation and coding model with Jinja templating, flash attention, and auto-detected speculative decoding (`draft-simple`).
+- **`jzaleski/multimodal`**: Qwen3.8-Flash-Next running on port 8081 with an F16 multimodal projector (`--mmproj`, auto-downloaded). Vision-capable model with reasoning preservation and auto-detected MTP speculative decoding (`draft-mtp`).
+- **`jzaleski/transcription`**: Persistent OpenAI-compatible Whisper HTTP server running on port 8765 (`lib/whisper_server.py`). Supports `/v1/audio/transcriptions` (both `multipart/form-data` uploads and JSON payloads with local file paths), `/health`, and `/v1/models` with hardware-accelerated inference (`cuda` -> `mps` -> `cpu`).
+
+Both LLMs support standard quantizations (`-q 4|6|8`, defaulting to `4`), a universal 64K default context window (`65536` tokens, overrideable via `-c / --ctx-size` or `CTX_SIZE`), and full unified memory optimizations (`--load-mode mlock`, `--cache-reuse 256`, `--cache-ram -1`). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Listen ports default to `8080` (text), `8081` (multimodal), and `8765` (transcription), overrideable via `PORT` or `-p / --port`.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -16,13 +23,15 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── bootstrap                   # System setup and configuration bootstrap
 │   ├── install-dependencies        # Installs/upgrades Homebrew base packages
 │   ├── configure-git               # Configures global git settings (core.excludesfile)
+│   ├── configure-python            # Sets up pyenv, installs Python 3.14.3 and requirements.txt
 │   ├── configure-opencode          # Installs opencode via the anomalyco/tap Homebrew tap, configures shell init
 │   ├── download-model              # Downloads a single GGUF file from Hugging Face via curl
-│   ├── run-model                   # Direct llama-server launcher (single model, --tier default/low|default/medium|default/high|default/<tier>-multimodal|experimental/quark|experimental/boson)
-│   └── run-router                  # Router server (llama.cpp, multi-model; --default binds 8080, --experimental binds 8081; HOST env toggles bind)
-├── templates/                      # llama-server INI preset templates
-│   ├── llama-cpp-default.ini.template      # Default router preset (6 aliases: default/low|medium|high + -multimodal variants)
-│   └── llama-cpp-experimental.ini.template # Experimental router preset (2 aliases: experimental/quark, experimental/boson)
+│   └── run-model                   # Unified model launcher (text, multimodal, transcription)
+├── lib/                            # Supporting server libraries
+│   └── whisper_server.py           # Persistent OpenAI-compatible Whisper HTTP server
+├── tests/                          # Test suites
+│   ├── test_run_model.sh           # CLI test harness for bin/run-model
+│   └── test_whisper_server.py      # Unit tests for persistent Whisper server
 ├── home/                           # Dotfiles and config files to symlink
 │   ├── .config/opencode/           # Opencode configuration and agent definitions
 │   │   ├── agents/
@@ -49,6 +58,8 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── .local/lib/
 │   │   └── opencode.sh             # Opencode wrapper script (session persistence, cache reset)
 │   └── .opencoderc                 # Shell alias: opencode → ~/.local/lib/opencode.sh
+├── .default-python-version         # Default Python version for pyenv (3.14.3)
+└── requirements.txt                # Python dependencies (openai-whisper, torch)
 ```
 
 ## Bootstrap System
@@ -76,6 +87,7 @@ Scripts run in the order defined in the `bin_scripts` array in `bin/bootstrap`:
 |--------|---------|
 | `bin/install-dependencies` | Installs Homebrew (if missing) and installs/upgrades: `ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `openssl`, `readline`, `sqlite`, `wget`, `zsh` |
 | `bin/configure-git` | Configures global git settings — sets `core.excludesfile` to `~/.gitignore` if not already set |
+| `bin/configure-python` | Sets up `pyenv` at `~/.pyenv`, installs Python version from `.default-python-version` (`3.14.3`), and installs pip packages from `requirements.txt` (`openai-whisper`, `torch`) |
 | `bin/configure-opencode` | Adds the `anomalyco/tap` Homebrew tap (if not already tapped) and installs/upgrades `anomalyco/tap/opencode`; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
 
 To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
@@ -89,8 +101,11 @@ BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
 
 ## Prerequisites
 
-- At least 16GB RAM for 20B+ models
-- GPU support (recommended)
+- At least 16GB RAM for 20B+ models (Apple Silicon or Linux CUDA)
+- GPU support (recommended: Apple Silicon Metal / NVIDIA CUDA)
+- Homebrew (macOS)
+- Python 3.10+ (managed via `pyenv` by `bin/configure-python`)
+- `ffmpeg` (required for Whisper audio transcription)
 
 ## Opencode Agent Configuration(s)
 
@@ -146,168 +161,175 @@ Workflow skills are vendored locally under `home/.config/opencode/skills/` (15 t
 
 You can override default settings via environment variables.
 
-**Common Variables:**
-- `HOST`: Network interface address to bind the server to (default: `127.0.0.1`; set `0.0.0.0` to expose on the LAN)
-- `PORT`: Network port for the server to listen on (default: `8080`; anything in the `experimental` namespace — `run-router --experimental` or `run-model --tier experimental/*` — defaults to `8081` instead, so a default and an experimental instance can run side by side; see Components below)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `HOST` | Network interface address to bind the server to | `127.0.0.1` (set `0.0.0.0` to expose on the LAN) |
+| `PORT` | Network port for the server to listen on | `8080` (text), `8081` (multimodal), `8765` (transcription) |
+| `MODELS_DIR` | Directory for downloaded GGUF models | `~/.cache/models` |
+| `CTX_SIZE` | Context window size in tokens | `65536` |
+| `N_GPU_LAYERS` | Number of layers offloaded to GPU | `-1` (all) |
+| `THREADS` | Number of CPU threads to use for inference | `8` |
+| `WHISPER_DEVICE` | Compute device for Whisper transcription (`auto`, `mps`, `cuda`, `cpu`) | `auto` |
 
 ## Components
 
 ### run-model
-Starts a single llama-server directly (no router). Accepts `--tier <namespace>/<tier>` (default: `default/medium`):
-- `default/low`, `default/medium`, `default/high` — fast, text-only Qwen3.8-27B tiers with MTP speculative decoding
-- `default/low-multimodal`, `default/medium-multimodal`, `default/high-multimodal` — vision-capable Qwen3.8-27B tiers (same weights, `--mmproj` instead of speculative decoding)
-- `experimental/quark` — DeepSeek-V4-Flash-0731, 1M ctx, DSpark speculative decoding
-- `experimental/boson` — Qwen3.8-Flash-Next, 256K ctx
+Unified model launcher driving `llama-server` for text and multimodal models, and `lib/whisper_server.py` for audio transcription. Accepts an optional positional purpose argument (`text`, `multimodal`, `transcription`, defaulting to `text`):
 
-Downloads the model automatically if not present, fetching multi-part GGUFs (`experimental/quark`, `experimental/boson`) shard-by-shard. Fast `default/*` tiers also run with MTP speculative decoding; `experimental/quark` downloads a separate DSpark drafter model; `-multimodal` tiers download the shared multimodal projector (mmproj) instead. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set. The default listen port matches the tier's namespace — `8080` for `default/*` tiers, `8081` for `experimental/*` tiers — so a `default/*` and an `experimental/*` tier can already run side by side without touching `PORT`; use `PORT` to override further (e.g. to avoid colliding with a router running on the same default port).
+```bash
+bin/run-model [options] [purpose] [-- <additional backend args>]
+# Or with explicit flags:
+bin/run-model --purpose <purpose> [options]
+bin/run-model --text | --multimodal | --transcription [options]
+```
 
-Bare legacy tier names (`low`, `medium`, `high`, `low-multimodal`, `medium-multimodal`, `high-multimodal`) and the old standalone `experimental` tier are no longer accepted — `run-model` exits with an error pointing you at the equivalent `default/*` tier or `experimental/quark`/`experimental/boson`.
+**Purposes:**
+- **`text`** (default): Mistral Small 3.2 24B Instruct running on port 8080 (alias `jzaleski/text`). High-speed, high-accuracy model with Jinja templating, flash attention, and auto-detected `draft-simple` speculative decoding.
+- **`multimodal`**: Qwen3.8 Flash Next running on port 8081 (alias `jzaleski/multimodal`) with an F16 multimodal projector (`--mmproj`, auto-downloaded). Vision-capable model with reasoning preservation and auto-detected `draft-mtp` speculative decoding.
+- **`transcription`**: Persistent OpenAI-compatible Whisper HTTP server running on port 8765 (`lib/whisper_server.py`). Supports `/v1/audio/transcriptions`, `/health`, and `/v1/models` with hardware-accelerated inference (`cuda` -> `mps` -> `cpu`).
 
-**Shared defaults (6 Qwen3.8-27B tiers — low/medium/high + their `-multimodal` counterparts):**
-- Host: `127.0.0.1` (override with `HOST`)
-- Port: 8080
-- Sampling: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`
-- Output: `predict=262144` default (clients may override via `max_tokens`)
-- GPU: `n-gpu-layers=-1` (all), flash-attn on
+**CLI Options:**
+- `-q, --quantization <4|6|8>`: Model quantization (default: `4`). Applies to `text` and `multimodal`.
+- `-H, --host <host>`: Host interface to bind (default: `127.0.0.1` or `HOST` env var).
+- `-p, --port <port>`: Port to listen on (default: `8080` for text, `8081` for multimodal, `8765` for transcription, or `PORT` env var).
+- `-m, --model <path|name>`: Override model GGUF path (for text/multimodal) or Whisper model name (for transcription, default `turbo`).
+- `-c, --ctx-size <size>`: Context window tokens (default: `65536` or `CTX_SIZE` env var; easily overridden to `131072`, `262144`, etc.).
+- `-ngl, --n-gpu-layers <n>`: Number of layers offloaded to GPU (default: `-1` or `N_GPU_LAYERS`).
+- `-t, --threads <n>`: CPU threads to use for inference (default: `8` or `THREADS`).
+- `--temp <temp>`: Sampling temperature (default: `0.15` for text, `1.0` for multimodal).
+- `--top-k <k>`: Top-k sampling threshold (default: `-1` for text, `20` for multimodal).
+- `--top-p <p>`: Top-p sampling threshold (default: `1.00` for text, `0.95` for multimodal).
+- `--min-p <p>`: Min-p sampling threshold (default: `0.0` for multimodal).
+- `--jinja / --no-jinja`: Enable or disable Jinja templating (default: enabled).
+- `-fa, --flash-attn [on|off|auto]`: Flash attention mode (default: `on`).
+- `--speculative / --no-speculative`: Speculative decoding (default: auto-detected when co-located draft or MTP files are found).
+- `--spec-type <type>`: Speculative decoding algorithm (`draft-simple` for text, `draft-mtp` for multimodal).
+- `-md, --draft-model <path>`: Explicit path to draft model GGUF or MTP file.
+- `--draft-max <n>`: Number of draft tokens to predict (default: `3`).
+- `--device <device>`: Inference device for Whisper transcription (`auto`, `mps`, `cuda`, `cpu`; default: `auto`).
+- `--dry-run`: Print the underlying command without executing.
+- `-- <args>`: Pass additional arguments directly to the backend (`llama-server` or `whisper_server.py`).
 
-**Fast/no-vision tiers** — `unsloth/Qwen3.8-27B-GGUF`, run with `--spec-type draft-mtp --spec-draft-n-max 3`:
+**Model Mapping & Quantization Matrix:**
 
-| Tier | Quant | KV Cache | Context | Batch/Ubatch |
+| Purpose | Quant | Model File / Split Pattern | Hugging Face Repository | Key Tuning Defaults |
 |---|---|---|---|---|
-| default/low | `UD-Q4_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
-| default/medium | `UD-Q6_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
-| default/high | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
+| `text` (default) | `4` (default) | `Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `text` | `6` | `Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf` (fallback: `UD-Q5_K_XL.gguf`) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `text` | `8` | `Mistral-Small-3.2-24B-Instruct-2506-UD-Q8_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `multimodal` | `4` (default) | `UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf` (4 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `multimodal` | `6` | `UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `multimodal` | `8` | `Q8_0/Qwen3.8-Flash-Next-Q8_0-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `transcription` | N/A | Downloaded via OpenAI Whisper cache (`~/.cache/whisper`) | `openai/whisper` (default `turbo`) | auto-detect `cuda` -> `mps` -> `cpu`, disable FP16 on CPU, thread-safe inference lock |
 
-**Vision-capable tiers** — `unsloth/Qwen3.8-27B-GGUF` + multimodal projector, no speculative decoding:
-
-| Tier | Quant | KV Cache | Context | Batch/Ubatch |
-|---|---|---|---|---|
-| default/low-multimodal | `UD-Q4_K_XL` | q8_0/q4_0 | 65,536 | 2048 / 512 |
-| default/medium-multimodal | `UD-Q6_K_XL` | q8_0/q8_0 | 131,072 | 1024 / 256 |
-| default/high-multimodal | `UD-Q8_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 |
-
-Batch/ubatch are identical between a tier and its `-multimodal` counterpart — both stay in the same Qwen3.8-27B family (no architecture change), so there was no technical driver to retune them.
-
-**Experimental tiers** — excluded from the default router; served by the experimental router (`run-router --experimental`, port `8081`) or directly via `run-model --tier experimental/quark|boson`:
-
-| Tier | Model | Quant | KV Cache | Context | Batch/Ubatch | Speculative Decoding |
-|---|---|---|---|---|---|---|
-| experimental/quark | `unsloth/DeepSeek-V4-Flash-0731-GGUF` | `UD-Q4_K_XL` | q8_0/q8_0 | 1,048,576 | 1024 / 256 | DSpark (`--spec-draft-n-max 3`) |
-| experimental/boson | `unsloth/Qwen3.8-Flash-Next-GGUF` | `UD-Q4_K_XL` | q8_0/q8_0 | 262,144 | 1024 / 256 | None |
-
-Sampling for `experimental/quark` follows [Unsloth's DeepSeek-V4-Flash-0731 guide](https://unsloth.ai/docs/models/deepseek-v4) rather than the Qwen shared defaults above, and diverges from them in three ways: `min-p=0.01` (matches every llama.cpp example in Unsloth's guide, though not called out in their prose recommendations), no `top-k` override (Unsloth's examples never pass one, so llama-server's built-in default applies instead of the `20` tuned for Qwen3.8), and `top-p=0.95` for the agentic/tool-calling use case this tier targets (Unsloth recommends `1.0` for non-agentic use instead). `temp=1.0`, `presence-penalty=0.0`, `repeat-penalty=1.0`, and `predict=262144` are unchanged from the shared defaults. Context is set to the model's stated 1,048,576-token ("1M") maximum — sized for a dedicated M3 Ultra Mac Studio (512GB unified memory), where the `UD-Q4_K_XL` weights plus the DSpark drafter total ~172GB per Unsloth's own hardware table, leaving ~340GB of headroom for the KV cache; DeepSeek-V4's MLA (Multi-head Latent Attention) architecture keeps the per-token KV cache footprint small enough that even 1M tokens of context fits comfortably within that headroom. `--spec-draft-n-max 3` is Unsloth's documented "good default" for DSpark (~1.9x faster; larger values measured slower).
-
-`experimental/boson` uses the same shared Qwen sampling defaults as the `default/*` fast tiers (`temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`) and runs without speculative decoding (llama.cpp does not yet support `draft-mtp` on the `qwen4exp` architecture).
-
-**MTP speculative decoding:** The fast `default/*` tiers run with `--spec-type draft-mtp --spec-draft-n-max 3`, for ~1.5-2x faster inference. Unsloth's MTP guide documents `2` as the "best starting point" but states 1-6 are all valid and the optimal value is hardware-dependent — `3` was chosen empirically for this hardware, re-benchmark if it changes. The Qwen3.8-27B model family ships with MTP tensors natively in its main repo, so there is no need to disambiguate local filenames or download a separate model file for MTP (unlike DSpark, which needs the separate drafter downloaded for `experimental/quark`).
-
-**Vision (multimodal):** Only the `-multimodal` tiers load a multimodal projector (`--mmproj`); the fast tiers are text-only because llama.cpp does not yet support combining `--mmproj` with MTP speculative decoding. The `F16` projector is downloaded from the same Hugging Face repo as the model (remote filename `mmproj-F16.gguf`) and stored alongside each model with a matching name — the model's filename with a `.mmproj` extension instead of `.gguf` (e.g. `Qwen3.8-27B-UD-Q4_K_XL.gguf` → `Qwen3.8-27B-UD-Q4_K_XL.mmproj`). All `-multimodal` tiers also set `--image-min-tokens 1024`, per [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842) — Qwen-VL models need at least 1024 image tokens to keep grounding/bbox accuracy correct.
-
-**Reasoning preservation:** All 8 tiers set `--reasoning-preserve`, which sets the chat template's `preserve_reasoning` kwarg server-wide instead of requiring each client request to pass `chat_template_kwargs: {"preserve_thinking": true}`. Qwen3.8's model card recommends this for agentic use (better decision consistency and KV-cache reuse across turns) at the cost of feeding more accumulated thinking-trace tokens back in on every subsequent turn — worth it on hardware with headroom to spare, less so if you're tight on context/memory on the smaller tiers.
-
-**Agentic/hardware tuning:** All 8 tiers also set `--cache-reuse 256`, `--cache-ram -1`, and `--load-mode mlock`, tuned for large-RAM dedicated inference hosts (e.g. Apple Silicon Mac Studio with 512GB unified memory) running agentic coding workloads:
-- `--cache-reuse 256` lets llama-server reuse cached KV state for the shared prefix when a new request extends a previous one (exactly the shape of an opencode agent loop: same system prompt + tool defs + growing history each turn) instead of reprocessing the whole prompt from scratch every time. Pairs especially well with `--reasoning-preserve`, which makes prompts grow faster.
-- `--cache-ram -1` removes the default 8GiB cap on the idle-slot prompt cache that `--cache-reuse` depends on, so cached conversation states aren't evicted under memory pressure that will essentially never occur with RAM to spare.
-- `--load-mode mlock` pins model weights in RAM, avoiding macOS's background memory compression touching them during idle periods between agent turns (and the decompression stall that would otherwise hit the next request).
-
-**Environment Variables:**
-- `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)
-- `PORT`: Override listen port (default: `8080` for `default/*` tiers, `8081` for `experimental/*` tiers)
-- `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
-
-### run-router
-Starts a single llama-server in [router mode](https://github.com/ggml-org/llama.cpp/blob/master/docs/preset.md), loading model aliases from a rendered INI preset. Accepts `--default` (default mode if no flag given) or `--experimental`:
-- `--default` — loads 6 aliases (`jzaleski/default/low|medium|high` + their `-multimodal` counterparts) from `templates/llama-cpp-default.ini.template` → `tmp/llama-cpp-default.ini`; binds to port `8080` by default.
-- `--experimental` — loads 2 aliases (`jzaleski/experimental/quark`, `jzaleski/experimental/boson`) from `templates/llama-cpp-experimental.ini.template` → `tmp/llama-cpp-experimental.ini`; binds to port `8081` by default so it can run alongside the default router.
-
-Clients select an alias via the `model` parameter. Binds to `127.0.0.1` unless `HOST=0.0.0.0` is set. Both routers can run at once (they default to different ports) to make every tier reachable simultaneously.
-
-**Defaults:**
-- Host: `127.0.0.1` (override with `HOST`)
-- Port: `8080` for `--default`, `8081` for `--experimental` (override either with `PORT`)
-- Sampling: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`, `repeat-penalty=1.0` on `--default`; `experimental/quark` overrides `min-p`/`top-p` and drops the `top-k` default per Unsloth's DeepSeek guidance, while `experimental/boson` matches the `--default` sampling defaults (see the run-model tables above)
-- Output: `predict=262144` default (clients may override via `max_tokens`)
-- Per-tier context/KV/batch as in the run-model tables above. `default/low|medium|high` additionally set `spec-type=draft-mtp`/`spec-draft-n-max=3` and omit `mmproj`; the `default/*-multimodal` sections set `mmproj` and omit the spec-decoding keys; `experimental/quark` sets `spec-type=draft-dspark`/`spec-draft-n-max=3` and a separate `spec-draft-model`; `experimental/boson` omits speculative decoding keys.
-
-**Environment Variables:**
-- `HOST`: Bind address (default: `127.0.0.1`; set `0.0.0.0` for LAN)
-- `PORT`: Override listen port (default: `8080` for `--default`, `8081` for `--experimental`)
-- `MODELS_DIR`: Override model cache directory (default: `~/.cache/models`)
+### whisper_server.py
+A persistent Python HTTP server (`lib/whisper_server.py`) exposing an OpenAI-compatible transcription interface:
+- **`POST /v1/audio/transcriptions`**: Supports both `multipart/form-data` file uploads and JSON bodies containing a local `file_path` or `path`.
+- **`GET /health`**: Health check reporting server status, loaded model, active device, and MPS/CUDA availability.
+- **`GET /v1/models`**: Lists available Whisper models.
+- **Acceleration**: Automatically selects `cuda` (if NVIDIA GPU present), `mps` (Apple Silicon Metal Performance Shaders), or `cpu`. Automatically disables FP16 precision on CPU to prevent PyTorch warnings.
+- **Concurrency**: Thread-safe single-instance inference protected by a mutex lock.
 
 ## Usage
 
 ```bash
-# Start single model directly — default/medium tier (default), localhost
+# Start text generation server (default: Mistral Small 3.2 24B, Q4, port 8080)
 ./bin/run-model
+./bin/run-model text
 
-# Start single model — specific default tier
-./bin/run-model --tier default/low
-./bin/run-model --tier default/high
+# Start text generation with Q6 quantization
+./bin/run-model text -q 6
 
-# Start single model — vision-capable variant
-./bin/run-model --tier default/high-multimodal
+# Start vision-capable model (Qwen3.8 Flash Next, Q4, port 8081)
+./bin/run-model multimodal
 
-# Start single model — experimental tiers
-./bin/run-model --tier experimental/quark
-./bin/run-model --tier experimental/boson
+# Start vision-capable model with Q6 quantization
+./bin/run-model multimodal -q 6
 
-# Expose a single model on the LAN
-HOST=0.0.0.0 ./bin/run-model --tier default/high
+# Start persistent Whisper transcription server (port 8765)
+./bin/run-model transcription
 
-# Start the default router (default/low|medium|high + their -multimodal counterparts on localhost:8080)
-./bin/run-router --default
+# Expose on the LAN
+HOST=0.0.0.0 ./bin/run-model text
 
-# Start the experimental router (experimental/quark, experimental/boson on localhost:8081)
-./bin/run-router --experimental
+# Override context size or port
+./bin/run-model text -c 131072 -p 8888
 
-# Run both routers at once — every tier reachable simultaneously
-./bin/run-router --default &
-./bin/run-router --experimental &
-
-# Start a router exposed on the LAN
-HOST=0.0.0.0 ./bin/run-router --default
+# Dry run to inspect the exact underlying command
+./bin/run-model text -q 6 --dry-run
 ```
 
-Clients select a model via the `model` query parameter or request body field:
+### Client API Examples
 
+**Text completions (`jzaleski/text` on port 8080):**
 ```bash
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/low               ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/low-multimodal    ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/medium            ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/medium-multimodal ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/high              ...
-curl http://localhost:8080/v1/chat/completions?model=jzaleski/default/high-multimodal   ...
-curl http://localhost:8081/v1/chat/completions?model=jzaleski/experimental/quark        ...
-curl http://localhost:8081/v1/chat/completions?model=jzaleski/experimental/boson        ...
-# Or run any tier standalone via run-model and curl the port it listens on
-# (defaults to 8080 for default/* tiers, 8081 for experimental/* tiers — override with PORT)
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "jzaleski/text",
+    "messages": [{"role": "user", "content": "Explain unified memory in Apple Silicon."}]
+  }'
+```
+
+**Multimodal completions (`jzaleski/multimodal` on port 8081):**
+```bash
+curl http://localhost:8081/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "jzaleski/multimodal",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {"type": "text", "text": "Describe this architecture diagram."},
+          {"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}}
+        ]
+      }
+    ]
+  }'
+```
+
+**Audio transcription via file upload (port 8765):**
+```bash
+curl http://localhost:8765/v1/audio/transcriptions \
+  -F "file=@/path/to/recording.mp3" \
+  -F "model=turbo"
+```
+
+**Audio transcription via local file path (port 8765):**
+```bash
+curl http://localhost:8765/v1/audio/transcriptions \
+  -H "Content-Type: application/json" \
+  -d '{"file_path": "/path/to/recording.mp3"}'
+```
+
+**Transcription health check:**
+```bash
+curl http://localhost:8765/health
 ```
 
 ## Architecture
 
-There are two routers, each serving a fixed set of aliases, plus `run-model` for launching any single tier directly. The default router (`run-router --default`, port `8080`) serves 6 aliases: the `default/low|medium|high` tiers and their `-multimodal` counterparts. The experimental router (`run-router --experimental`, port `8081`) serves 2 aliases: `experimental/quark` and `experimental/boson`. `run-model` bypasses both routers and starts a single llama-server directly for any of the 8 tiers via `--tier <namespace>/<tier>`, defaulting its listen port to `8080` for `default/*` tiers or `8081` for `experimental/*` tiers (mirroring the routers). All three bind to `127.0.0.1` unless `HOST=0.0.0.0` is set.
+All model execution is consolidated under `bin/run-model`. It drives `llama-server` for text and multimodal LLMs and `lib/whisper_server.py` for persistent Whisper audio transcription:
 
 ```
-┌────────────────────────────┐  ┌────────────────────────────────┐  ┌─────────────────────┐
-│  ./bin/run-router --default │  │  ./bin/run-router --experimental │  │  ./bin/run-model     │
-│  (multi-model router)       │  │  (multi-model router)            │  │  (single model)      │
-└──────────────┬───────────────┘  └────────────────┬─────────────────┘  └───────────┬──────────┘
-               │                                     │                               │
-    ┌──────────┴───────────┐              ┌──────────┴───────────┐        ┌──────────┴─────────┐
-    │ llama.cpp (default)   │              │ llama.cpp (experimental)│    │ llama.cpp            │
-    │ HOST:8080              │              │ HOST:8081                │    │ HOST:8080 or :8081   │
-    │ --models-preset        │              │ --models-preset          │    │ (--tier, see below)  │
-    │                        │              │                          │    └──────────────────────┘
-    │ jzaleski/default/low          │      │ jzaleski/experimental/quark │
-    │ jzaleski/default/low-multimodal│     │ jzaleski/experimental/boson │
-    │ jzaleski/default/medium        │      └──────────────────────────┘
-    │ jzaleski/default/medium-multimodal│
-    │ jzaleski/default/high             │
-    │ jzaleski/default/high-multimodal  │
-    └────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                             bin/run-model                              │
+│             (Unified CLI: text, multimodal, transcription)             │
+└───────────────┬────────────────────────┬───────────────────────────────┘
+                │                        │                               │
+    ┌───────────┴──────────┐ ┌───────────┴──────────┐       ┌────────────┴─────────────┐
+    │ llama-server (text)  │ │llama-server (vision) │       │ lib/whisper_server.py    │
+    │ HOST:8080            │ │HOST:8081             │       │ HOST:8765                │
+    │ Mistral Small 24B    │ │Qwen3.8 Flash Next    │       │ OpenAI Whisper Turbo     │
+    │ alias: jzaleski/text │ │+ mmproj (F16)        │       │ /v1/audio/transcriptions │
+    │ (Q4/Q6/Q8, 64K ctx)  │ │alias:                │       │ (MPS / CUDA / CPU)       │
+    │                      │ │  jzaleski/multimodal │       │                          │
+    │                      │ │(Q4/Q6/Q8, 64K ctx)   │       │                          │
+    └──────────────────────┘ └──────────────────────┘       └──────────────────────────┘
 ```
 
-HOST defaults to `127.0.0.1` for all three launchers; set `HOST=0.0.0.0` to expose on the LAN. `run-model` accepts any of the 8 tiers directly (`default/low|medium|high[-multimodal]`, `experimental/quark|boson`) and defaults its port to `8080` for `default/*` tiers or `8081` for `experimental/*` tiers, so a default and an experimental tier (whether via router or `run-model`) can run side by side without a `PORT` override.
+`HOST` defaults to `127.0.0.1` across all launchers; set `HOST=0.0.0.0` to expose on the LAN. Listen ports default to `8080` (text), `8081` (multimodal), and `8765` (transcription), so all three services can run concurrently without port conflicts.
 
 ## Opencode Agent Architecture
 
@@ -345,36 +367,31 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 └──────────┬───────────┘
            │
            ▼
-┌───────────────────────────────────────────────────────┐
-│                     LLM Providers                     │
-│                                                       │
-│ ┌───────────────────────┐  ┌────────────────────────┐ │
-│ │ jzaleski/default      │  │ jzaleski/experimental  │ │
-│ │ server-hostname-or-ip │  │ server-hostname-or-ip  │ │
-│ │ :8080, per-tier ctx   │  │ :8081, quark/boson ctx │ │
-│ └───────────────────────┘  └────────────────────────┘ │
-└───────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                        LLM Provider                          │
+│                                                              │
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ jzaleski                                                 │ │
+│ │ baseURL: http://server-hostname-or-ip:8080/v1            │ │
+│ │                                                          │ │
+│ │ • jzaleski/text:       Mistral 24B, port 8080 (ctx 64K)  │ │
+│ │ • jzaleski/multimodal: Qwen3.8 Flash, port 8081 (ctx 64K)│ │
+│ └──────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Provider Configuration
 
-The opencode configuration (`~/.config/opencode/opencode.json`) defines 2 provider endpoints, one per router namespace:
+The opencode configuration (`home/.config/opencode/opencode.json`) defines a single `jzaleski` provider:
+- **`jzaleski/text`**: Mistral-Small 3.2 24B Instruct running on port 8080. Universal 65,536 token context (57,344 input, 8,192 output). Text-only modality.
+- **`jzaleski/multimodal`**: Qwen3.8-Flash-Next running on port 8081 with F16 multimodal projector. Universal 65,536 token context (57,344 input, 8,192 output). Text and image input modalities.
 
-The `jzaleski/default` provider exposes the 6 `jzaleski/default/*` aliases at `server-hostname-or-ip:8080`; the fast aliases (`jzaleski/default/low`,
-`jzaleski/default/medium`, `jzaleski/default/high`) are text-only (MTP speculative decoding
-does not yet support `--mmproj`); the `-multimodal` aliases accept image
-input. The `jzaleski/experimental` provider exposes `jzaleski/experimental/quark` and `jzaleski/experimental/boson` at `server-hostname-or-ip:8081` (both text-only). Both `baseURL`s ship templated with the `server-hostname-or-ip` placeholder rather than a hardcoded `localhost` — replace it with `localhost` if opencode runs on the same machine as the llama-server, or with that machine's actual hostname/IP if opencode runs elsewhere. Either way, the `HOST` env var on the server side independently governs whether the underlying router/model binds to `127.0.0.1` (local-only) or `0.0.0.0` (LAN-reachable) — `HOST` and the provider's `baseURL` are two separate settings that both need to agree for a remote connection to work. Each model's display `name` in opencode is a short human-readable label (e.g. `Low`, `High (Multimodal)`, `Quark`, `Boson`) rather than the full `jzaleski/<namespace>/<alias>` model ID.
+The `baseURL` ships templated with the `server-hostname-or-ip` placeholder rather than a hardcoded `localhost` — replace it with `localhost` if opencode runs on the same machine as the model server, or with that machine's actual hostname/IP if opencode runs elsewhere. The `HOST` env var independently governs whether the underlying server binds to `127.0.0.1` (local-only) or `0.0.0.0` (LAN-reachable).
 
 | Provider | Endpoint | Model | Display Name | Context | Input | Output | Modalities |
 |----------|----------|-------|---------------|---------|-------|--------|------------|
-| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/low | Low | 65,536 | 57,344 | 8,192 | text in, text out |
-| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/low-multimodal | Low (Multimodal) | 65,536 | 57,344 | 8,192 | text+image in, text out |
-| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/medium | Medium | 131,072 | 114,688 | 16,384 | text in, text out |
-| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/medium-multimodal | Medium (Multimodal) | 131,072 | 114,688 | 16,384 | text+image in, text out |
-| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/high | High | 262,144 | 229,376 | 32,768 | text in, text out |
-| jzaleski/default | `server-hostname-or-ip:8080` | jzaleski/default/high-multimodal | High (Multimodal) | 262,144 | 229,376 | 32,768 | text+image in, text out |
-| jzaleski/experimental | `server-hostname-or-ip:8081` | jzaleski/experimental/quark | Quark | 1,048,576 | 917,504 | 131,072 | text in, text out |
-| jzaleski/experimental | `server-hostname-or-ip:8081` | jzaleski/experimental/boson | Boson | 262,144 | 229,376 | 32,768 | text in, text out |
+| jzaleski | `server-hostname-or-ip:8080` | `jzaleski/text` | Text (Mistral 24B) | 65,536 | 57,344 | 8,192 | text in, text out |
+| jzaleski | `server-hostname-or-ip:8081` | `jzaleski/multimodal` | Multimodal (Qwen3.8 Flash) | 65,536 | 57,344 | 8,192 | text+image in, text out |
 
 ### Agent Roles
 
@@ -398,7 +415,7 @@ The following MCP integrations are configured but **disabled by default**:
 
 | Integration | Type | Command / URL | Notes |
 |-------------|------|---------------|-------|
-| AWS API | local | `uvx awslabs.aws-api-mcp-server@latest` | Enable in `opencode.json` to use; requires `uvx` (uv) |
+| AWS API | local | `uvx mcp-proxy-for-aws@latest https://aws-mcp.YOUR_AWS_REGION.api.aws/mcp --metadata AWS_REGION=YOUR_AWS_REGION --profile YOUR_AWS_PROFILE` | Enable in `opencode.json` to use; requires `uvx` (uv) |
 | Google Cloud | local | `npx -y @google-cloud/gcloud-mcp` | Enable in `opencode.json` to use; requires Node.js/npm on `PATH` (not installed by the bootstrap system) |
 | GitHub | remote | `https://api.githubcopilot.com/mcp/` | Enable in `opencode.json` to use; requires a Personal Access Token in headers |
 | Jira | remote | `https://mcp.atlassian.com/v1/mcp` | Enable in `opencode.json` to use |
@@ -443,7 +460,7 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults, o
 
 ```json
 {
-  "model": "jzaleski/default/high",
+  "model": "jzaleski/text",
   "agent": "engineer"
 }
 ```
@@ -463,41 +480,45 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults, o
 
 - `autoupdate`: disabled (manual updates only)
 - `default_agent`: `engineer` (full tool access for general work)
-- Both providers ship with a `server-hostname-or-ip` placeholder in their `baseURL` — replace with `localhost` or the actual hostname/IP (see Provider Configuration above)
-- Input/output token limits set to optimize for local inference constraints
+- Both models are served under the unified `jzaleski` provider with a `server-hostname-or-ip` placeholder in the `baseURL` — replace with `localhost` or the actual hostname/IP
+- Universal context window set to 65,536 tokens (57,344 input, 8,192 output)
 
 ## Performance Tips
 
-- GPU acceleration enabled with flash attention by default
-- Each tier has a fast/no-vision variant (`jzaleski/default/<tier>`, MTP + speculative decoding) and a vision-capable variant (`jzaleski/default/<tier>-multimodal`, no speculative decoding); `--mmproj` and `--spec-type draft-mtp` are not yet supported together in llama.cpp
-- KV cache quantization is tier-specific (same for a tier and its `-multimodal` counterpart): `default/low`=q8_0/q4_0 (K/V), `default/medium`=q8_0/q8_0 (K/V), `default/high`=q8_0/q8_0 — K-cache is kept at q8_0 on all tiers to preserve quality of long thinking traces; V-cache moves to q8_0 at 128K+ context (medium and high) to preserve quality at longer context lengths
-- Context size is tier-specific: `default/low`=64K, `default/medium`=128K, `default/high`=256K; `experimental/quark`=1M, `experimental/boson`=256K
-- Batch/ubatch scales inversely with context for steady latency on Apple Silicon: `default/low`=2048/512, `default/medium` & `default/high`=1024/256 — identical between a tier and its `-multimodal` counterpart, since both stay within the same Qwen3.8-27B family
-- Sampling defaults are tuned for coding and tool-calling per Qwen3.8's thinking/coding profile: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`; server-side `predict=262144` caps default output length
-- `--reasoning-preserve` is set on all 8 tiers, preserving full reasoning traces across turns server-wide (matches Qwen3.8's agentic-use recommendation) — trades a larger accumulated context per turn for better multi-turn decision consistency; worth it with RAM/context to spare, worth reconsidering on the smaller tiers if you're context-constrained
-- `--image-min-tokens 1024` is set on all `-multimodal` tiers to preserve grounding/bbox accuracy on Qwen-VL models (see [llama.cpp #16842](https://github.com/ggml-org/llama.cpp/issues/16842))
-- `--cache-reuse 256` + `--cache-ram -1` are set on all 8 tiers to reuse KV cache across turns that extend a previous prompt (the common shape of an agent loop) instead of reprocessing from scratch, with the idle-slot cache's default 8GiB budget removed — tuned for hosts with RAM to spare
-- `--load-mode mlock` is set on all 8 tiers to keep model weights pinned in RAM rather than subject to macOS's background memory compression, avoiding a decompression stall on the first request after an idle period
+- GPU acceleration enabled with flash attention by default (`--flash-attn on`)
+- Standard quantization: `4` (default), `6`, `8` via `-q / --quantization`
+- KV cache quantization: `q8_0` for both K and V cache across text and multimodal models to preserve quality during extended reasoning traces
+- Universal context size: `65536` (64K tokens) by default; override with `-c <size>` or `CTX_SIZE`
+- Batch/ubatch: `2048` / `1024` for high-throughput prompt processing on Apple Silicon
+- Unified memory optimizations:
+  - `--load-mode mlock`: pins model weights in RAM to prevent macOS memory compression latency on idle resumption
+  - `--cache-reuse 256`: reuses KV cache for shared prompt prefixes across turns
+  - `--cache-ram -1`: removes the default 8GiB slot RAM cache cap for memory-rich systems
+- Purpose-specific tuning:
+  - `text` (Mistral Small 3.2 24B): `temp=0.15`, `top-k=-1`, `top-p=1.00`, `--jinja`; auto-detects `draft-simple` speculative decoding when draft models are co-located
+  - `multimodal` (Qwen3.8 Flash Next): `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `--image-min-tokens 1024`, `--reasoning-preserve`; auto-detects `draft-mtp` speculative decoding
+  - `transcription` (Whisper): auto-detects `cuda` -> `mps` -> `cpu`, disables FP16 on CPU, thread-safe transcription mutex
 
 ## Troubleshooting
 
 **Bootstrap issues:**
 - Run with `ASSUME_YES=true` for non-interactive mode
+- If using an existing Python version manager (such as `asdf`), set `USE_EXISTING_PYTHON_MANAGER=true`
 
 **Model not loading:**
-- Ensure you have enough RAM
-- Verify model name and quantization
+- Ensure you have enough RAM (16GB+ recommended)
+- Verify model name and quantization level
 
 **Slow inference:**
-- Enable flash attention
-- Reduce context size
-- Adjust quantization level
+- Enable flash attention (`--flash-attn on`)
+- Reduce context size (`-c 32768`)
+- Use Q4 quantization (`-q 4`)
 
 **Quality issues:**
-- Sampling defaults are tuned for coding/tool-calling per Qwen3.8's thinking/coding profile: `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `presence-penalty=0.0`
-- For more creative/diverse responses, increase `temp` and `top-p`, or raise `presence-penalty`
-- For more deterministic output, lower `temp` (e.g. `0.4–0.6`)
+- Sampling defaults are tuned specifically for coding and agentic reasoning: `temp=0.15` for text, `temp=1.0` for multimodal
+- For more creative responses, increase `temp` (e.g. `0.7`) and `top-p`
+- For deterministic output, use lower temperatures
 
 **Memory issues:**
 - Reduce `CTX_SIZE` for smaller context windows
-- Use lower quantization (recommend Q4 as the minimum to balance accuracy and speed)
+- Use lower quantization (`-q 4`)
