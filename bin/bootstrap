@@ -54,6 +54,7 @@ if [ -z "$BOOTSTRAP_SCRIPTS" ]; then
   bin_scripts=(
     install-dependencies \
     configure-git \
+    configure-python \
     configure-opencode \
   );
 else
