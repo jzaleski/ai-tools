@@ -32,6 +32,7 @@ Abstract tier and particle names add unnecessary cognitive and architectural com
 - Maintaining backward-compatible router flags (`--default`, `--experimental`) or INI preset generation.
 - Preserving deprecated models (DeepSeek V4 Flash, GLM 5.3 Flash, Gemma 4, Qwen 27B) — these are slated for decommissioning.
 - Building a custom C++ `whisper-server` via CMake; the tested Python `openai-whisper` server is used instead.
+- Bundling or requiring custom local draft models for speculative decoding; only publicly accessible Hugging Face repositories are used by default. Clients with custom draft models can pass additional arguments via `-- <args>`.
 
 ### Anti-Goals
 - Adding heavy orchestration frameworks, Docker, or Kubernetes.
