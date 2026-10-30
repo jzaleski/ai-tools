@@ -96,22 +96,32 @@ bin/run-model --purpose <purpose> [options]
 - `--top-p <p>`: Top-p sampling (default: `1.00` for text, `0.95` for multimodal).
 - `-fa, --flash-attn [on|off|auto]`: Flash attention (default: `on`).
 - `--jinja / --no-jinja`: Enable/disable Jinja templating (default: enabled).
+- `--speculative / --no-speculative`: Speculative decoding (default: auto-enabled when draft/MTP model is found).
+- `--spec-type <type>`: Speculative decoding algorithm (default: `draft-simple` or `draft-mtp`).
+- `-md, --draft-model <path>`: Explicit path to draft model GGUF or MTP file.
+- `--draft-max <n>`: Number of draft tokens to predict (default: `3` or `4`).
 - `--device <device>`: Inference device for transcription (`auto`, `mps`, `cuda`, `cpu`; default: `auto`).
 - `--dry-run`: Print the underlying command without executing.
 - `-h, --help`: Display help and documentation.
 
 ### 5.2 Model Mapping, Quantization Matrix & Tuning Defaults
 
-All models prioritize Unsloth's Dynamic Quantization (`UD-*_K_XL`) and public Hugging Face repos.
+All models prioritize Unsloth's Dynamic Quantization (`UD-*_K_XL`) and public Hugging Face repos. Sized and tuned for high throughput and massive unified memory runways (e.g. 512GB Apple Silicon Mac Studio):
+- **Memory & Cache:** Full `q8_0` KV cache (or `q4_0` V-cache on smaller quantizations), `--load-mode mlock` (pins model in RAM to prevent macOS memory compression latency), `--cache-reuse 256` (shared prefix KV reuse), and `--cache-ram -1` (unbounded slot RAM cache).
+- **Speculative Decoding:** Maximum throughput via speculative decoding:
+  - When `--speculative` is active (or auto-detected), checks for co-located draft files (`<model>.draft.gguf`, `<model>.draft`, `<model>.mtp`, `<model>.mtp.gguf`, or `mtp-*.gguf`).
+  - For `Qwen3.8-Flash-Next`, leverages Unsloth's MTP draft files (`--spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-ngl -1`).
+  - For `Mistral-Small-3.2-24B`, leverages draft GGUFs or MTP files (`--spec-type draft-simple --spec-draft-n-max 3 --spec-draft-ngl -1`).
+  - Users can explicitly supply custom draft models via `--draft-model <path>`.
 
 | Purpose | Quant | Local Path / Split Pattern | HF Repo & Filename | Key Tuning Defaults |
 |---|---|---|---|---|
-| `text` (default) | `4` (default) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `512`, cache K/V `q8_0`/`q4_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1` |
-| `text` | `6` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf` (fallback: `UD-Q5_K_XL.gguf`) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1` |
-| `text` | `8` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q8_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1` |
-| `multimodal` | `4` (default) | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf` (4 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `1024`, ubatch `256`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1` |
-| `multimodal` | `6` | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `1024`, ubatch `256`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1` |
-| `multimodal` | `8` | `unsloth/Qwen3.8-Flash-Next-GGUF/Q8_0/Qwen3.8-Flash-Next-Q8_0-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `1024`, ubatch `256`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1` |
+| `text` (default) | `4` (default) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `text` | `6` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf` (fallback: `UD-Q5_K_XL.gguf`) | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `text` | `8` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q8_K_XL.gguf` | `unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF` | ctx `65536`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `0.15`, jinja on, flash-attn on, mlock on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `multimodal` | `4` (default) | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf` (4 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `multimodal` | `6` | `unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
+| `multimodal` | `8` | `unsloth/Qwen3.8-Flash-Next-GGUF/Q8_0/Qwen3.8-Flash-Next-Q8_0-00001-of-00006.gguf` (6 parts) + `mmproj-F16.gguf` | `unsloth/Qwen3.8-Flash-Next-GGUF` | ctx `262144`, batch `2048`, ubatch `1024`, cache K/V `q8_0`/`q8_0`, temp `1.0`, top-k `20`, top-p `0.95`, min-p `0.0`, flash-attn on, mlock on, image-min-tokens `1024`, reasoning-preserve on, cache-reuse `256`, cache-ram `-1`, speculative auto-detect |
 | `transcription` | N/A | Downloaded via OpenAI Whisper cache (`~/.cache/whisper`) | `turbo` (or `base`, `small`, `medium`, `large-v3`) | Auto-detect `cuda` -> `mps` -> `cpu`, disable FP16 on CPU |
 
 ### 5.3 Persistent Whisper Server (`lib/whisper_server.py`)
