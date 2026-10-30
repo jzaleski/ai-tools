@@ -37,16 +37,16 @@ fi
 
 pyenv_dir="$HOME/.pyenv";
 if [ ! -e "$pyenv_dir" ]; then
-  ${git_cmd} clone https://github.com/pyenv/pyenv.git ${pyenv_dir};
+  "${git_cmd}" clone https://github.com/pyenv/pyenv.git "${pyenv_dir}";
 elif [ -e "$pyenv_dir/.git" ]; then
-  (cd ${pyenv_dir} && ${git_cmd} pull);
+  (cd "${pyenv_dir}" && "${git_cmd}" pull);
 fi
 
 pyenv_plugins_dir="$pyenv_dir/plugins";
-mkdir -p ${pyenv_plugins_dir};
+mkdir -p "${pyenv_plugins_dir}";
 
 pyenv_versions_dir="$pyenv_dir/versions";
-mkdir -p ${pyenv_versions_dir};
+mkdir -p "${pyenv_versions_dir}";
 
 if [ -e "$dot_opencoderc_file" ]; then
   source "$dot_opencoderc_file";
@@ -62,13 +62,13 @@ if [ -z "$pyenv_cmd" ]; then
 fi
 
 default_python_version=$(${cat_cmd} "$(dirname "$0")/../.default-python-version");
-python_versions=($default_python_version);
+python_versions=("${default_python_version}");
 
-for python_version in ${python_versions[@]}; do
-  ${pyenv_cmd} install -s ${python_version};
+for python_version in "${python_versions[@]}"; do
+  "${pyenv_cmd}" install -s "${python_version}";
 done
 
-${pyenv_cmd} global ${default_python_version};
-${pyenv_cmd} rehash;
+"${pyenv_cmd}" global "${default_python_version}";
+"${pyenv_cmd}" rehash;
 
-${pyenv_cmd} exec pip install -r "$(dirname "$0")/../requirements.txt";
+"${pyenv_cmd}" exec pip install -r "$(dirname "$0")/../requirements.txt";
