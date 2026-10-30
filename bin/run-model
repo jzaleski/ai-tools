@@ -2,6 +2,7 @@
 
 set -e;
 
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)";
 MODELS_DIR="${MODELS_DIR:-"$HOME/.cache/models"}";
 
 find_binary() {
@@ -18,32 +19,36 @@ find_binary() {
 
 LLAMA_SERVER="${LLAMA_SERVER:-"$(find_binary llama-server)"}";
 
+find_python() {
+  if [[ -x "${repo_root}/.venv/bin/python" ]]; then
+    echo "${repo_root}/.venv/bin/python";
+  elif [[ -n "${VIRTUAL_ENV:-}" && -x "${VIRTUAL_ENV}/bin/python" ]]; then
+    echo "${VIRTUAL_ENV}/bin/python";
+  elif command -v pyenv >/dev/null 2>&1 && pyenv which python3 >/dev/null 2>&1; then
+    pyenv which python3;
+  elif command -v python3 >/dev/null 2>&1; then
+    command -v python3;
+  elif command -v python >/dev/null 2>&1; then
+    command -v python;
+  else
+    echo "python3";
+  fi
+}
+
 require_model() {
   local model_file="${1}";
   local hf_repo="${2}";
-  # Optional third arg: HF path relative to repo root (e.g. subdir/file.gguf).
-  # Falls back to basename of model_file for flat (non-split) models.
   local hf_filename="${3:-"$(basename "${model_file}")"}";
   if [[ ! -f "${model_file}" ]]; then
     echo "Model not found: ${model_file}";
     echo "Downloading ${hf_repo}/${hf_filename} -> ${model_file} ...";
-    # Pass model_file as the explicit local filename so download-model
-    # saves directly under the exact absolute path requested. This enables
-    # both disambiguated local names (e.g. a "-MTP-" infix) and custom
-    # directory structures (e.g. provider/repo/file.gguf) regardless of
-    # the remote path structure.
-    "$(dirname "$0")/download-model" "${hf_repo}" "${hf_filename}" "${model_file}" || {
+    "${repo_root}/bin/download-model" "${hf_repo}" "${hf_filename}" "${model_file}" || {
       echo "Error: download failed." >&2;
       exit 1;
     };
   fi
 }
 
-# Ensure all parts of a split GGUF model exist, downloading them if missing.
-# Args: <base-model-file> <hf-repo> <hf-base-filename> [num-parts]
-# <base-model-file> is the absolute path to the .gguf without part suffixes.
-# <hf-base-filename> is the HF-relative path to the .gguf without part suffixes.
-# [num-parts] defaults to 1 (which falls back to require_model).
 require_split_model() {
   local base_model_file="${1}";
   local hf_repo="${2}";
@@ -55,11 +60,15 @@ require_split_model() {
     return 0;
   fi
 
-  local local_dir="$(dirname "${base_model_file}")";
-  local local_base="$(basename "${base_model_file}" .gguf)";
-  local hf_dir="$(dirname "${hf_base_filename}")";
-  local hf_base="$(basename "${hf_base_filename}" .gguf)";
-  
+  local local_dir;
+  local_dir="$(dirname "${base_model_file}")";
+  local local_base;
+  local_base="$(basename "${base_model_file}" .gguf)";
+  local hf_dir;
+  hf_dir="$(dirname "${hf_base_filename}")";
+  local hf_base;
+  hf_base="$(basename "${hf_base_filename}" .gguf)";
+
   if [[ "${hf_dir}" == "." ]]; then
     hf_dir="";
   else
@@ -74,342 +83,546 @@ require_split_model() {
   done
 }
 
-# Ensure the F16 multimodal projector for a model exists, downloading it if
-# missing.  Derives the local mmproj path from the model file (same name with a
-# .mmproj extension instead of .gguf) and pulls the repo's shared mmproj-F16.gguf.
-# Args: <model-file> <hf-repo>
-require_mmproj() {
-  local model_file="${1}";
-  local hf_repo="${2}";
-  local mmproj_file="${model_file%.gguf}.mmproj";
-  require_model "${mmproj_file}" "${hf_repo}" "mmproj-F16.gguf";
+print_help() {
+  cat << EOF
+Usage: bin/run-model [options] [purpose] [-- <additional args>]
+       bin/run-model --purpose <purpose> [options] [-- <additional args>]
+
+Runs local models using llama-server (text, multimodal) or persistent Whisper server (transcription).
+
+Purposes:
+  text (default)                    Mistral Small 3.2 24B Instruct (port 8080, alias jzaleski/text)
+  multimodal                        Qwen3.8 Flash Next with mmproj (port 8081, alias jzaleski/multimodal)
+  transcription                     Persistent Whisper transcription server (port 8765)
+
+Options:
+  -h, --help                        Display this help message
+  -q, --quantization <4|6|8>        Model quantization (default: 4; text and multimodal)
+  -H, --host <host>                 Host interface to bind to (default: 127.0.0.1 or HOST)
+  -p, --port <port>                 Port to listen on (default: 8080 text, 8081 multimodal, 8765 transcription)
+  -m, --model <path|name>           Override model path (text/multimodal) or Whisper model (default: turbo)
+  -c, --ctx-size <size>             Context window size in tokens (default: 65536 or CTX_SIZE)
+  -ngl, --n-gpu-layers <n>          Number of layers to offload to GPU (default: -1 or N_GPU_LAYERS)
+  -t, --threads <n>                 Number of CPU threads to use (default: 8 or THREADS)
+  --temp <temp>                     Sampling temperature (default: 0.15 text, 1.0 multimodal)
+  --top-k <k>                       Top-k sampling threshold (default: -1 text, 20 multimodal)
+  --top-p <p>                       Top-p sampling threshold (default: 1.00 text, 0.95 multimodal)
+  --min-p <p>                       Min-p sampling threshold (default: 0.0 multimodal)
+  --jinja                           Enable Jinja templating (default: enabled)
+  --no-jinja                        Disable Jinja templating
+  -fa, --flash-attn [on|off|auto]   Flash attention mode (default: on)
+  --no-flash-attn                   Disable flash attention
+  --speculative                     Enable speculative decoding
+  --no-speculative                  Disable speculative decoding
+  --spec-type <type>                Speculative decoding type (default: draft-simple text, draft-mtp multimodal)
+  -md, --draft-model <path>         Path to draft model GGUF or MTP file
+  --spec-draft-model <path>         Alias for --draft-model
+  --draft-max <n>                   Number of draft tokens to predict (default: 3)
+  --spec-draft-n-max <n>            Alias for --draft-max
+  --device <device>                 Inference device for transcription: auto, mps, cuda, cpu (default: auto)
+  --dry-run                         Print the command without executing
+  --purpose <purpose>               Explicit purpose (text, multimodal, transcription)
+  --text, --multimodal, --transcription  Shorthand purpose flags
+EOF
 }
 
-# Fast tiers (low/medium/high): unsloth's MTP (multi-token prediction)
-# build of Qwen3.8-27B, run with llama.cpp's `--spec-type draft-mtp`
-# speculative decoding for ~1.5-2x faster inference. llama.cpp does not yet
-# support combining `--mmproj` with MTP speculative decoding, so these tiers
-# are text-only (no vision).
+purpose="";
+quantization="4";
+host="${HOST:-"127.0.0.1"}";
+port="";
+model="";
+ctx_size="${CTX_SIZE:-"65536"}";
+n_gpu_layers="${N_GPU_LAYERS:-"-1"}";
+threads="${THREADS:-"8"}";
+temp="";
+top_k="";
+top_p="";
+min_p="";
+jinja="true";
+flash_attn="on";
+speculative="";
+spec_type="";
+draft_model="";
+draft_max="3";
+device="${WHISPER_DEVICE:-"auto"}";
+dry_run="false";
+extra_args=();
 
-run_low() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q4_K_XL.gguf";
-  exec "${LLAMA_SERVER}" \
-    --model            "${model}" \
-    --alias            jzaleski/default/low \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       2048 \
-    --ubatch-size      512 \
-    --ctx-size         65536 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q4_0 \
-    --spec-type        draft-mtp \
-    --spec-draft-n-max 3 \
-    --chat-template-kwargs '{"reasoning_effort":"low"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-k            20 \
-    --top-p            0.95;
-}
-
-run_medium() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q6_K_XL.gguf";
-  exec "${LLAMA_SERVER}" \
-    --model            "${model}" \
-    --alias            jzaleski/default/medium \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       1024 \
-    --ubatch-size      256 \
-    --ctx-size         131072 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
-    --spec-type        draft-mtp \
-    --spec-draft-n-max 3 \
-    --chat-template-kwargs '{"reasoning_effort":"medium"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-k            20 \
-    --top-p            0.95;
-}
-
-run_high() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf";
-  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF" "Qwen3.8-27B-UD-Q8_K_XL.gguf";
-  exec "${LLAMA_SERVER}" \
-    --model            "${model}" \
-    --alias            jzaleski/default/high \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       1024 \
-    --ubatch-size      256 \
-    --ctx-size         262144 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
-    --spec-type        draft-mtp \
-    --spec-draft-n-max 3 \
-    --chat-template-kwargs '{"reasoning_effort":"xhigh"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-k            20 \
-    --top-p            0.95;
-}
-
-# Multimodal tiers (low-multimodal/medium-multimodal/high-multimodal):
-# Qwen3.8-27B loaded with the shared F16 multimodal projector so image input works.
-# No MTP speculative decoding.
-
-run_low_multimodal() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf";
-  local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  exec "${LLAMA_SERVER}" \
-    --model            "${model}" \
-    --mmproj           "${mmproj}" \
-    --image-min-tokens 1024 \
-    --alias            jzaleski/default/low-multimodal \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       2048 \
-    --ubatch-size      512 \
-    --ctx-size         65536 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q4_0 \
-    --chat-template-kwargs '{"reasoning_effort":"low"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-k            20 \
-    --top-p            0.95;
-}
-
-run_medium_multimodal() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q6_K_XL.gguf";
-  local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  exec "${LLAMA_SERVER}" \
-    --model            "${model}" \
-    --mmproj           "${mmproj}" \
-    --image-min-tokens 1024 \
-    --alias            jzaleski/default/medium-multimodal \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       1024 \
-    --ubatch-size      256 \
-    --ctx-size         131072 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
-    --chat-template-kwargs '{"reasoning_effort":"medium"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-k            20 \
-    --top-p            0.95;
-}
-
-run_high_multimodal() {
-  local model="${MODELS_DIR}/unsloth/Qwen3.8-27B-UD-Q8_K_XL.gguf";
-  local mmproj="${model%.gguf}.mmproj";
-  require_model "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  require_mmproj "${model}" "unsloth/Qwen3.8-27B-GGUF";
-  exec "${LLAMA_SERVER}" \
-    --model            "${model}" \
-    --mmproj           "${mmproj}" \
-    --image-min-tokens 1024 \
-    --alias            jzaleski/default/high-multimodal \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8080"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       1024 \
-    --ubatch-size      256 \
-    --ctx-size         262144 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
-    --chat-template-kwargs '{"reasoning_effort":"xhigh"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-k            20 \
-    --top-p            0.95;
-}
-
-# Experimental tier: DeepSeek-V4-Flash-0731 with DSpark speculative decoding.
-# Note on naming: "DSpark" is DeepSeek's proprietary speculative decoding algorithm
-# (DeepSeek Spark), completely unrelated to Apache Spark. It functions similarly to
-# MTP but is optimized for V4, yielding ~1.5x-2x faster inference.
-#
-# Settings below follow Unsloth's DeepSeek-V4-Flash-0731 guide
-# (https://unsloth.ai/docs/models/deepseek-v4):
-# - Context is set to the model's stated maximum (1,048,576 / "1M"). Sized for
-#   a dedicated M3 Ultra Mac Studio (512GB unified memory): UD-Q4_K_XL + the
-#   DSpark drafter total ~172GB per Unsloth's own hardware table, leaving
-#   ~340GB of headroom for the KV cache. DeepSeek-V4 uses MLA (Multi-head
-#   Latent Attention), which compresses the per-token KV cache footprint far
-#   below a standard dense-attention model, so even 1M tokens of context fits
-#   comfortably in that headroom without needing hundreds more GB of RAM.
-# - `top-p 0.95` is Unsloth's agentic-scenario recommendation for
-#   DeepSeek-V4-Flash-0731 (general/non-agentic use recommends `1.0` instead);
-#   this tier is used for agentic coding/tool-calling, so 0.95 applies.
-# - `min-p 0.01` matches every llama.cpp invocation shown in Unsloth's guide
-#   (including the DSpark example), even though it isn't called out in their
-#   prose "Recommended Settings" table alongside temp/top-p.
-# - `top-k` is intentionally omitted: none of Unsloth's DeepSeek-V4 examples
-#   pass it, so this tier relies on llama-server's built-in default rather
-#   than reusing the `20` tuned for Qwen3.8's separate sampling profile.
-# - `--spec-draft-n-max 3` is already Unsloth's documented "good default" for
-#   DSpark (~1.9x faster; larger values measured slower) — unchanged here.
-run_experimental_quark() {
-  local base_model="${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/DeepSeek-V4-Flash-0731-UD-Q4_K_XL.gguf";
-  local drafter_model="${MODELS_DIR}/unsloth/DeepSeek-V4-Flash-0731-GGUF/dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
-
-  require_split_model "${base_model}" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "UD-Q4_K_XL/DeepSeek-V4-Flash-0731-UD-Q4_K_XL.gguf" 5;
-  require_model "${drafter_model}" "unsloth/DeepSeek-V4-Flash-0731-GGUF" "dspark-DeepSeek-V4-Flash-0731-Q8_0.gguf";
-
-  local first_part="${base_model%.gguf}-00001-of-00005.gguf";
-
-  exec "${LLAMA_SERVER}" \
-    --model            "${first_part}" \
-    --spec-draft-model "${drafter_model}" \
-    --alias            jzaleski/experimental/quark \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8081"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       1024 \
-    --ubatch-size      256 \
-    --ctx-size         1048576 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
-    --spec-type        draft-dspark \
-    --spec-draft-n-max 3 \
-    --chat-template-kwargs '{"reasoning_effort":"high"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.01 \
-    --temp             1.0 \
-    --top-p            0.95;
-}
-
-run_experimental_boson() {
-  local base_model="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf";
-  require_split_model "${base_model}" "unsloth/Qwen3.8-Flash-Next-GGUF" "UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf" 4;
-  
-  local first_part="${base_model%.gguf}-00001-of-00004.gguf";
-
-  exec "${LLAMA_SERVER}" \
-    --model            "${first_part}" \
-    --alias            jzaleski/experimental/boson \
-    --host             "${HOST:-"127.0.0.1"}" \
-    --port             "${PORT:-"8081"}" \
-    --flash-attn       on \
-    --n-gpu-layers     -1 \
-    --batch-size       1024 \
-    --ubatch-size      256 \
-    --ctx-size         262144 \
-    --cache-type-k     q8_0 \
-    --cache-type-v     q8_0 \
-    --chat-template-kwargs '{"reasoning_effort":"xhigh"}' \
-    --reasoning-preserve \
-    --cache-reuse      256 \
-    --cache-ram        -1 \
-    --load-mode        mlock \
-    --predict          262144 \
-    --presence-penalty 0.0 \
-    --repeat-penalty   1.0 \
-    --min-p            0.0 \
-    --temp             1.0 \
-    --top-k            20 \
-    --top-p            0.95;
-}
-
-tier="default/medium";
-for arg in "$@"; do
-  case "${arg}" in
-    --tier) ;;
-    *)
-      case "${prev_arg}" in
-        --tier) tier="${arg}";;
-      esac
+while [[ $# -gt 0 ]]; do
+  case "${1}" in
+    -h|--help)
+      print_help;
+      exit 0;
       ;;
-  esac
-  prev_arg="${arg}";
-done
+    -q|--quantization)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      quantization="${2}";
+      shift 2;
+      ;;
+    --quantization=*|-q=*)
+      quantization="${1#*=}";
+      shift;
+      ;;
+    -H|--host)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      host="${2}";
+      shift 2;
+      ;;
+    --host=*|-H=*)
+      host="${1#*=}";
+      shift;
+      ;;
+    -p|--port)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      port="${2}";
+      shift 2;
+      ;;
+    --port=*|-p=*)
+      port="${1#*=}";
+      shift;
+      ;;
+    -m|--model)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      model="${2}";
+      shift 2;
+      ;;
+    --model=*|-m=*)
+      model="${1#*=}";
+      shift;
+      ;;
+    -c|--ctx-size)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      ctx_size="${2}";
+      shift 2;
+      ;;
+    --ctx-size=*|-c=*)
+      ctx_size="${1#*=}";
+      shift;
+      ;;
+    -ngl|--n-gpu-layers|--gpu-layers)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      n_gpu_layers="${2}";
+      shift 2;
+      ;;
+    --n-gpu-layers=*|--gpu-layers=*|-ngl=*)
+      n_gpu_layers="${1#*=}";
+      shift;
+      ;;
+    -t|--threads)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      threads="${2}";
+      shift 2;
+      ;;
+    --threads=*|-t=*)
+      threads="${1#*=}";
+      shift;
+      ;;
+    --temp)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      temp="${2}";
+      shift 2;
+      ;;
+    --temp=*)
+      temp="${1#*=}";
+      shift;
+      ;;
+    --top-k)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      top_k="${2}";
+      shift 2;
+      ;;
+    --top-k=*)
+      top_k="${1#*=}";
+      shift;
+      ;;
+    --top-p)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      top_p="${2}";
+      shift 2;
+      ;;
+    --top-p=*)
+      top_p="${1#*=}";
+      shift;
+      ;;
+    --min-p)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      min_p="${2}";
+      shift 2;
+      ;;
+    --min-p=*)
+      min_p="${1#*=}";
+      shift;
+      ;;
+    --jinja)
+      jinja="true";
+      shift;
+      ;;
+    --no-jinja)
+      jinja="false";
+      shift;
+      ;;
+    -fa|--flash-attn)
+      if [[ -n "${2:-}" && "${2}" =~ ^(on|off|auto)$ ]]; then
+        flash_attn="${2}";
+        shift 2;
+      else
+        flash_attn="on";
+        shift;
+      fi
+      ;;
+    --flash-attn=*)
+      flash_attn="${1#*=}";
+      shift;
+      ;;
+    --no-flash-attn)
+      flash_attn="off";
+      shift;
+      ;;
+    --speculative)
+      speculative="true";
+      shift;
+      ;;
+    --no-speculative)
+      speculative="false";
+      shift;
+      ;;
+    --spec-type)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      spec_type="${2}";
+      shift 2;
+      ;;
+    --spec-type=*)
+      spec_type="${1#*=}";
+      shift;
+      ;;
+    -md|--draft-model|--spec-draft-model)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      draft_model="${2}";
+      shift 2;
+      ;;
+    --draft-model=*|--spec-draft-model=*|-md=*)
+      draft_model="${1#*=}";
+      shift;
+      ;;
+    --draft-max|--spec-draft-n-max)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      draft_max="${2}";
+      shift 2;
+      ;;
+    --draft-max=*|--spec-draft-n-max=*)
+      draft_max="${1#*=}";
+      shift;
+      ;;
+    --device)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      device="${2}";
+      shift 2;
+      ;;
+    --device=*)
+      device="${1#*=}";
+      shift;
+      ;;
+    --dry-run)
+      dry_run="true";
+      shift;
+      ;;
+    --purpose)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      purpose="${2}";
+      shift 2;
+      ;;
+    --purpose=*)
+      purpose="${1#*=}";
+      shift;
+      ;;
+    --text)
+      purpose="text";
+      shift;
+      ;;
+    --multimodal)
+      purpose="multimodal";
+      shift;
+      ;;
+    --transcription)
+      purpose="transcription";
+      shift;
+      ;;
+    --)
+      shift;
+      while [[ $# -gt 0 ]]; do
+        extra_args+=("${1}");
+        shift;
+      done;
+      break;
+      ;;
+    -*)
+      echo "Error: unknown option '${1}'." >&2;
+      exit 1;
+      ;;
+    *)
+      if [[ -z "${purpose}" ]]; then
+        purpose="${1}";
+      else
+        extra_args+=("${1}");
+      fi
+      shift;
+      ;;
+  esac;
+done;
 
-case "${tier}" in
-  default/low)               run_low;;
-  default/medium)            run_medium;;
-  default/high)              run_high;;
-  default/low-multimodal)    run_low_multimodal;;
-  default/medium-multimodal) run_medium_multimodal;;
-  default/high-multimodal)   run_high_multimodal;;
-  experimental/quark)        run_experimental_quark;;
-  experimental/boson)        run_experimental_boson;;
-  experimental)
-    echo "Error: the 'experimental' tier has been removed. Use experimental/quark or experimental/boson." >&2;
-    exit 1;;
-  low|medium|high|low-multimodal|medium-multimodal|high-multimodal)
-    echo "Error: standard tiers have moved to the default/ namespace (e.g. default/${tier})." >&2;
-    exit 1;;
+purpose="${purpose:-"text"}";
+
+case "${purpose}" in
+  text|multimodal|transcription) ;;
   *)
-    echo "Error: unknown tier '${tier}'. Use: default/low, default/medium, default/high, default/low-multimodal, default/medium-multimodal, default/high-multimodal, experimental/quark, experimental/boson" >&2;
-    exit 1;;
+    echo "Error: unknown purpose '${purpose}'. Use: text, multimodal, or transcription." >&2;
+    exit 1;
+    ;;
 esac
+
+case "${quantization}" in
+  4|6|8) ;;
+  *)
+    echo "Error: unsupported quantization '${quantization}'. Must be 4, 6, or 8." >&2;
+    exit 1;
+    ;;
+esac
+
+if [[ "${purpose}" == "transcription" ]]; then
+  port="${port:-${PORT:-8765}}";
+  model="${model:-"turbo"}";
+  python_bin="$(find_python)";
+
+  if [[ "${dry_run}" != "true" ]]; then
+    if ! command -v "${python_bin}" >/dev/null 2>&1 && [[ ! -x "${python_bin}" ]]; then
+      echo "Error: Python 3 not found. Please run bin/configure-python or install python3." >&2;
+      exit 1;
+    fi
+    if ! "${python_bin}" -c "import whisper" >/dev/null 2>&1; then
+      echo "Error: Python module 'whisper' not found." >&2;
+      echo "Please run bin/bootstrap or install dependencies with: pip install -r requirements.txt" >&2;
+      exit 1;
+    fi
+  fi
+
+  whisper_script="${repo_root}/lib/whisper_server.py";
+  cmd_args=(
+    --host "${host}"
+    --port "${port}"
+    --model "${model}"
+    --device "${device}"
+  );
+
+  if [[ "${dry_run}" == "true" ]]; then
+    echo "${python_bin}" "${whisper_script}" "${cmd_args[@]}" "${extra_args[@]}";
+    exit 0;
+  fi
+
+  exec "${python_bin}" "${whisper_script}" "${cmd_args[@]}" "${extra_args[@]}";
+fi
+
+if [[ "${purpose}" == "text" ]]; then
+  port="${port:-${PORT:-8080}}";
+  alias_name="jzaleski/text";
+  temp="${temp:-0.15}";
+  top_k="${top_k:--1}";
+  top_p="${top_p:-1.00}";
+  spec_type="${spec_type:-draft-simple}";
+
+  if [[ -z "${model}" ]]; then
+    case "${quantization}" in
+      4)
+        model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf";
+        hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
+        hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf";
+        ;;
+      6)
+        if [[ -f "${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf" ]]; then
+          model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf";
+          hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
+          hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf";
+        else
+          model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
+          hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
+          hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
+        fi
+        ;;
+      8)
+        model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q8_K_XL.gguf";
+        hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
+        hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q8_K_XL.gguf";
+        ;;
+    esac
+  fi
+
+  if [[ "${dry_run}" != "true" && -n "${hf_repo:-}" ]]; then
+    require_model "${model}" "${hf_repo}" "${hf_filename}";
+  fi
+
+  if [[ "${speculative}" != "false" && -z "${draft_model}" ]]; then
+    expanded_model="${model/#\~/$HOME}";
+    if [[ -f "${expanded_model%.gguf}.draft.gguf" ]]; then
+      draft_model="${expanded_model%.gguf}.draft.gguf";
+    elif [[ -f "${expanded_model%.gguf}.draft" ]]; then
+      draft_model="${expanded_model%.gguf}.draft";
+    elif [[ -f "${expanded_model%.gguf}.mtp" ]]; then
+      draft_model="${expanded_model%.gguf}.mtp";
+    elif [[ -f "${expanded_model%.gguf}.mtp.gguf" ]]; then
+      draft_model="${expanded_model%.gguf}.mtp.gguf";
+    fi
+  fi
+
+  cmd_args=(
+    --model "${model}"
+    --alias "${alias_name}"
+    --host "${host}"
+    --port "${port}"
+    --flash-attn "${flash_attn}"
+    --n-gpu-layers "${n_gpu_layers}"
+    --threads "${threads}"
+    --batch-size 2048
+    --ubatch-size 1024
+    --ctx-size "${ctx_size}"
+    --cache-type-k q8_0
+    --cache-type-v q8_0
+    --load-mode mlock
+    --cache-reuse 256
+    --cache-ram -1
+  );
+
+  if [[ "${jinja}" == "true" ]]; then
+    cmd_args+=(--jinja);
+  fi
+
+  cmd_args+=(
+    --temp "${temp}"
+    --top-k "${top_k}"
+    --top-p "${top_p}"
+  );
+
+  if [[ "${speculative}" != "false" && -n "${draft_model}" ]]; then
+    cmd_args+=(
+      --spec-type "${spec_type}"
+      --spec-draft-model "${draft_model}"
+      --spec-draft-ngl -1
+      --spec-draft-n-max "${draft_max}"
+    );
+  fi
+
+  if [[ "${dry_run}" == "true" ]]; then
+    echo "${LLAMA_SERVER}" "${cmd_args[@]}" "${extra_args[@]}";
+    exit 0;
+  fi
+
+  if ! command -v "${LLAMA_SERVER}" >/dev/null 2>&1 && [[ ! -x "${LLAMA_SERVER}" ]]; then
+    echo "Error: llama-server not found. Please run bin/bootstrap or brew install llama.cpp." >&2;
+    exit 1;
+  fi
+
+  exec "${LLAMA_SERVER}" "${cmd_args[@]}" "${extra_args[@]}";
+fi
+
+if [[ "${purpose}" == "multimodal" ]]; then
+  port="${port:-${PORT:-8081}}";
+  alias_name="jzaleski/multimodal";
+  temp="${temp:-1.0}";
+  top_k="${top_k:-20}";
+  top_p="${top_p:-0.95}";
+  min_p="${min_p:-0.0}";
+  spec_type="${spec_type:-draft-mtp}";
+
+  num_parts=1;
+  if [[ -z "${model}" ]]; then
+    case "${quantization}" in
+      4)
+        base_model="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf";
+        hf_repo="unsloth/Qwen3.8-Flash-Next-GGUF";
+        hf_base="UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf";
+        num_parts=4;
+        ;;
+      6)
+        base_model="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL.gguf";
+        hf_repo="unsloth/Qwen3.8-Flash-Next-GGUF";
+        hf_base="UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL.gguf";
+        num_parts=6;
+        ;;
+      8)
+        base_model="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/Q8_0/Qwen3.8-Flash-Next-Q8_0.gguf";
+        hf_repo="unsloth/Qwen3.8-Flash-Next-GGUF";
+        hf_base="Q8_0/Qwen3.8-Flash-Next-Q8_0.gguf";
+        num_parts=6;
+        ;;
+    esac
+    model="${base_model%.gguf}-00001-of-$(printf "%05d" "${num_parts}").gguf";
+  fi
+
+  mmproj="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/mmproj-F16.gguf";
+  if [[ -f "${model%.gguf}.mmproj" ]]; then
+    mmproj="${model%.gguf}.mmproj";
+  elif [[ -f "$(dirname "${model}")/mmproj-F16.gguf" ]]; then
+    mmproj="$(dirname "${model}")/mmproj-F16.gguf";
+  fi
+
+  if [[ "${dry_run}" != "true" ]]; then
+    if [[ -n "${base_model:-}" ]]; then
+      require_split_model "${base_model}" "${hf_repo}" "${hf_base}" "${num_parts}";
+    fi
+    require_model "${mmproj}" "unsloth/Qwen3.8-Flash-Next-GGUF" "mmproj-F16.gguf";
+  fi
+
+  if [[ "${speculative}" != "false" && -z "${draft_model}" ]]; then
+    expanded_model="${model/#\~/$HOME}";
+    local_dir="$(dirname "${expanded_model}")";
+    if [[ -f "${expanded_model%.gguf}.mtp" ]]; then
+      draft_model="${expanded_model%.gguf}.mtp";
+    elif compgen -G "${local_dir}/mtp-*.gguf" >/dev/null 2>&1; then
+      draft_model="$(compgen -G "${local_dir}/mtp-*.gguf" | head -n 1)";
+    fi
+  fi
+
+  cmd_args=(
+    --model "${model}"
+    --mmproj "${mmproj}"
+    --image-min-tokens 1024
+    --alias "${alias_name}"
+    --host "${host}"
+    --port "${port}"
+    --flash-attn "${flash_attn}"
+    --n-gpu-layers "${n_gpu_layers}"
+    --threads "${threads}"
+    --batch-size 2048
+    --ubatch-size 1024
+    --ctx-size "${ctx_size}"
+    --cache-type-k q8_0
+    --cache-type-v q8_0
+    --load-mode mlock
+    --cache-reuse 256
+    --cache-ram -1
+    --reasoning-preserve
+    --temp "${temp}"
+    --top-k "${top_k}"
+    --top-p "${top_p}"
+    --min-p "${min_p}"
+  );
+
+  if [[ "${speculative}" != "false" && -n "${draft_model}" ]]; then
+    cmd_args+=(
+      --spec-type "${spec_type}"
+      --spec-draft-model "${draft_model}"
+      --spec-draft-ngl -1
+      --spec-draft-n-max "${draft_max}"
+    );
+  fi
+
+  if [[ "${dry_run}" == "true" ]]; then
+    echo "${LLAMA_SERVER}" "${cmd_args[@]}" "${extra_args[@]}";
+    exit 0;
+  fi
+
+  if ! command -v "${LLAMA_SERVER}" >/dev/null 2>&1 && [[ ! -x "${LLAMA_SERVER}" ]]; then
+    echo "Error: llama-server not found. Please run bin/bootstrap or brew install llama.cpp." >&2;
+    exit 1;
+  fi
+
+  exec "${LLAMA_SERVER}" "${cmd_args[@]}" "${extra_args[@]}";
+fi
