@@ -101,6 +101,7 @@ assert_contains "${output}" "jzaleski/multi" "Uses alias jzaleski/multi";
 assert_contains "${output}" "8080" "Uses default port 8080";
 assert_contains "${output}" "65536" "Uses default ctx-size 65536";
 assert_contains "${output}" "--jinja" "Includes --jinja flag";
+assert_contains "${output}" "chat-template-kwargs" "Includes default reasoning chat-template-kwargs";
 
 # Test 6: multi -q 6 --dry-run
 echo "Test 6: bin/run-model multi -q 6 --dry-run";
@@ -166,6 +167,7 @@ set -e;
 assert_exit_code 0 "${status}" "Exits with code 0";
 assert_contains "${output}" "--spec-draft-model /path/to/draft.gguf" "Includes draft model path";
 assert_contains "${output}" "--spec-type draft-simple" "Uses default draft-simple spec-type for text";
+assert_contains "${output}" "--spec-draft-n-max 5" "Uses default draft-max 5";
 
 # Test 13: --no-speculative disables draft model
 echo "Test 13: bin/run-model text --no-speculative -md /path/to/draft.gguf --dry-run";

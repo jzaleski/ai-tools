@@ -117,8 +117,9 @@ Options:
   --spec-type <type>                Speculative decoding type (default: draft-simple text, draft-mtp multi)
   -md, --draft-model <path>         Path to draft model GGUF or MTP file
   --spec-draft-model <path>         Alias for --draft-model
-  --draft-max <n>                   Number of draft tokens to predict (default: 3)
+  --draft-max <n>                   Number of draft tokens to predict (default: 5)
   --spec-draft-n-max <n>            Alias for --draft-max
+  --chat-template-kwargs <json>     Chat template kwargs JSON (default: '{"reasoning_effort":"medium"}' for multi)
   -d, --device <device>             Inference device for transcription: auto, mps, cuda, cpu (default: auto)
   --dry-run                         Print the command without executing
   --purpose <purpose>               Explicit purpose (text, multi, transcription)
@@ -146,7 +147,8 @@ flash_attn="on";
 speculative="";
 spec_type="";
 draft_model="";
-draft_max="3";
+draft_max="5";
+chat_template_kwargs="";
 device="${WHISPER_DEVICE:-"auto"}";
 device_cli="";
 dry_run="false";
@@ -323,6 +325,15 @@ while [[ $# -gt 0 ]]; do
       draft_max="${1#*=}";
       shift;
       ;;
+    --chat-template-kwargs)
+      if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
+      chat_template_kwargs="${2}";
+      shift 2;
+      ;;
+    --chat-template-kwargs=*)
+      chat_template_kwargs="${1#*=}";
+      shift;
+      ;;
     -d|--device)
       if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
       device="${2}";
@@ -450,6 +461,7 @@ if [[ "${purpose}" == "text" ]]; then
   top_k="${top_k:--1}";
   top_p="${top_p:-1.00}";
   spec_type="${spec_type:-draft-simple}";
+  draft_max="${draft_max:-5}";
 
   if [[ -z "${model}" ]]; then
     case "${quantization}" in
@@ -552,6 +564,8 @@ if [[ "${purpose}" == "multi" ]]; then
   top_p="${top_p:-0.95}";
   min_p="${min_p:-0.0}";
   spec_type="${spec_type:-draft-mtp}";
+  draft_max="${draft_max:-5}";
+  chat_template_kwargs="${chat_template_kwargs:-"{\"reasoning_effort\":\"medium\"}"}";
 
   num_parts=1;
   if [[ -z "${model}" ]]; then
@@ -639,6 +653,10 @@ if [[ "${purpose}" == "multi" ]]; then
 
   if [[ "${jinja}" == "true" ]]; then
     cmd_args+=(--jinja);
+  fi
+
+  if [[ -n "${chat_template_kwargs}" ]]; then
+    cmd_args+=(--chat-template-kwargs "${chat_template_kwargs}");
   fi
 
   if [[ "${speculative}" != "false" && -n "${draft_model}" ]]; then

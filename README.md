@@ -210,7 +210,8 @@ bin/run-model --text | --multi | --transcription [options]
 - `--speculative / --no-speculative`: Speculative decoding (default: auto-detected when co-located draft or MTP files are found).
 - `--spec-type <type>`: Speculative decoding algorithm (`draft-simple` for text, `draft-mtp` for multi).
 - `-md, --draft-model <path>`: Explicit path to draft model GGUF or MTP file.
-- `--draft-max <n>`: Number of draft tokens to predict (default: `3`).
+- `--draft-max <n>`: Number of draft tokens to predict (default: `5`).
+- `--chat-template-kwargs <json>`: Chat template kwargs JSON (default: `'{"reasoning_effort":"medium"}'` for multi).
 - `-d, --device <device>`: Inference device for Whisper transcription (`auto`, `mps`, `cuda`, `cpu`; default: `auto`).
 - `--dry-run`: Print the underlying command without executing.
 - `--multi`: Run multi model (alias `jzaleski/multi`).
@@ -502,8 +503,8 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults, o
   - `--cache-reuse 256`: reuses KV cache for shared prompt prefixes across turns
   - `--cache-ram -1`: removes the default 8GiB slot RAM cache cap for memory-rich systems
 - Purpose-specific tuning:
-  - `text` (Mistral Small 3.2 24B): `temp=0.15`, `top-k=-1`, `top-p=1.00`, `--jinja`; auto-detects `draft-simple` speculative decoding when draft models are co-located
-  - `multi` (Qwen3.8 Flash Next): `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `--image-min-tokens 1024`, `--reasoning-preserve`; auto-detects `draft-mtp` speculative decoding
+  - `text` (Mistral Small 3.2 24B): `temp=0.15`, `top-k=-1`, `top-p=1.00`, `--jinja`; auto-detects `draft-simple` speculative decoding (`draft-max 5`) when draft models are co-located
+  - `multi` (Qwen3.8 Flash Next): `temp=1.0`, `top-k=20`, `top-p=0.95`, `min-p=0.0`, `--image-min-tokens 1024`, `--reasoning-preserve`, `--chat-template-kwargs '{"reasoning_effort":"medium"}'`; auto-detects `draft-mtp` speculative decoding (`draft-max 5`)
   - `transcription` (Whisper): auto-detects `cuda` -> `mps` -> `cpu`, disables FP16 on CPU, thread-safe transcription mutex
 
 ## Troubleshooting
