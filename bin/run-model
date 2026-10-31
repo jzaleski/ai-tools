@@ -522,6 +522,7 @@ if [[ "${purpose}" == "text" ]]; then
     --load-mode mlock
     --cache-reuse 256
     --cache-ram -1
+    --fit off
   );
 
   if [[ "${jinja}" == "true" ]]; then
@@ -644,6 +645,7 @@ if [[ "${purpose}" == "multi" ]]; then
     --load-mode mlock
     --cache-reuse 256
     --cache-ram -1
+    --fit off
     --reasoning-preserve
     --temp "${temp}"
     --top-k "${top_k}"

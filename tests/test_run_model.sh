@@ -55,6 +55,7 @@ assert_contains "${output}" "65536" "Uses default ctx-size 65536";
 assert_contains "${output}" "2048" "Uses batch-size 2048";
 assert_contains "${output}" "1024" "Uses ubatch-size 1024";
 assert_contains "${output}" "mlock" "Uses mlock load-mode";
+assert_contains "${output}" "--fit off" "Disables auto-fit heuristic";
 
 # Test 2: text -q 6 --dry-run
 echo "Test 2: bin/run-model text -q 6 --dry-run";
@@ -101,6 +102,7 @@ assert_contains "${output}" "jzaleski/multi" "Uses alias jzaleski/multi";
 assert_contains "${output}" "8080" "Uses default port 8080";
 assert_contains "${output}" "65536" "Uses default ctx-size 65536";
 assert_contains "${output}" "--jinja" "Includes --jinja flag";
+assert_contains "${output}" "--fit off" "Disables auto-fit heuristic";
 assert_contains "${output}" "chat-template-kwargs" "Includes default reasoning chat-template-kwargs";
 
 # Test 6: multi -q 6 --dry-run
