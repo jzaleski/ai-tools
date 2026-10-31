@@ -100,6 +100,7 @@ assert_contains "${output}" "--mmproj" "Includes --mmproj flag";
 assert_contains "${output}" "jzaleski/multi" "Uses alias jzaleski/multi";
 assert_contains "${output}" "8080" "Uses default port 8080";
 assert_contains "${output}" "65536" "Uses default ctx-size 65536";
+assert_contains "${output}" "--jinja" "Includes --jinja flag";
 
 # Test 6: multi -q 6 --dry-run
 echo "Test 6: bin/run-model multi -q 6 --dry-run";

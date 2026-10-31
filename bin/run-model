@@ -578,11 +578,19 @@ if [[ "${purpose}" == "multi" ]]; then
     model="${base_model%.gguf}-00001-of-$(printf "%05d" "${num_parts}").gguf";
   fi
 
+  expanded_model="${model/#\~/$HOME}";
+  local_dir="$(dirname "${expanded_model}")";
+  expanded_base="${base_model:+"${base_model/#\~/$HOME}"}";
+
   mmproj="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/mmproj-F16.gguf";
-  if [[ -f "${model%.gguf}.mmproj" ]]; then
-    mmproj="${model%.gguf}.mmproj";
-  elif [[ -f "$(dirname "${model}")/mmproj-F16.gguf" ]]; then
-    mmproj="$(dirname "${model}")/mmproj-F16.gguf";
+  if [[ -n "${expanded_base:-}" && -f "${expanded_base%.gguf}.mmproj" ]]; then
+    mmproj="${expanded_base%.gguf}.mmproj";
+  elif [[ -f "${expanded_model%.gguf}.mmproj" ]]; then
+    mmproj="${expanded_model%.gguf}.mmproj";
+  elif compgen -G "${local_dir}/*.mmproj" >/dev/null 2>&1; then
+    mmproj="$(compgen -G "${local_dir}/*.mmproj" | head -n 1)";
+  elif [[ -f "${local_dir}/mmproj-F16.gguf" ]]; then
+    mmproj="${local_dir}/mmproj-F16.gguf";
   fi
 
   if [[ "${dry_run}" != "true" ]]; then
@@ -593,10 +601,12 @@ if [[ "${purpose}" == "multi" ]]; then
   fi
 
   if [[ "${speculative}" != "false" && -z "${draft_model}" ]]; then
-    expanded_model="${model/#\~/$HOME}";
-    local_dir="$(dirname "${expanded_model}")";
-    if [[ -f "${expanded_model%.gguf}.mtp" ]]; then
+    if [[ -n "${expanded_base:-}" && -f "${expanded_base%.gguf}.mtp" ]]; then
+      draft_model="${expanded_base%.gguf}.mtp";
+    elif [[ -f "${expanded_model%.gguf}.mtp" ]]; then
       draft_model="${expanded_model%.gguf}.mtp";
+    elif compgen -G "${local_dir}/*.mtp" >/dev/null 2>&1; then
+      draft_model="$(compgen -G "${local_dir}/*.mtp" | head -n 1)";
     elif compgen -G "${local_dir}/mtp-*.gguf" >/dev/null 2>&1; then
       draft_model="$(compgen -G "${local_dir}/mtp-*.gguf" | head -n 1)";
     fi
@@ -626,6 +636,10 @@ if [[ "${purpose}" == "multi" ]]; then
     --top-p "${top_p}"
     --min-p "${min_p}"
   );
+
+  if [[ "${jinja}" == "true" ]]; then
+    cmd_args+=(--jinja);
+  fi
 
   if [[ "${speculative}" != "false" && -n "${draft_model}" ]]; then
     cmd_args+=(
