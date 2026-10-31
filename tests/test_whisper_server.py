@@ -101,6 +101,25 @@ class TestWhisperServerArgs(unittest.TestCase):
                 self.assertEqual(args.model, "medium")
                 self.assertEqual(args.device, "cpu")
 
+    def test_parse_args_device_auto_resolves_to_detected_device(self):
+        cli = ["whisper_server.py", "--device", "auto"]
+        with patch.object(sys, "argv", cli):
+            with patch.dict(os.environ, {}, clear=True):
+                with patch.object(ws.torch.cuda, "is_available", return_value=True):
+                    args = ws.parse_args()
+                    self.assertEqual(args.device, "cuda")
+
+    def test_parse_args_device_short_flag_auto_resolves(self):
+        cli = ["whisper_server.py", "-d", "auto"]
+        with patch.object(sys, "argv", cli):
+            with patch.dict(os.environ, {}, clear=True):
+                with patch.object(ws.torch.cuda, "is_available", return_value=False):
+                    with patch.object(
+                        ws.torch.backends.mps, "is_available", return_value=True
+                    ):
+                        args = ws.parse_args()
+                        self.assertEqual(args.device, "mps")
+
 
 class TestGetDefaultDevice(unittest.TestCase):
     def test_cuda_available_returns_cuda(self):
@@ -132,6 +151,21 @@ class TestGetDefaultDevice(unittest.TestCase):
         with patch.dict(os.environ, {"WHISPER_DEVICE": "mps"}, clear=True):
             with patch.object(ws.torch.cuda, "is_available", return_value=True):
                 self.assertEqual(ws.get_default_device(), "mps")
+
+    def test_resolve_device_auto_and_empty(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.object(ws.torch.cuda, "is_available", return_value=False):
+                with patch.object(
+                    ws.torch.backends.mps, "is_available", return_value=True
+                ):
+                    self.assertEqual(ws.resolve_device("auto"), "mps")
+                    self.assertEqual(ws.resolve_device("AUTO"), "mps")
+                    self.assertEqual(ws.resolve_device(""), "mps")
+                    self.assertEqual(ws.resolve_device(None), "mps")
+
+    def test_resolve_device_explicit(self):
+        self.assertEqual(ws.resolve_device("cpu"), "cpu")
+        self.assertEqual(ws.resolve_device("cuda:0"), "cuda:0")
 
 
 class TestWhisperRequestHandler(unittest.TestCase):

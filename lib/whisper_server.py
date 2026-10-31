@@ -45,6 +45,13 @@ def get_default_device() -> str:
     return "cpu"
 
 
+def resolve_device(device: str | None = None) -> str:
+    device_str = (device or "").strip().lower()
+    if not device_str or device_str == "auto":
+        return get_default_device()
+    return device_str
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Persistent Whisper HTTP transcription server"
@@ -74,7 +81,9 @@ def parse_args():
         default=get_default_device(),
         help="Inference device (cuda, mps, cpu, etc.; default: cuda or mps if available, else cpu)",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.device = resolve_device(args.device)
+    return args
 
 
 class WhisperRequestHandler(BaseHTTPRequestHandler):
@@ -286,7 +295,7 @@ def main():
     args = parse_args()
 
     current_model_name = args.model
-    current_device = args.device
+    current_device = resolve_device(args.device)
 
     print(
         f"Loading Whisper model '{current_model_name}' on device '{current_device}'..."
