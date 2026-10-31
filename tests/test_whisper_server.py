@@ -57,6 +57,50 @@ class TestWhisperServerArgs(unittest.TestCase):
             self.assertEqual(args.model, "small")
             self.assertEqual(args.device, "cuda:1")
 
+    def test_parse_args_general_env_fallback(self):
+        env = {
+            "HOST": "0.0.0.0",
+            "PORT": "9000",
+        }
+        with patch.object(sys, "argv", ["whisper_server.py"]):
+            with patch.dict(os.environ, env, clear=True):
+                args = ws.parse_args()
+                self.assertEqual(args.host, "0.0.0.0")
+                self.assertEqual(args.port, 9000)
+
+    def test_parse_args_whisper_env_precedence_over_general(self):
+        env = {
+            "HOST": "1.1.1.1",
+            "PORT": "8000",
+            "WHISPER_HOST": "2.2.2.2",
+            "WHISPER_PORT": "8888",
+        }
+        with patch.object(sys, "argv", ["whisper_server.py"]):
+            with patch.dict(os.environ, env, clear=True):
+                args = ws.parse_args()
+                self.assertEqual(args.host, "2.2.2.2")
+                self.assertEqual(args.port, 8888)
+
+    def test_parse_args_short_flags(self):
+        cli = [
+            "whisper_server.py",
+            "-H",
+            "192.168.1.100",
+            "-p",
+            "8999",
+            "-m",
+            "medium",
+            "-d",
+            "cpu",
+        ]
+        with patch.object(sys, "argv", cli):
+            with patch.dict(os.environ, {}, clear=True):
+                args = ws.parse_args()
+                self.assertEqual(args.host, "192.168.1.100")
+                self.assertEqual(args.port, 8999)
+                self.assertEqual(args.model, "medium")
+                self.assertEqual(args.device, "cpu")
+
 
 class TestGetDefaultDevice(unittest.TestCase):
     def test_cuda_available_returns_cuda(self):
