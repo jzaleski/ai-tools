@@ -11,7 +11,7 @@ All model hosting is unified behind `bin/run-model` with purpose-oriented model 
 - **`jzaleski/multi`**: Qwen3.8-Flash-Next running on port 8080 with an F16 multimodal projector (`--mmproj`, auto-downloaded). Vision-capable model with reasoning preservation and auto-detected MTP speculative decoding (`draft-mtp`).
 - **`jzaleski/transcription`**: Persistent OpenAI-compatible Whisper HTTP server running on port 8765 (`lib/whisper_server.py`). Supports `/v1/audio/transcriptions`, `/health`, and `/v1/models` with hardware-accelerated inference (`cuda` -> `mps` -> `cpu`).
 
-Both LLMs support standard quantizations (`-q 4|6|8`, defaulting to `4`), 64K universal default context (`65536` tokens, overrideable via `-c / --ctx-size` or `CTX_SIZE`), and full unified memory optimizations (`--load-mode mlock`, `--cache-reuse 256`, `--cache-ram -1`). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Listen ports default to `8080` (text/multi LLMs) and `8765` (transcription), overrideable via `PORT` or `-p / --port`.
+Both LLMs support standard quantizations (`-q 4|5|6|8`, defaulting to `4`), 64K universal default context (`65536` tokens, overrideable via `-c / --ctx-size` or `CTX_SIZE`), and full unified memory optimizations (`--load-mode mlock`, `--cache-reuse 256`, `--cache-ram -1`). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Listen ports default to `8080` (text/multi LLMs) and `8765` (transcription), overrideable via `PORT` or `-p / --port`.
 
 **No code repositories** - utilities/config only.
 
@@ -65,7 +65,7 @@ Agent configurations are managed via the bootstrap system and integrate with the
 
 ## Build/Test Commands
 
-Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose on the LAN. `run-model` launches models by purpose (`text`, `multi`, `transcription`; default `text`), with optional quantization (`-q 4|6|8`, default `4`):
+Scripts in `bin/` bind to `127.0.0.1` by default; set `HOST=0.0.0.0` to expose on the LAN. `run-model` launches models by purpose (`text`, `multi`, `transcription`; default `text`), with optional quantization (`-q 4|5|6|8`, default `4`):
 
 ```bash
 ./bin/run-model                               # text generation (Mistral 24B, Q4, port 8080)
@@ -268,7 +268,7 @@ BOOTSTRAP_SKIP="install-dependencies" bin/bootstrap
 ## Performance
 
 - GPU acceleration enabled with flash attention by default (`--flash-attn on`)
-- Standard quantization: `4` (default), `6`, `8` via `-q / --quantization`
+- Standard quantization: `4` (default), `5`, `6`, `8` via `-q / --quantization`
 - KV cache quantization: `q8_0` for both K and V cache across text and multi models to preserve quality during extended reasoning traces
 - Universal context size: `65536` (64K tokens) by default; override with `-c <size>` or `CTX_SIZE`
 - Batch/ubatch: `2048` / `1024` for high-throughput prompt processing on Apple Silicon

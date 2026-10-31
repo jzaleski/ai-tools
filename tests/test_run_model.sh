@@ -64,11 +64,16 @@ output=$("${RUN_MODEL}" text -q 6 --dry-run 2>&1);
 status=$?;
 set -e;
 assert_exit_code 0 "${status}" "Exits with code 0";
-if echo "${output}" | grep -q "Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf"; then
-  assert_contains "${output}" "Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf" "Selects Q5_K_XL Mistral fallback model";
-else
-  assert_contains "${output}" "Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf" "Selects Q6_K_XL Mistral model";
-fi
+assert_contains "${output}" "Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf" "Selects Q6_K_XL Mistral model";
+
+# Test 2b: text -q 5 --dry-run
+echo "Test 2b: bin/run-model text -q 5 --dry-run";
+set +e;
+output=$("${RUN_MODEL}" text -q 5 --dry-run 2>&1);
+status=$?;
+set -e;
+assert_exit_code 0 "${status}" "Exits with code 0";
+assert_contains "${output}" "Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf" "Selects Q5_K_XL Mistral model";
 
 # Test 3: text -q 8 --dry-run
 echo "Test 3: bin/run-model text -q 8 --dry-run";
@@ -114,6 +119,15 @@ set -e;
 assert_exit_code 0 "${status}" "Exits with code 0";
 assert_contains "${output}" "Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf" "Selects Qwen3.8 Flash Next Q6 part 1";
 
+# Test 6b: multi -q 5 --dry-run
+echo "Test 6b: bin/run-model multi -q 5 --dry-run";
+set +e;
+output=$("${RUN_MODEL}" multi -q 5 --dry-run 2>&1);
+status=$?;
+set -e;
+assert_exit_code 0 "${status}" "Exits with code 0";
+assert_contains "${output}" "Qwen3.8-Flash-Next-UD-Q5_K_XL-00001-of-00006.gguf" "Selects Qwen3.8 Flash Next Q5 part 1";
+
 # Test 7: multi -q 8 --dry-run
 echo "Test 7: bin/run-model multi -q 8 --dry-run";
 set +e;
@@ -153,9 +167,9 @@ assert_contains "${output}" "jzaleski/text" "Defaults to jzaleski/text";
 assert_contains "${output}" "Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf" "Selects Q4 Mistral model";
 
 # Test 11: unsupported quantization exits with code 1
-echo "Test 11: bin/run-model text -q 5 --dry-run";
+echo "Test 11: bin/run-model text -q 7 --dry-run";
 set +e;
-output=$("${RUN_MODEL}" text -q 5 --dry-run 2>&1);
+output=$("${RUN_MODEL}" text -q 7 --dry-run 2>&1);
 status=$?;
 set -e;
 assert_exit_code 1 "${status}" "Rejects unsupported quantization with exit code 1";

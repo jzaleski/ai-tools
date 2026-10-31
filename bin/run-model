@@ -100,7 +100,7 @@ Purposes:
 
 Options:
   -h, --help                        Display this help message
-  -q, --quantization <4|6|8>        Model quantization (default: 4; text and multi)
+  -q, --quantization <4|5|6|8>      Model quantization (default: 4; text and multi)
   -H, --host <host>                 Host interface to bind to (default: 127.0.0.1 or HOST)
   -p, --port <port>                 Port to listen on (default: 8080 text/multi, 8765 transcription)
   -m, --model <path|name>           Override model path (text/multi) or Whisper model (default: turbo)
@@ -407,9 +407,9 @@ case "${purpose}" in
 esac
 
 case "${quantization}" in
-  4|6|8) ;;
+  4|5|6|8) ;;
   *)
-    echo "Error: unsupported quantization '${quantization}'. Must be 4, 6, or 8." >&2;
+    echo "Error: unsupported quantization '${quantization}'. Must be 4, 5, 6, or 8." >&2;
     exit 1;
     ;;
 esac
@@ -473,20 +473,15 @@ if [[ "${purpose}" == "text" ]]; then
         hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
         hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf";
         ;;
+      5)
+        model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf";
+        hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
+        hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf";
+        ;;
       6)
-        if [[ -f "${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf" ]]; then
-          model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
-          hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
-          hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
-        elif [[ -f "${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf" ]]; then
-          model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf";
-          hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
-          hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf";
-        else
-          model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
-          hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
-          hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
-        fi
+        model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
+        hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
+        hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
         ;;
       8)
         model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q8_K_XL.gguf";
@@ -583,6 +578,12 @@ if [[ "${purpose}" == "multi" ]]; then
         hf_repo="unsloth/Qwen3.8-Flash-Next-GGUF";
         hf_base="UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL.gguf";
         num_parts=4;
+        ;;
+      5)
+        base_model="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q5_K_XL/Qwen3.8-Flash-Next-UD-Q5_K_XL.gguf";
+        hf_repo="unsloth/Qwen3.8-Flash-Next-GGUF";
+        hf_base="UD-Q5_K_XL/Qwen3.8-Flash-Next-UD-Q5_K_XL.gguf";
+        num_parts=6;
         ;;
       6)
         base_model="${MODELS_DIR}/unsloth/Qwen3.8-Flash-Next-GGUF/UD-Q6_K_XL/Qwen3.8-Flash-Next-UD-Q6_K_XL.gguf";
