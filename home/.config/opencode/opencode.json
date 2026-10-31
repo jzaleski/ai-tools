@@ -38,8 +38,8 @@
             ]
           }
         },
-        "jzaleski/multimodal": {
-          "name": "Multimodal (Qwen3.8 Flash)",
+        "jzaleski/multi": {
+          "name": "jzaleski/multi",
           "limit": {
             "context": 65536,
             "input": 57344,
