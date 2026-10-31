@@ -474,7 +474,11 @@ if [[ "${purpose}" == "text" ]]; then
         hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q4_K_XL.gguf";
         ;;
       6)
-        if [[ -f "${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf" ]]; then
+        if [[ -f "${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf" ]]; then
+          model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
+          hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
+          hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q6_K_XL.gguf";
+        elif [[ -f "${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf" ]]; then
           model="${MODELS_DIR}/unsloth/Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf";
           hf_repo="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF";
           hf_filename="Mistral-Small-3.2-24B-Instruct-2506-UD-Q5_K_XL.gguf";
