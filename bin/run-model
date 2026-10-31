@@ -85,52 +85,56 @@ require_split_model() {
 
 print_help() {
   cat << EOF
-Usage: bin/run-model [options] [purpose] [-- <additional args>]
+Usage: bin/run-model [options] [text|multi|transcription] [-- <additional args>]
        bin/run-model --purpose <purpose> [options] [-- <additional args>]
 
-Runs local models using llama-server (text, multimodal) or persistent Whisper server (transcription).
+Runs local models using llama-server (text, multi) or persistent Whisper server (transcription).
 
 Purposes:
   text (default)                    Mistral Small 3.2 24B Instruct (port 8080, alias jzaleski/text)
-  multimodal                        Qwen3.8 Flash Next with mmproj (port 8081, alias jzaleski/multimodal)
+  multi                             Qwen3.8 Flash Next with mmproj (port 8081, alias jzaleski/multi)
   transcription                     Persistent Whisper transcription server (port 8765)
 
 Options:
   -h, --help                        Display this help message
-  -q, --quantization <4|6|8>        Model quantization (default: 4; text and multimodal)
+  -q, --quantization <4|6|8>        Model quantization (default: 4; text and multi)
   -H, --host <host>                 Host interface to bind to (default: 127.0.0.1 or HOST)
-  -p, --port <port>                 Port to listen on (default: 8080 text, 8081 multimodal, 8765 transcription)
-  -m, --model <path|name>           Override model path (text/multimodal) or Whisper model (default: turbo)
+  -p, --port <port>                 Port to listen on (default: 8080 text, 8081 multi, 8765 transcription)
+  -m, --model <path|name>           Override model path (text/multi) or Whisper model (default: turbo)
   -c, --ctx-size <size>             Context window size in tokens (default: 65536 or CTX_SIZE)
   -ngl, --n-gpu-layers <n>          Number of layers to offload to GPU (default: -1 or N_GPU_LAYERS)
   -t, --threads <n>                 Number of CPU threads to use (default: 8 or THREADS)
-  --temp <temp>                     Sampling temperature (default: 0.15 text, 1.0 multimodal)
-  --top-k <k>                       Top-k sampling threshold (default: -1 text, 20 multimodal)
-  --top-p <p>                       Top-p sampling threshold (default: 1.00 text, 0.95 multimodal)
-  --min-p <p>                       Min-p sampling threshold (default: 0.0 multimodal)
+  --temp <temp>                     Sampling temperature (default: 0.15 text, 1.0 multi)
+  --top-k <k>                       Top-k sampling threshold (default: -1 text, 20 multi)
+  --top-p <p>                       Top-p sampling threshold (default: 1.00 text, 0.95 multi)
+  --min-p <p>                       Min-p sampling threshold (default: 0.0 multi)
   --jinja                           Enable Jinja templating (default: enabled)
   --no-jinja                        Disable Jinja templating
   -fa, --flash-attn [on|off|auto]   Flash attention mode (default: on)
   --no-flash-attn                   Disable flash attention
   --speculative                     Enable speculative decoding
   --no-speculative                  Disable speculative decoding
-  --spec-type <type>                Speculative decoding type (default: draft-simple text, draft-mtp multimodal)
+  --spec-type <type>                Speculative decoding type (default: draft-simple text, draft-mtp multi)
   -md, --draft-model <path>         Path to draft model GGUF or MTP file
   --spec-draft-model <path>         Alias for --draft-model
   --draft-max <n>                   Number of draft tokens to predict (default: 3)
   --spec-draft-n-max <n>            Alias for --draft-max
-  --device <device>                 Inference device for transcription: auto, mps, cuda, cpu (default: auto)
+  -d, --device <device>             Inference device for transcription: auto, mps, cuda, cpu (default: auto)
   --dry-run                         Print the command without executing
-  --purpose <purpose>               Explicit purpose (text, multimodal, transcription)
-  --text, --multimodal, --transcription  Shorthand purpose flags
+  --purpose <purpose>               Explicit purpose (text, multi, transcription)
+  --multi                           Run multi model (alias jzaleski/multi)
+  --text, --multi, --transcription  Shorthand purpose flags
 EOF
 }
 
 purpose="";
 quantization="4";
 host="${HOST:-"127.0.0.1"}";
+host_cli="";
 port="";
+port_cli="";
 model="";
+model_cli="";
 ctx_size="${CTX_SIZE:-"65536"}";
 n_gpu_layers="${N_GPU_LAYERS:-"-1"}";
 threads="${THREADS:-"8"}";
@@ -145,6 +149,7 @@ spec_type="";
 draft_model="";
 draft_max="3";
 device="${WHISPER_DEVICE:-"auto"}";
+device_cli="";
 dry_run="false";
 extra_args=();
 
@@ -166,28 +171,34 @@ while [[ $# -gt 0 ]]; do
     -H|--host)
       if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
       host="${2}";
+      host_cli="true";
       shift 2;
       ;;
     --host=*|-H=*)
       host="${1#*=}";
+      host_cli="true";
       shift;
       ;;
     -p|--port)
       if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
       port="${2}";
+      port_cli="true";
       shift 2;
       ;;
     --port=*|-p=*)
       port="${1#*=}";
+      port_cli="true";
       shift;
       ;;
     -m|--model)
       if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
       model="${2}";
+      model_cli="true";
       shift 2;
       ;;
     --model=*|-m=*)
       model="${1#*=}";
+      model_cli="true";
       shift;
       ;;
     -c|--ctx-size)
@@ -313,13 +324,15 @@ while [[ $# -gt 0 ]]; do
       draft_max="${1#*=}";
       shift;
       ;;
-    --device)
+    -d|--device)
       if [[ $# -lt 2 ]]; then echo "Error: ${1} requires an argument." >&2; exit 1; fi
       device="${2}";
+      device_cli="true";
       shift 2;
       ;;
-    --device=*)
+    --device=*|-d=*)
       device="${1#*=}";
+      device_cli="true";
       shift;
       ;;
     --dry-run)
@@ -339,8 +352,8 @@ while [[ $# -gt 0 ]]; do
       purpose="text";
       shift;
       ;;
-    --multimodal)
-      purpose="multimodal";
+    --multi)
+      purpose="multi";
       shift;
       ;;
     --transcription)
@@ -373,9 +386,9 @@ done;
 purpose="${purpose:-"text"}";
 
 case "${purpose}" in
-  text|multimodal|transcription) ;;
+  text|multi|transcription) ;;
   *)
-    echo "Error: unknown purpose '${purpose}'. Use: text, multimodal, or transcription." >&2;
+    echo "Error: unknown purpose '${purpose}'. Use: text, multi, or transcription." >&2;
     exit 1;
     ;;
 esac
@@ -389,8 +402,18 @@ case "${quantization}" in
 esac
 
 if [[ "${purpose}" == "transcription" ]]; then
-  port="${port:-${PORT:-8765}}";
-  model="${model:-"turbo"}";
+  if [[ "${host_cli}" != "true" ]]; then
+    host="${WHISPER_HOST:-${HOST:-"127.0.0.1"}}";
+  fi
+  if [[ "${port_cli}" != "true" ]]; then
+    port="${WHISPER_PORT:-${PORT:-8765}}";
+  fi
+  if [[ "${model_cli}" != "true" ]]; then
+    model="${WHISPER_MODEL:-"turbo"}";
+  fi
+  if [[ "${device_cli}" != "true" ]]; then
+    device="${WHISPER_DEVICE:-"auto"}";
+  fi
   python_bin="$(find_python)";
 
   if [[ "${dry_run}" != "true" ]]; then
@@ -522,9 +545,9 @@ if [[ "${purpose}" == "text" ]]; then
   exec "${LLAMA_SERVER}" "${cmd_args[@]}" "${extra_args[@]}";
 fi
 
-if [[ "${purpose}" == "multimodal" ]]; then
+if [[ "${purpose}" == "multi" ]]; then
   port="${port:-${PORT:-8081}}";
-  alias_name="jzaleski/multimodal";
+  alias_name="jzaleski/multi";
   temp="${temp:-1.0}";
   top_k="${top_k:-20}";
   top_p="${top_p:-0.95}";

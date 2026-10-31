@@ -87,33 +87,33 @@ set -e;
 assert_exit_code 0 "${status}" "Exits with code 0";
 assert_contains "${output}" "--ctx-size 262144" "Overrides ctx-size to 262144";
 
-# Test 5: multimodal --dry-run
-echo "Test 5: bin/run-model multimodal --dry-run";
+# Test 5: multi --dry-run
+echo "Test 5: bin/run-model multi --dry-run";
 set +e;
-output=$("${RUN_MODEL}" multimodal --dry-run 2>&1);
+output=$("${RUN_MODEL}" multi --dry-run 2>&1);
 status=$?;
 set -e;
 assert_exit_code 0 "${status}" "Exits with code 0";
 assert_contains "${output}" "llama-server" "Contains llama-server";
 assert_contains "${output}" "Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf" "Selects Qwen3.8 Flash Next Q4 part 1";
 assert_contains "${output}" "--mmproj" "Includes --mmproj flag";
-assert_contains "${output}" "jzaleski/multimodal" "Uses alias jzaleski/multimodal";
+assert_contains "${output}" "jzaleski/multi" "Uses alias jzaleski/multi";
 assert_contains "${output}" "8081" "Uses port 8081";
 assert_contains "${output}" "65536" "Uses default ctx-size 65536";
 
-# Test 6: multimodal -q 6 --dry-run
-echo "Test 6: bin/run-model multimodal -q 6 --dry-run";
+# Test 6: multi -q 6 --dry-run
+echo "Test 6: bin/run-model multi -q 6 --dry-run";
 set +e;
-output=$("${RUN_MODEL}" multimodal -q 6 --dry-run 2>&1);
+output=$("${RUN_MODEL}" multi -q 6 --dry-run 2>&1);
 status=$?;
 set -e;
 assert_exit_code 0 "${status}" "Exits with code 0";
 assert_contains "${output}" "Qwen3.8-Flash-Next-UD-Q6_K_XL-00001-of-00006.gguf" "Selects Qwen3.8 Flash Next Q6 part 1";
 
-# Test 7: multimodal -q 8 --dry-run
-echo "Test 7: bin/run-model multimodal -q 8 --dry-run";
+# Test 7: multi -q 8 --dry-run
+echo "Test 7: bin/run-model multi -q 8 --dry-run";
 set +e;
-output=$("${RUN_MODEL}" multimodal -q 8 --dry-run 2>&1);
+output=$("${RUN_MODEL}" multi -q 8 --dry-run 2>&1);
 status=$?;
 set -e;
 assert_exit_code 0 "${status}" "Exits with code 0";
@@ -211,22 +211,50 @@ assert_exit_code 0 "${status}" "Exits with code 0";
 assert_contains "${output}" "--custom-flag custom-val" "Passes through extra args";
 
 # Test 17: explicit --purpose flag
-echo "Test 17: bin/run-model --purpose multimodal --dry-run";
+echo "Test 17: bin/run-model --purpose multi --dry-run";
 set +e;
-output=$("${RUN_MODEL}" --purpose multimodal --dry-run 2>&1);
+output=$("${RUN_MODEL}" --purpose multi --dry-run 2>&1);
 status=$?;
 set -e;
 assert_exit_code 0 "${status}" "Exits with code 0";
-assert_contains "${output}" "jzaleski/multimodal" "Accepts --purpose multimodal";
+assert_contains "${output}" "jzaleski/multi" "Accepts --purpose multi";
 
-# Test 18: shorthand --multimodal flag
-echo "Test 18: bin/run-model --multimodal --dry-run";
+# Test 18: shorthand --multi flag
+echo "Test 18: bin/run-model --multi --dry-run";
 set +e;
-output=$("${RUN_MODEL}" --multimodal --dry-run 2>&1);
+output=$("${RUN_MODEL}" --multi --dry-run 2>&1);
 status=$?;
 set -e;
 assert_exit_code 0 "${status}" "Exits with code 0";
-assert_contains "${output}" "jzaleski/multimodal" "Accepts shorthand --multimodal";
+assert_contains "${output}" "jzaleski/multi" "Accepts shorthand --multi";
+
+# Test 19: multimodal purpose is rejected
+echo "Test 19: bin/run-model multimodal --dry-run";
+set +e;
+output=$("${RUN_MODEL}" multimodal --dry-run 2>&1);
+status=$?;
+set -e;
+assert_exit_code 1 "${status}" "Rejects multimodal with exit code 1";
+
+# Test 20: transcription -d cpu --dry-run
+echo "Test 20: bin/run-model transcription -d cpu --dry-run";
+set +e;
+output=$("${RUN_MODEL}" transcription -d cpu --dry-run 2>&1);
+status=$?;
+set -e;
+assert_exit_code 0 "${status}" "Exits with code 0";
+assert_contains "${output}" "--device cpu" "Overrides device to cpu with -d";
+
+# Test 21: WHISPER_HOST=0.0.0.0 WHISPER_PORT=9100 WHISPER_MODEL=small run_model transcription --dry-run
+echo "Test 21: WHISPER_HOST=0.0.0.0 WHISPER_PORT=9100 WHISPER_MODEL=small bin/run-model transcription --dry-run";
+set +e;
+output=$(WHISPER_HOST=0.0.0.0 WHISPER_PORT=9100 WHISPER_MODEL=small "${RUN_MODEL}" transcription --dry-run 2>&1);
+status=$?;
+set -e;
+assert_exit_code 0 "${status}" "Exits with code 0";
+assert_contains "${output}" "--host 0.0.0.0" "Uses WHISPER_HOST";
+assert_contains "${output}" "--port 9100" "Uses WHISPER_PORT";
+assert_contains "${output}" "--model small" "Uses WHISPER_MODEL";
 
 echo "";
 echo "=== Test Summary ===";
