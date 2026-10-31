@@ -92,14 +92,14 @@ Runs local models using llama-server (text, multi) or persistent Whisper server 
 
 Purposes:
   text (default)                    Mistral Small 3.2 24B Instruct (port 8080, alias jzaleski/text)
-  multi                             Qwen3.8 Flash Next with mmproj (port 8081, alias jzaleski/multi)
+  multi                             Qwen3.8 Flash Next with mmproj (port 8080, alias jzaleski/multi)
   transcription                     Persistent Whisper transcription server (port 8765)
 
 Options:
   -h, --help                        Display this help message
   -q, --quantization <4|6|8>        Model quantization (default: 4; text and multi)
   -H, --host <host>                 Host interface to bind to (default: 127.0.0.1 or HOST)
-  -p, --port <port>                 Port to listen on (default: 8080 text, 8081 multi, 8765 transcription)
+  -p, --port <port>                 Port to listen on (default: 8080 text/multi, 8765 transcription)
   -m, --model <path|name>           Override model path (text/multi) or Whisper model (default: turbo)
   -c, --ctx-size <size>             Context window size in tokens (default: 65536 or CTX_SIZE)
   -ngl, --n-gpu-layers <n>          Number of layers to offload to GPU (default: -1 or N_GPU_LAYERS)
@@ -545,7 +545,7 @@ if [[ "${purpose}" == "text" ]]; then
 fi
 
 if [[ "${purpose}" == "multi" ]]; then
-  port="${port:-${PORT:-8081}}";
+  port="${port:-${PORT:-8080}}";
   alias_name="jzaleski/multi";
   temp="${temp:-1.0}";
   top_k="${top_k:-20}";

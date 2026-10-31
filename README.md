@@ -8,10 +8,10 @@ This repository provides unified scripts and configurations for hosting local AI
 
 All model hosting is unified behind a single entrypoint `bin/run-model` with purpose-oriented model aliases:
 - **`jzaleski/text`**: Mistral-Small 3.2 24B Instruct running on port 8080 (default). High-throughput text generation and coding model with Jinja templating, flash attention, and auto-detected speculative decoding (`draft-simple`).
-- **`jzaleski/multi`**: Qwen3.8-Flash-Next running on port 8081 with an F16 multimodal projector (`--mmproj`, auto-downloaded). Vision-capable model with reasoning preservation and auto-detected MTP speculative decoding (`draft-mtp`).
+- **`jzaleski/multi`**: Qwen3.8-Flash-Next running on port 8080 with an F16 multimodal projector (`--mmproj`, auto-downloaded). Vision-capable model with reasoning preservation and auto-detected MTP speculative decoding (`draft-mtp`).
 - **`jzaleski/transcription`**: Persistent OpenAI-compatible Whisper HTTP server running on port 8765 (`lib/whisper_server.py`). Supports `/v1/audio/transcriptions` (both `multipart/form-data` uploads and JSON payloads with local file paths), `/health`, and `/v1/models` with hardware-accelerated inference (`cuda` -> `mps` -> `cpu`).
 
-Both LLMs support standard quantizations (`-q 4|6|8`, defaulting to `4`), a universal 64K default context window (`65536` tokens, overrideable via `-c / --ctx-size` or `CTX_SIZE`), and full unified memory optimizations (`--load-mode mlock`, `--cache-reuse 256`, `--cache-ram -1`). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Listen ports default to `8080` (text), `8081` (multi), and `8765` (transcription), overrideable via `PORT` or `-p / --port`.
+Both LLMs support standard quantizations (`-q 4|6|8`, defaulting to `4`), a universal 64K default context window (`65536` tokens, overrideable via `-c / --ctx-size` or `CTX_SIZE`), and full unified memory optimizations (`--load-mode mlock`, `--cache-reuse 256`, `--cache-ram -1`). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Listen ports default to `8080` (text/multi LLMs) and `8765` (transcription), overrideable via `PORT` or `-p / --port`.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -164,7 +164,7 @@ You can override default settings via environment variables.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `HOST` | Network interface address to bind the server to | `127.0.0.1` (set `0.0.0.0` to expose on the LAN) |
-| `PORT` | Network port for the server to listen on | `8080` (text), `8081` (multi), `8765` (transcription) |
+| `PORT` | Network port for the server to listen on | `8080` (text/multi), `8765` (transcription) |
 | `WHISPER_HOST` | Bind address override for Whisper server | `${HOST:-127.0.0.1}` |
 | `WHISPER_PORT` | Network port override for Whisper server | `${PORT:-8765}` |
 | `WHISPER_MODEL` | Whisper transcription model name | `turbo` |
@@ -190,13 +190,13 @@ bin/run-model --text | --multi | --transcription [options]
 
 **Purposes:**
 - **`text`** (default): Mistral Small 3.2 24B Instruct running on port 8080 (alias `jzaleski/text`). High-speed, high-accuracy model with Jinja templating, flash attention, and auto-detected `draft-simple` speculative decoding.
-- **`multi`**: Qwen3.8 Flash Next running on port 8081 (alias `jzaleski/multi`) with an F16 multimodal projector (`--mmproj`, auto-downloaded). Vision-capable model with reasoning preservation and auto-detected `draft-mtp` speculative decoding.
+- **`multi`**: Qwen3.8 Flash Next running on port 8080 (alias `jzaleski/multi`) with an F16 multimodal projector (`--mmproj`, auto-downloaded). Vision-capable model with reasoning preservation and auto-detected `draft-mtp` speculative decoding.
 - **`transcription`**: Persistent OpenAI-compatible Whisper HTTP server running on port 8765 (`lib/whisper_server.py`). Supports `/v1/audio/transcriptions`, `/health`, and `/v1/models` with hardware-accelerated inference (`cuda` -> `mps` -> `cpu`).
 
 **CLI Options:**
 - `-q, --quantization <4|6|8>`: Model quantization (default: `4`). Applies to `text` and `multi`.
 - `-H, --host <host>`: Host interface to bind (default: `127.0.0.1` or `HOST` env var).
-- `-p, --port <port>`: Port to listen on (default: `8080` for text, `8081` for multi, `8765` for transcription, or `PORT` env var).
+- `-p, --port <port>`: Port to listen on (default: `8080` for text/multi, `8765` for transcription, or `PORT` env var).
 - `-m, --model <path|name>`: Override model GGUF path (for text/multi) or Whisper model name (for transcription, default `turbo`).
 - `-c, --ctx-size <size>`: Context window tokens (default: `65536` or `CTX_SIZE` env var; easily overridden to `131072`, `262144`, etc.).
 - `-ngl, --n-gpu-layers <n>`: Number of layers offloaded to GPU (default: `-1` or `N_GPU_LAYERS`).
@@ -248,7 +248,7 @@ A persistent Python HTTP server (`lib/whisper_server.py`) exposing an OpenAI-com
 # Start text generation with Q6 quantization
 ./bin/run-model text -q 6
 
-# Start vision-capable model (Qwen3.8 Flash Next, Q4, port 8081)
+# Start vision-capable model (Qwen3.8 Flash Next, Q4, port 8080)
 ./bin/run-model multi
 
 # Start vision-capable model with Q6 quantization
@@ -279,9 +279,9 @@ curl http://localhost:8080/v1/chat/completions \
   }'
 ```
 
-**Multimodal completions (`jzaleski/multi` on port 8081):**
+**Multimodal completions (`jzaleski/multi` on port 8080):**
 ```bash
-curl http://localhost:8081/v1/chat/completions \
+curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "jzaleski/multi",
@@ -328,7 +328,7 @@ All model execution is consolidated under `bin/run-model`. It drives `llama-serv
                 │                        │                               │
     ┌───────────┴──────────┐ ┌───────────┴──────────┐       ┌────────────┴─────────────┐
     │ llama-server (text)  │ │llama-server (vision) │       │ lib/whisper_server.py    │
-    │ HOST:8080            │ │HOST:8081             │       │ HOST:8765                │
+    │ HOST:8080            │ │HOST:8080             │       │ HOST:8765                │
     │ Mistral Small 24B    │ │Qwen3.8 Flash Next    │       │ OpenAI Whisper Turbo     │
     │ alias: jzaleski/text │ │+ mmproj (F16)        │       │ /v1/audio/transcriptions │
     │ (Q4/Q6/Q8, 64K ctx)  │ │alias: jzaleski/multi │       │ (MPS / CUDA / CPU)       │
@@ -336,7 +336,7 @@ All model execution is consolidated under `bin/run-model`. It drives `llama-serv
     └──────────────────────┘ └──────────────────────┘       └──────────────────────────┘
 ```
 
-`HOST` defaults to `127.0.0.1` across all launchers; set `HOST=0.0.0.0` to expose on the LAN. Listen ports default to `8080` (text), `8081` (multi), and `8765` (transcription), so all three services can run concurrently without port conflicts.
+`HOST` defaults to `127.0.0.1` across all launchers; set `HOST=0.0.0.0` to expose on the LAN. Listen ports default to `8080` (text and multi LLMs) and `8765` (transcription); override with `PORT` or `-p / --port` when running servers concurrently.
 
 ## Opencode Agent Architecture
 
@@ -382,7 +382,7 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 │ │ baseURL: http://server-hostname-or-ip:8080/v1            │ │
 │ │                                                          │ │
 │ │ • jzaleski/text:       Mistral 24B, port 8080 (ctx 64K)  │ │
-│ │ • jzaleski/multi:      Qwen3.8 Flash, port 8081 (ctx 64K)│ │
+│ │ • jzaleski/multi:      Qwen3.8 Flash, port 8080 (ctx 64K)│ │
 │ └──────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -391,14 +391,14 @@ The opencode system provides a multi-agent workflow with role-specific capabilit
 
 The opencode configuration (`home/.config/opencode/opencode.json`) defines a single `jzaleski` provider:
 - **`jzaleski/text`**: Mistral-Small 3.2 24B Instruct running on port 8080. Universal 65,536 token context (57,344 input, 8,192 output). Text-only modality.
-- **`jzaleski/multi`**: Qwen3.8-Flash-Next running on port 8081 with F16 multimodal projector. Universal 65,536 token context (57,344 input, 8,192 output). Text and image input modalities.
+- **`jzaleski/multi`**: Qwen3.8-Flash-Next running on port 8080 with F16 multimodal projector. Universal 65,536 token context (57,344 input, 8,192 output). Text and image input modalities.
 
 The `baseURL` ships templated with the `server-hostname-or-ip` placeholder rather than a hardcoded `localhost` — replace it with `localhost` if opencode runs on the same machine as the model server, or with that machine's actual hostname/IP if opencode runs elsewhere. The `HOST` env var independently governs whether the underlying server binds to `127.0.0.1` (local-only) or `0.0.0.0` (LAN-reachable).
 
 | Provider | Endpoint | Model | Display Name | Context | Input | Output | Modalities |
 |----------|----------|-------|---------------|---------|-------|--------|------------|
 | jzaleski | `server-hostname-or-ip:8080` | `jzaleski/text` | Text (Mistral 24B) | 65,536 | 57,344 | 8,192 | text in, text out |
-| jzaleski | `server-hostname-or-ip:8081` | `jzaleski/multi` | jzaleski/multi | 65,536 | 57,344 | 8,192 | text+image in, text out |
+| jzaleski | `server-hostname-or-ip:8080` | `jzaleski/multi` | jzaleski/multi | 65,536 | 57,344 | 8,192 | text+image in, text out |
 
 ### Agent Roles
 

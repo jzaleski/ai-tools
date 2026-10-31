@@ -98,7 +98,7 @@ assert_contains "${output}" "llama-server" "Contains llama-server";
 assert_contains "${output}" "Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf" "Selects Qwen3.8 Flash Next Q4 part 1";
 assert_contains "${output}" "--mmproj" "Includes --mmproj flag";
 assert_contains "${output}" "jzaleski/multi" "Uses alias jzaleski/multi";
-assert_contains "${output}" "8081" "Uses port 8081";
+assert_contains "${output}" "8080" "Uses default port 8080";
 assert_contains "${output}" "65536" "Uses default ctx-size 65536";
 
 # Test 6: multi -q 6 --dry-run
