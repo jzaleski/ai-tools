@@ -122,7 +122,6 @@ Options:
   -d, --device <device>             Inference device for transcription: auto, mps, cuda, cpu (default: auto)
   --dry-run                         Print the command without executing
   --purpose <purpose>               Explicit purpose (text, multi, transcription)
-  --multi                           Run multi model (alias jzaleski/multi)
   --text, --multi, --transcription  Shorthand purpose flags
 EOF
 }

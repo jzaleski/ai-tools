@@ -53,14 +53,14 @@ def parse_args():
         "-H",
         "--host",
         default=os.getenv("WHISPER_HOST") or os.getenv("HOST") or "127.0.0.1",
-        help="Host to bind to (default: 127.0.0.1 or WHISPER_HOST)",
+        help="Host to bind to (default: 127.0.0.1 or WHISPER_HOST or HOST)",
     )
     parser.add_argument(
         "-p",
         "--port",
         type=int,
         default=int(os.getenv("WHISPER_PORT") or os.getenv("PORT") or "8765"),
-        help="Port to listen on (default: 8765 or WHISPER_PORT)",
+        help="Port to listen on (default: 8765 or WHISPER_PORT or PORT)",
     )
     parser.add_argument(
         "-m",
