@@ -56,7 +56,8 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   │   ├── skills/                        # Vendored workflow skills (analyze, coder, debugging, finisher, handoff, ingest, planner, refine, report, researcher, reviewer, scope, test-driven-development, triage, verification-before-completion)
 │   │   └── opencode.json                  # Provider, agent, MCP configuration
 │   ├── .local/lib/opencode.sh             # Opencode wrapper (session persistence, cache reset)
-│   └── .opencoderc                        # Shell alias: opencode → ~/.local/lib/opencode.sh
+│   ├── .opencoderc                        # Shell alias: opencode → ~/.local/lib/opencode.sh
+│   └── .pyenvrc                           # Shell environment for pyenv (bin, shims, rehash)
 ├── .default-python-version                # Default Python version for pyenv (3.14.3)
 └── requirements.txt                       # Python dependencies (openai-whisper, torch)
 ```
@@ -251,7 +252,7 @@ Bootstrap scripts are defined as an explicit ordered array in `bin/bootstrap` an
 |--------|---------|
 | `bin/install-dependencies` | Installs Homebrew (if missing) and base packages (`ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `openssl`, `readline`, `sqlite`, `wget`, `zsh`) |
 | `bin/configure-git` | Configures global git settings — sets `core.excludesfile` to `~/.gitignore` if not already set |
-| `bin/configure-python` | Sets up `pyenv` at `~/.pyenv`, installs Python version from `.default-python-version` (`3.14.3`), and installs pip packages from `requirements.txt` (`openai-whisper`, `torch`) |
+| `bin/configure-python` | Sets up `pyenv` at `~/.pyenv`, installs Python version from `.default-python-version` (`3.14.3`), and installs pip packages from `requirements.txt` (`openai-whisper`, `torch`); appends `.pyenvrc` sourcing to `~/.bashrc` and `~/.zshrc` |
 | `bin/configure-opencode` | Adds the `anomalyco/tap` Homebrew tap (if not already tapped) and installs/upgrades `anomalyco/tap/opencode`; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
 
 To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
