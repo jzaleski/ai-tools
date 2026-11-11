@@ -11,7 +11,7 @@ All model hosting is unified behind a single entrypoint `bin/run-model` with pur
 - **`jzaleski/multi`**: Qwen3.8-Flash-Next running on port 8080 with an F16 multimodal projector (`--mmproj`, auto-downloaded). Vision-capable model with reasoning preservation and auto-detected MTP speculative decoding (`draft-mtp`).
 - **`jzaleski/transcription`**: Persistent OpenAI-compatible Whisper HTTP server running on port 8765 (`lib/whisper_server.py`). Supports `/v1/audio/transcriptions` (both `multipart/form-data` uploads and JSON payloads with local file paths), `/health`, and `/v1/models` with hardware-accelerated inference (`cuda` -> `mps` -> `cpu`).
 
-Both LLMs support standard quantizations (`-q 4|5|6|8`, defaulting to `4`), a universal 64K default context window (`65536` tokens, overrideable via `-c / --ctx-size` or `CTX_SIZE`), and full unified memory optimizations (`--load-mode mlock`, `--cache-reuse 256`, `--cache-ram -1`). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Listen ports default to `8080` (text/multi LLMs) and `8765` (transcription), overrideable via `PORT` or `-p / --port`.
+Both LLMs support standard quantizations (`-q 4|5|6|8`, defaulting to `4`), a universal 64K default context window (`65536` tokens, overrideable via `-c / --ctx-size` or `CTX_SIZE`), and full unified memory optimizations (`--load-mode mlock`, `--cache-reuse 256`, `--cache-ram -1`). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN, or `HOST=0.0.0.0,::` for dual-stack IPv4/IPv6). Listen ports default to `8080` (text/multi LLMs) and `8765` (transcription), overrideable via `PORT` or `-p / --port`.
 
 Models are loaded from HuggingFace and quantized for efficient local inference.
 
@@ -164,7 +164,7 @@ You can override default settings via environment variables.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `HOST` | Network interface address to bind the server to | `127.0.0.1` (set `0.0.0.0` to expose on the LAN) |
+| `HOST` | Network interface address to bind the server to | `127.0.0.1` (set `0.0.0.0` for LAN, or `0.0.0.0,::` for dual-stack IPv4/IPv6) |
 | `PORT` | Network port for the server to listen on | `8080` (text/multi), `8765` (transcription) |
 | `WHISPER_HOST` | Bind address override for Whisper server | `${HOST:-127.0.0.1}` |
 | `WHISPER_PORT` | Network port override for Whisper server | `${PORT:-8765}` |
@@ -340,7 +340,7 @@ All model execution is consolidated under `bin/run-model`. It drives `llama-serv
     └──────────────────────┘ └──────────────────────┘       └──────────────────────────┘
 ```
 
-`HOST` defaults to `127.0.0.1` across all launchers; set `HOST=0.0.0.0` to expose on the LAN. Listen ports default to `8080` (text and multi LLMs) and `8765` (transcription); override with `PORT` or `-p / --port` when running servers concurrently.
+`HOST` defaults to `127.0.0.1` across all launchers; set `HOST=0.0.0.0` to expose on the LAN (or `HOST=0.0.0.0,::` for dual-stack IPv4/IPv6). Listen ports default to `8080` (text and multi LLMs) and `8765` (transcription); override with `PORT` or `-p / --port` when running servers concurrently.
 
 ## Opencode Agent Architecture
 

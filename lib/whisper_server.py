@@ -11,7 +11,9 @@ import email.policy
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
+import selectors
 import signal
+import socket
 import sys
 import tempfile
 import threading
@@ -52,6 +54,17 @@ def resolve_device(device: str | None = None) -> str:
     return device_str
 
 
+def parse_hosts(host_str: str | None) -> list[str]:
+    if not host_str:
+        return ["127.0.0.1"]
+    hosts = []
+    for h in host_str.split(","):
+        cleaned = h.strip().strip("[]")
+        if cleaned and cleaned not in hosts:
+            hosts.append(cleaned)
+    return hosts or ["127.0.0.1"]
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Persistent Whisper HTTP transcription server"
@@ -60,7 +73,7 @@ def parse_args():
         "-H",
         "--host",
         default=os.getenv("WHISPER_HOST") or os.getenv("HOST") or "127.0.0.1",
-        help="Host to bind to (default: 127.0.0.1 or WHISPER_HOST or HOST)",
+        help="Host(s) to bind to, comma-separated (default: 127.0.0.1 or WHISPER_HOST or HOST)",
     )
     parser.add_argument(
         "-p",
@@ -290,6 +303,92 @@ class WhisperRequestHandler(BaseHTTPRequestHandler):
                         pass
 
 
+class MultiHostThreadingHTTPServer(ThreadingHTTPServer):
+    """
+    Threading HTTP server capable of binding and listening to multiple
+    host interfaces simultaneously (e.g. dual-stack '0.0.0.0,::').
+    """
+
+    def __init__(self, hosts: list[str] | str, port: int, RequestHandlerClass):
+        if isinstance(hosts, str):
+            hosts = parse_hosts(hosts)
+        self.hosts = hosts
+        self.port = port
+        self.sockets = []
+        self._shutdown_event = threading.Event()
+        self._is_shut_down = threading.Event()
+
+        # Initialize BaseServer without binding self.socket
+        super().__init__((hosts[0], port), RequestHandlerClass, bind_and_activate=False)
+        self.socket.close()
+
+        try:
+            for host in hosts:
+                clean_host = host.strip("[]")
+                family = socket.AF_INET6 if ":" in clean_host else socket.AF_INET
+                s = socket.socket(family, socket.SOCK_STREAM)
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                if (
+                    family == socket.AF_INET6
+                    and hasattr(socket, "IPPROTO_IPV6")
+                    and hasattr(socket, "IPV6_V6ONLY")
+                ):
+                    try:
+                        s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                    except OSError:
+                        pass
+                s.bind((clean_host, port))
+                s.listen(self.request_queue_size)
+                self.sockets.append(s)
+            self.socket = self.sockets[0]
+            self.server_address = self.socket.getsockname()
+        except Exception:
+            self.server_close()
+            raise
+
+    def serve_forever(self, poll_interval: float = 0.5):
+        self._is_shut_down.clear()
+        try:
+            with selectors.DefaultSelector() as selector:
+                for sock in self.sockets:
+                    selector.register(sock, selectors.EVENT_READ, data=sock)
+                while not self._shutdown_event.is_set():
+                    ready = selector.select(poll_interval)
+                    if self._shutdown_event.is_set():
+                        break
+                    for key, mask in ready:
+                        sock = key.data
+                        try:
+                            request, client_address = sock.accept()
+                        except OSError:
+                            continue
+                        if self.verify_request(request, client_address):
+                            try:
+                                self.process_request(request, client_address)
+                            except Exception:
+                                self.handle_error(request, client_address)
+                                self.shutdown_request(request)
+                            except:
+                                self.shutdown_request(request)
+                                raise
+                        else:
+                            self.shutdown_request(request)
+                    self.service_actions()
+        finally:
+            self._is_shut_down.set()
+
+    def shutdown(self):
+        self._shutdown_event.set()
+        self._is_shut_down.wait()
+
+    def server_close(self):
+        for sock in self.sockets:
+            try:
+                sock.close()
+            except OSError:
+                pass
+
+
 def main():
     global model, current_model_name, current_device
     args = parse_args()
@@ -305,11 +404,14 @@ def main():
     load_time = time.time() - load_start
     print(f"Model '{current_model_name}' successfully loaded in {load_time:.2f}s.")
 
-    server = ThreadingHTTPServer((args.host, args.port), WhisperRequestHandler)
-    print(f"Whisper server listening on http://{args.host}:{args.port}")
-    print(
-        f"Whisper transcription endpoint: http://{args.host}:{args.port}/v1/audio/transcriptions"
-    )
+    hosts = parse_hosts(args.host)
+    server = MultiHostThreadingHTTPServer(hosts, args.port, WhisperRequestHandler)
+    for host in hosts:
+        host_display = f"[{host}]" if ":" in host else host
+        print(f"Whisper server listening on http://{host_display}:{args.port}")
+        print(
+            f"Whisper transcription endpoint: http://{host_display}:{args.port}/v1/audio/transcriptions"
+        )
 
     def handle_shutdown(signum, frame):
         print(f"\nReceived signal {signum}, shutting down Whisper server...")

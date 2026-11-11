@@ -275,6 +275,24 @@ assert_contains "${output}" "--host 0.0.0.0" "Uses WHISPER_HOST";
 assert_contains "${output}" "--port 9100" "Uses WHISPER_PORT";
 assert_contains "${output}" "--model small" "Uses WHISPER_MODEL";
 
+# Test 22: HOST=0.0.0.0,:: run_model transcription --dry-run
+echo "Test 22: HOST=0.0.0.0,:: bin/run-model transcription --dry-run";
+set +e;
+output=$(HOST="0.0.0.0,::" "${RUN_MODEL}" transcription --dry-run 2>&1);
+status=$?;
+set -e;
+assert_exit_code 0 "${status}" "Exits with code 0";
+assert_contains "${output}" "--host 0.0.0.0,::" "Passes dual-stack 0.0.0.0,:: host via HOST env-var";
+
+# Test 23: bin/run-model transcription -H 0.0.0.0,:: --dry-run
+echo "Test 23: bin/run-model transcription -H 0.0.0.0,:: --dry-run";
+set +e;
+output=$("${RUN_MODEL}" transcription -H "0.0.0.0,::" --dry-run 2>&1);
+status=$?;
+set -e;
+assert_exit_code 0 "${status}" "Exits with code 0";
+assert_contains "${output}" "--host 0.0.0.0,::" "Overrides host to dual-stack 0.0.0.0,:: via -H flag";
+
 echo "";
 echo "=== Test Summary ===";
 echo "Passed: ${PASSED}";

@@ -1,9 +1,13 @@
 import io
 import json
 import os
+import socket
 import sys
 import tempfile
+import threading
+import time
 import unittest
+import urllib.request
 from unittest.mock import MagicMock, patch
 
 # Ensure repository root is in sys.path
@@ -499,6 +503,61 @@ class TestWhisperTranscriptionHandling(unittest.TestCase):
         finally:
             if os.path.exists(local_path):
                 os.remove(local_path)
+
+
+class TestParseHosts(unittest.TestCase):
+    def test_parse_hosts_single_ipv4(self):
+        self.assertEqual(ws.parse_hosts("127.0.0.1"), ["127.0.0.1"])
+
+    def test_parse_hosts_comma_separated_dual_stack(self):
+        self.assertEqual(ws.parse_hosts("0.0.0.0,::"), ["0.0.0.0", "::"])
+
+    def test_parse_hosts_with_whitespace_and_brackets(self):
+        self.assertEqual(ws.parse_hosts(" 0.0.0.0 , [::] "), ["0.0.0.0", "::"])
+
+    def test_parse_hosts_empty_and_default(self):
+        self.assertEqual(ws.parse_hosts(""), ["127.0.0.1"])
+        self.assertEqual(ws.parse_hosts(None), ["127.0.0.1"])
+        self.assertEqual(ws.parse_hosts(" , "), ["127.0.0.1"])
+
+    def test_parse_hosts_deduplicate(self):
+        self.assertEqual(ws.parse_hosts("0.0.0.0, 0.0.0.0"), ["0.0.0.0"])
+
+
+class TestMultiHostThreadingHTTPServer(unittest.TestCase):
+    def test_dual_stack_binding_and_request_handling(self):
+        # Find an open port
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+        sock.close()
+
+        ws.current_model_name = "test-model"
+        ws.current_device = "cpu"
+
+        server = ws.MultiHostThreadingHTTPServer(["127.0.0.1", "::1"], port, ws.WhisperRequestHandler)
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+        time.sleep(0.05)
+
+        try:
+            # Query via IPv4
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as resp:
+                self.assertEqual(resp.status, 200)
+                data = json.loads(resp.read().decode("utf-8"))
+                self.assertEqual(data["status"], "ok")
+                self.assertEqual(data["model"], "test-model")
+
+            # Query via IPv6
+            with urllib.request.urlopen(f"http://[::1]:{port}/health", timeout=2) as resp:
+                self.assertEqual(resp.status, 200)
+                data = json.loads(resp.read().decode("utf-8"))
+                self.assertEqual(data["status"], "ok")
+                self.assertEqual(data["model"], "test-model")
+        finally:
+            server.shutdown()
+            server.server_close()
+            t.join(timeout=2)
 
 
 if __name__ == "__main__":

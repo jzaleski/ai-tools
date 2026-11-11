@@ -11,7 +11,7 @@ All model hosting is unified behind `bin/run-model` with purpose-oriented model 
 - **`jzaleski/multi`**: Qwen3.8-Flash-Next running on port 8080 with an F16 multimodal projector (`--mmproj`, auto-downloaded). Vision-capable model with reasoning preservation and auto-detected MTP speculative decoding (`draft-mtp`).
 - **`jzaleski/transcription`**: Persistent OpenAI-compatible Whisper HTTP server running on port 8765 (`lib/whisper_server.py`). Supports `/v1/audio/transcriptions`, `/health`, and `/v1/models` with hardware-accelerated inference (`cuda` -> `mps` -> `cpu`).
 
-Both LLMs support standard quantizations (`-q 4|5|6|8`, defaulting to `4`), 64K universal default context (`65536` tokens, overrideable via `-c / --ctx-size` or `CTX_SIZE`), and full unified memory optimizations (`--load-mode mlock`, `--cache-reuse 256`, `--cache-ram -1`). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN). Listen ports default to `8080` (text/multi LLMs) and `8765` (transcription), overrideable via `PORT` or `-p / --port`.
+Both LLMs support standard quantizations (`-q 4|5|6|8`, defaulting to `4`), 64K universal default context (`65536` tokens, overrideable via `-c / --ctx-size` or `CTX_SIZE`), and full unified memory optimizations (`--load-mode mlock`, `--cache-reuse 256`, `--cache-ram -1`). Bind address is controlled by the `HOST` env var (default `127.0.0.1`; set `HOST=0.0.0.0` to expose on the LAN, or `HOST=0.0.0.0,::` for dual-stack IPv4/IPv6). Listen ports default to `8080` (text/multi LLMs) and `8765` (transcription), overrideable via `PORT` or `-p / --port`.
 
 **No code repositories** - utilities/config only.
 
@@ -116,7 +116,7 @@ python3 -m unittest discover -s tests         # Whisper server unit test suite
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `HOST` | Bind address | `127.0.0.1` (set `0.0.0.0` to expose on the LAN) |
+| `HOST` | Bind address | `127.0.0.1` (set `0.0.0.0` for LAN, or `0.0.0.0,::` for dual-stack IPv4/IPv6) |
 | `PORT` | Network port | `8080` (text/multi), `8765` (transcription) |
 | `WHISPER_HOST` | Bind address override for Whisper server | `${HOST:-127.0.0.1}` |
 | `WHISPER_PORT` | Network port override for Whisper server | `${PORT:-8765}` |
