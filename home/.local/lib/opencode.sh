@@ -1,208 +1,276 @@
 #!/usr/bin/env bash
 #
-# opencode wrapper script
+# opencode wrapper script (OpenCode 2.x)
 #
 # This script wraps the opencode CLI to provide additional functionality:
-#   1. Persists the last session ID to .last-opencode-session in the repo root
-#   2. Resumes sessions via --continue by reading the persisted session ID
-#   3. Resets opencode history/cache on new sessions (configurable via env vars)
-#   4. Reads default --model/--agent values from .opencode-config (JSON) in
-#      the repo root (or home directory as fallback) if present, applied only
-#      when not already passed on the command line
+#   1. Always runs with a private server (--standalone) instead of the shared
+#      background service, so concurrent sessions across projects stay isolated
+#      and each one sees its own environment (see #3)
+#   2. Starts every session clean: clears recent models, favorite models, and
+#      saved variant selections (configurable via RESET_OPENCODE_HISTORY)
+#   3. Reads default model/agent values from .opencode-config (JSON) files and
+#      passes them to OpenCode via OPENCODE_CONFIG_CONTENT. Files are layered,
+#      closest wins: ~/.opencode-config < <repo-root>/.opencode-config <
+#      <current-dir>/.opencode-config
+#   4. Persists the last session ID to .last-opencode-session in the repo root
+#      and resumes it via --continue, which keeps working even after the repo
+#      is moved to a different location on the filesystem
 #
-# The session persistence enables resuming sessions even after moving the repo
-# to a different location on the filesystem, which is useful when working across
-# multiple repositories.
+# Why OPENCODE_CONFIG_CONTENT: the OpenCode 2.x TUI no longer accepts --model or
+# --agent. Config content is read by the server, which is why --standalone
+# matters: a private server inherits this process's environment, whereas the
+# shared background service would not.
+#
+# .opencode-config format (all keys optional):
+#   { "model": "provider/model", "agent": "agent-name" }
+#
+# Precedence (lowest to highest): .opencode-config files, a pre-existing
+# OPENCODE_CONFIG_CONTENT, then --model/--agent passed on the command line.
+#
+# Subcommand handling:
+#   (none)      full treatment (#1-#4)
+#   run, mini   #1-#3; their native --model/--agent flags still win
+#   others      passed through to opencode untouched
+
+# jq programs below use jq's own $variables inside single quotes.
+# shellcheck disable=SC2016
 
 # =============================================================================
 # BINARY VALIDATION
 # =============================================================================
-# Ensure all required binaries are available before proceeding. Each check
-# exits with an error if the binary cannot be located in PATH.
 
-cat_cmd=$(which cat 2> /dev/null || echo -n);
-if [ -z "$cat_cmd" ]; then
-  echo "Could not locate the \"cat\" binary";
-  exit 1;
-fi
-
-git_cmd=$(which git 2> /dev/null || echo -n);
-if [ -z "$git_cmd" ]; then
-  echo "Could not locate the \"git\" binary";
-  exit 1;
-fi
-
-jq_cmd=$(which jq 2> /dev/null || echo -n);
+jq_cmd=$(command -v jq 2> /dev/null || echo -n);
 if [ -z "$jq_cmd" ]; then
-  echo "Could not locate the \"jq\" binary";
+  echo "Could not locate the \"jq\" binary" >&2;
   exit 1;
 fi
 
-opencode_cmd=$(which opencode 2> /dev/null || echo -n);
+opencode_cmd=$(command -v opencode 2> /dev/null || echo -n);
 if [ -z "$opencode_cmd" ]; then
-  echo "Could not locate the \"opencode\" binary";
+  echo "Could not locate the \"opencode\" binary" >&2;
   exit 1;
 fi
 
-sqlite3_cmd=$(which sqlite3 2> /dev/null || echo -n);
-if [ -z "$sqlite3_cmd" ]; then
-  echo "Could not locate the \"sqlite3\" binary";
-  exit 1;
-fi
+# Optional: only used to locate the repo root.
+git_cmd=$(command -v git 2> /dev/null || echo -n);
 
 # =============================================================================
 # ENVIRONMENT VARIABLES
 # =============================================================================
-# Configure behavior via environment variables. Default values are used if
-# the variables are not set.
-#
 # RESET_OPENCODE_HISTORY:
-#   - "true" (default): Clear model history on new sessions
-#   - "false": Preserve model history across sessions (ignored for --continue)
-#
-# RESET_OPENCODE_MODELS_CACHE:
-#   - "true" (default): Clear models cache on new sessions
-#   - "false": Preserve models cache across sessions (ignored for --continue)
+#   - "true" (default): clear recent models, favorites, and variant selections
+#   - "false": preserve them across sessions
 
 reset_opencode_history=${RESET_OPENCODE_HISTORY:-"true"};
-reset_opencode_models_cache=${RESET_OPENCODE_MODELS_CACHE:-"true"};
 
 # =============================================================================
-# HISTORY/CACHE RESET LOGIC
+# ARGUMENT CLASSIFICATION
 # =============================================================================
-# Force reset of history and cache when continuing a session. This ensures
-# a clean state when resuming, regardless of the environment variable settings.
-# The regex matches: --continue, -s, or --session
+# Find the subcommand (if any) and the optional directory positional. Flags
+# that take a separate value are skipped along with their value so the value
+# is never mistaken for a positional.
 
-if [ "$reset_opencode_history" != "true" ] && [[ "$1" =~ "^(--continue|-s|--session)$" ]]; then
-  reset_opencode_history="true";
+subcommands=" upgrade update uninstall acp api debug auth mcp plugin models stats mini run session service reload pair serve ";
+value_flags=" --session -s --prompt --server --log-level --completions --model -m --agent ";
+
+mode="tui";
+subcommand_index=-1;
+target_dir="$PWD";
+
+args=("$@");
+i=0;
+while [ "$i" -lt "${#args[@]}" ]; do
+  arg=${args[$i]};
+  if [[ "$arg" == "--" ]]; then
+    break;
+  elif [[ "$value_flags" == *" $arg "* ]]; then
+    i=$((i + 1));
+  elif [[ "$arg" != -* ]]; then
+    if [[ "$subcommands" == *" $arg "* ]]; then
+      subcommand_index=$i;
+      case "$arg" in
+        run|mini) mode="$arg" ;;
+        *)        mode="passthrough" ;;
+      esac
+    elif [ -d "$arg" ]; then
+      target_dir=$(cd "$arg" && pwd);
+    fi
+    break;
+  fi
+  i=$((i + 1));
+done
+
+if [ "$mode" = "passthrough" ]; then
+  exec "$opencode_cmd" "$@";
 fi
 
-if [ "$reset_opencode_models_cache" != "true" ] && [[ "$1" =~ "^(--continue|-s|--session)$" ]]; then
-  reset_opencode_models_cache="true";
+# =============================================================================
+# PATHS
+# =============================================================================
+
+repo_root="";
+if [ -n "$git_cmd" ]; then
+  repo_root=$("$git_cmd" -C "$target_dir" rev-parse --show-toplevel 2> /dev/null || echo -n);
 fi
 
-# =============================================================================
-# SESSION PERSISTENCE CONFIGURATION
-# =============================================================================
-# Determine where to store the session ID file. We use the git repo root if
-# available, falling back to the current directory if not in a git repo.
-# This allows the session file to travel with the repo when moved.
-
-opencode_db_file="$HOME/.local/share/opencode/opencode.db";
-opencode_session_file="$(${git_cmd} rev-parse --show-toplevel 2> /dev/null || pwd)/.last-opencode-session";
+opencode_session_file="${repo_root:-$target_dir}/.last-opencode-session";
+opencode_model_state_file="${XDG_STATE_HOME:-$HOME/.local/state}/opencode/model.json";
 
 # =============================================================================
-# SESSION RESUMPTION (--continue HANDLING)
+# ARGUMENT REWRITING
 # =============================================================================
-# When --continue is invoked, we read the persisted session ID from the file
-# and convert it to --session <id>. This allows resuming sessions even after
-# the repo has been moved to a different filesystem location.
-#
-# Flow:
-#   1. Check if --continue was passed
-#   2. Check if .last-opencode-session file exists
-#   3. Read the session ID from the file
-#   4. Replace --continue with --session <id> in the argument list
+# For the TUI: --model/--agent are stripped and folded into config content, and
+# --continue/-c becomes --session <persisted-id> when one is available (if not,
+# OpenCode's native --continue is used). For run/mini, arguments are untouched.
+# Either way, --standalone is added unless --standalone or --server is present.
 
-if [[ "$1" == "--continue" ]] && [[ -e "$opencode_session_file" ]]; then
-  session_id=$(${cat_cmd} "$opencode_session_file" 2> /dev/null);
-  if [[ -n "$session_id" ]]; then
-    # Remove --continue from args and replace with --session <id>
-    shift;
-    set -- --session "$session_id" "$@";
+cli_model="";
+cli_agent="";
+has_standalone_arg=0;
+has_server_url_arg=0;
+new_args=();
+i=0;
+while [ "$i" -lt "${#args[@]}" ]; do
+  arg=${args[$i]};
+  next=${args[$((i + 1))]:-};
+
+  if [[ "$arg" == "--" ]]; then
+    new_args+=("${args[@]:$i}");
+    break;
+  fi
+
+  case "$arg" in
+    --standalone)         has_standalone_arg=1 ;;
+    --server|--server=*)  has_server_url_arg=1 ;;
+  esac
+
+  if [ "$mode" = "tui" ]; then
+    case "$arg" in
+      --model|-m) cli_model=$next; i=$((i + 2)); continue ;;
+      --model=*)  cli_model=${arg#--model=}; i=$((i + 1)); continue ;;
+      --agent)    cli_agent=$next; i=$((i + 2)); continue ;;
+      --agent=*)  cli_agent=${arg#--agent=}; i=$((i + 1)); continue ;;
+      --continue|-c)
+        if [ -s "$opencode_session_file" ]; then
+          session_id=$(< "$opencode_session_file");
+          if [ -n "$session_id" ]; then
+            new_args+=(--session "$session_id");
+            i=$((i + 1));
+            continue;
+          fi
+        fi
+        ;;
+    esac
+  fi
+
+  new_args+=("$arg");
+  i=$((i + 1));
+done
+
+if [ "$has_standalone_arg" -eq 0 ] && [ "$has_server_url_arg" -eq 0 ]; then
+  if [ "$subcommand_index" -ge 0 ]; then
+    # Insert right after the subcommand so it is never swallowed by a
+    # positional message (e.g. `opencode run "..."`).
+    new_args=("${new_args[@]:0:$((subcommand_index + 1))}" --standalone "${new_args[@]:$((subcommand_index + 1))}");
+  else
+    new_args=(--standalone "${new_args[@]}");
   fi
 fi
 
 # =============================================================================
-# MODEL HISTORY RESET
+# CONFIG CONTENT (MODEL/AGENT)
 # =============================================================================
-# Clear the recent model history and variant selection. This ensures a fresh
-# model selection state for each new session. The model history file tracks
-# recently used models and the current variant selection.
+# Layer .opencode-config files (home < repo root < target dir; duplicates
+# skipped), then any pre-existing OPENCODE_CONFIG_CONTENT, then CLI flags.
+# Invalid files are reported to stderr and ignored.
 
-opencode_model_history_file="$HOME/.local/state/opencode/model.json";
-if [ "$reset_opencode_history" = "true" ] && [ -e "$opencode_model_history_file" ]; then
-  opencode_model_history_temp_file="$opencode_model_history_file.tmp";
-  ${jq_cmd} '.recent = []' "$opencode_model_history_file" > "$opencode_model_history_temp_file" && \
-    ${jq_cmd} '.variant = {}' "$opencode_model_history_temp_file" > "$opencode_model_history_file";
-fi
+config_content='{}';
 
-# =============================================================================
-# MODELS CACHE RESET
-# =============================================================================
-# Remove the models cache file if it exists. This forces opencode to fetch
-# fresh model information from the providers on the next session.
+merge_config() { # $1 = JSON object to merge over config_content
+  config_content=$("$jq_cmd" -cn --argjson a "$config_content" --argjson b "$1" '$a * $b');
+}
 
-opencode_models_cache_file="$HOME/.cache/opencode/models.json";
-if [ "$reset_opencode_models_cache" = "true" ] && [ -e "$opencode_models_cache_file" ]; then
-  rm "$opencode_models_cache_file";
-fi
+seen_config_files=" ";
+for config_dir in "$HOME" "$repo_root" "$target_dir"; do
+  [ -n "$config_dir" ] || continue;
+  config_file="$config_dir/.opencode-config";
+  [ -f "$config_file" ] || continue;
+  config_real=$(cd "$config_dir" && pwd -P)/.opencode-config;
+  [[ "$seen_config_files" == *" $config_real "* ]] && continue;
+  seen_config_files+="$config_real ";
 
-# =============================================================================
-# DEFAULT MODEL/AGENT CONFIGURATION
-# =============================================================================
-# Read default --model and --agent values from .opencode-config (JSON) in the
-# repo root (or pwd) if it exists, falling back to ~/.opencode-config in the home
-# directory, and append them to the opencode arguments for any flag not already
-# specified on the command line. Invalid JSON is reported as a warning to stderr
-# and otherwise ignored (the underlying opencode command still runs normally,
-# falling through to CLI flags and opencode.json defaults).
-
-opencode_config_file="$(${git_cmd} rev-parse --show-toplevel 2> /dev/null || pwd)/.opencode-config";
-if [[ ! -e "$opencode_config_file" ]] && [[ -n "${HOME:-}" ]] && [[ -e "$HOME/.opencode-config" ]]; then
-  opencode_config_file="$HOME/.opencode-config";
-fi
-
-has_model_arg=0;
-has_agent_arg=0;
-for arg in "$@"; do
-  if [[ "$arg" == "--model" ]] || [[ "$arg" == "-m" ]]; then
-    has_model_arg=1;
-  fi
-  if [[ "$arg" == "--agent" ]]; then
-    has_agent_arg=1;
+  if layer=$("$jq_cmd" -ce '
+      if type != "object" then error("not an object") else . end
+      | {model: .model, default_agent: .agent}
+      | with_entries(select(.value | type == "string" and length > 0))
+    ' "$config_file" 2> /dev/null); then
+    merge_config "$layer";
+  else
+    echo "Warning: $config_file contains invalid JSON, ignoring" >&2;
   fi
 done
 
-if [[ -e "$opencode_config_file" ]]; then
-  if ${jq_cmd} empty "$opencode_config_file" 2> /dev/null; then
-    opencode_config_model=$(${jq_cmd} -r '.model // empty' "$opencode_config_file" 2> /dev/null);
-    opencode_config_agent=$(${jq_cmd} -r '.agent // empty' "$opencode_config_file" 2> /dev/null);
-
-    if [[ "$has_model_arg" -eq 0 ]] && [[ -n "$opencode_config_model" ]]; then
-      set -- "$@" --model "$opencode_config_model";
-    fi
-
-    if [[ "$has_agent_arg" -eq 0 ]] && [[ -n "$opencode_config_agent" ]]; then
-      set -- "$@" --agent "$opencode_config_agent";
-    fi
+if [ -n "${OPENCODE_CONFIG_CONTENT:-}" ]; then
+  if "$jq_cmd" -e 'type == "object"' <<< "$OPENCODE_CONFIG_CONTENT" > /dev/null 2>&1; then
+    merge_config "$OPENCODE_CONFIG_CONTENT";
   else
-    echo "Warning: .opencode-config contains invalid JSON, ignoring" >&2;
+    echo "Warning: OPENCODE_CONFIG_CONTENT is not a JSON object, ignoring" >&2;
   fi
+fi
+
+if [ -n "$cli_model" ]; then
+  merge_config "$("$jq_cmd" -cn --arg v "$cli_model" '{model: $v}')";
+fi
+if [ -n "$cli_agent" ]; then
+  merge_config "$("$jq_cmd" -cn --arg v "$cli_agent" '{default_agent: $v}')";
+fi
+
+if [ "$config_content" != '{}' ]; then
+  export OPENCODE_CONFIG_CONTENT="$config_content";
+fi
+
+# =============================================================================
+# MODEL STATE RESET
+# =============================================================================
+# Clear recent models, favorites, and variant selections so each session starts
+# clean. Other keys are preserved. Written via a temp file + mv so a failed jq
+# never truncates the state file.
+
+if [ "$reset_opencode_history" = "true" ] && [ -f "$opencode_model_state_file" ]; then
+  model_state_tmp=$(mktemp "$opencode_model_state_file.XXXXXX") && \
+    if "$jq_cmd" '.recent = [] | .favorite = [] | .variant = {}' "$opencode_model_state_file" > "$model_state_tmp"; then
+      mv "$model_state_tmp" "$opencode_model_state_file";
+    else
+      rm -f "$model_state_tmp";
+    fi
 fi
 
 # =============================================================================
 # EXECUTE OPENCODE
 # =============================================================================
-# Run the actual opencode command with all arguments (potentially modified
-# if --continue was converted to --session above).
 
-${opencode_cmd} "$@";
+if [ "$mode" != "tui" ]; then
+  exec "$opencode_cmd" "${new_args[@]}";
+fi
+
+"$opencode_cmd" "${new_args[@]}";
+opencode_status=$?;
 
 # =============================================================================
 # SESSION PERSISTENCE (POST-EXECUTION)
 # =============================================================================
-# After opencode exits, query the database for the most recent session in the
-# current directory and persist it to .last-opencode-session. This enables
-# future --continue calls to find the session even if the repo is moved.
-#
-# The session table stores: id, directory, time_created, etc.
-# We query by directory to find sessions for this specific repo.
+# Ask OpenCode for the project's most recently updated top-level session in the
+# target directory and persist its ID, enabling future --continue calls. Skipped
+# when connected to an explicit --server (its sessions may live elsewhere).
 
-if [[ -e "$opencode_db_file" ]]; then
-  session_id=$(${sqlite3_cmd} "$opencode_db_file" "SELECT id FROM session WHERE directory = '$(pwd)' ORDER BY time_created DESC LIMIT 1;" 2> /dev/null);
-  if [[ -n "$session_id" ]]; then
+if [ "$has_server_url_arg" -eq 0 ]; then
+  target_dir_physical=$(cd "$target_dir" && pwd -P);
+  session_id=$(cd "$target_dir" && "$opencode_cmd" session list --format json --standalone 2> /dev/null | \
+    "$jq_cmd" -r --arg l "$target_dir" --arg p "$target_dir_physical" \
+      '[.[] | select(.directory == $l or .directory == $p)] | first | .id // empty' 2> /dev/null);
+  if [ -n "$session_id" ]; then
     echo "$session_id" > "$opencode_session_file";
   fi
 fi
+
+exit "$opencode_status";

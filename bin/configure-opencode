@@ -26,13 +26,45 @@ if [ $(uname) = "Darwin" ]; then
     $brew_cmd tap "$opencode_tap";
   fi
 
-  opencode_package="anomalyco/tap/opencode";
+  opencode_package="anomalyco/tap/opencode-v2";
+
+  # Homebrew refuses to load formulae from untrusted taps; trust just this
+  # formula (not the whole tap) when the installed Homebrew supports it.
+  if $brew_cmd trust --help > /dev/null 2>&1 && \
+    ! $brew_cmd trust --json=v1 2> /dev/null | ${grep_cmd} -q "\"$opencode_package\""; then
+    $brew_cmd trust --formula "$opencode_package";
+  fi
+
   opencode_package_details=$($brew_cmd list $opencode_package 2> /dev/null || echo -n);
 
   if [ -z "$opencode_package_details" ]; then
     $brew_cmd install -y $opencode_package;
   else
     $brew_cmd upgrade -y $opencode_package;
+  fi
+
+  # Disable the shared background service so every CLI invocation runs with a
+  # private server (sessions across concurrent projects stay isolated). Only
+  # set when needed, since setting it also stops a running service.
+  opencode_cmd=$(which opencode 2> /dev/null || echo -n);
+  if [ -z "$opencode_cmd" ]; then
+    echo "Error: Could not locate the \"opencode\" command" >&2;
+    exit 1;
+  fi
+
+  if [ "$($opencode_cmd service get disabled 2> /dev/null || echo -n)" != "true" ]; then
+    $opencode_cmd service set disabled true;
+  fi
+
+  # Pre-dismiss the TUI's "Getting started" sidebar card. It is shown until
+  # dismissed whenever no integration has a /connect credential, which is
+  # always the case here (providers authenticate via AWS profiles, gcloud ADC,
+  # or plain local URLs). This mirrors what clicking its close button stores.
+  opencode_tui_state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/opencode/latest/tui";
+  opencode_getting_started_file="$opencode_tui_state_dir/plugin.opencode.sidebar.footer.getting-started.json";
+  if [ ! -e "$opencode_getting_started_file" ]; then
+    mkdir -p "$opencode_tui_state_dir";
+    echo -n '{"dismissed":true}' > "$opencode_getting_started_file";
   fi
 
   for shell_init_script in "$HOME/.bashrc" "$HOME/.zshrc"; do

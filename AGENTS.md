@@ -42,20 +42,22 @@ Agent configurations are managed via the bootstrap system and integrate with the
 │   ├── install-dependencies               # Installs/upgrades Homebrew base packages
 │   ├── configure-git                      # Configures global git settings (core.excludesfile)
 │   ├── configure-python                   # Sets up pyenv, installs Python 3.14.3 and requirements.txt
-│   ├── configure-opencode                 # Installs opencode via the anomalyco/tap Homebrew tap, configures shell init
+│   ├── configure-opencode                 # Installs opencode-v2 via the anomalyco/tap Homebrew tap, configures shell init
 │   ├── download-model                     # Downloads a single GGUF file from Hugging Face via curl
 │   └── run-model                          # Unified model launcher (text, multi, transcription)
 ├── lib/                                   # Supporting server libraries
 │   └── whisper_server.py                  # Persistent OpenAI-compatible Whisper HTTP server
 ├── tests/                                 # Test suites
+│   ├── test_opencode_wrapper.sh           # Stub-based test harness for the opencode wrapper
 │   ├── test_run_model.sh                  # CLI test harness for bin/run-model
 │   └── test_whisper_server.py             # Unit tests for persistent Whisper server
 ├── home/                                  # Dotfiles and config files to symlink
 │   ├── .config/opencode/
 │   │   ├── agents/                        # Agent definitions (data, engineer, product)
 │   │   ├── skills/                        # Vendored workflow skills (analyze, coder, debugging, finisher, handoff, ingest, planner, refine, report, researcher, reviewer, scope, test-driven-development, triage, verification-before-completion)
+│   │   ├── plugins/model-curator/         # Local plugin: model allowlists, provider labels, alphabetical picker
 │   │   └── opencode.json                  # Provider, agent, MCP configuration
-│   ├── .local/lib/opencode.sh             # Opencode wrapper (session persistence, cache reset)
+│   ├── .local/lib/opencode.sh             # Opencode wrapper (clean sessions, config defaults, session persistence)
 │   ├── .opencoderc                        # Shell alias: opencode → ~/.local/lib/opencode.sh
 │   └── .pyenvrc                           # Shell environment for pyenv (bin, shims, rehash)
 ├── .default-python-version                # Default Python version for pyenv (3.14.3)
@@ -79,6 +81,7 @@ HOST=0.0.0.0 ./bin/run-model text            # expose on LAN
 Test with:
 ```bash
 bash tests/test_run_model.sh                  # run-model CLI test harness (59 assertions)
+bash tests/test_opencode_wrapper.sh           # opencode wrapper test harness (stubbed opencode, 26 assertions)
 python3 -m unittest discover -s tests         # Whisper server unit test suite
 ```
 
@@ -225,15 +228,23 @@ MCP integrations are declared in `opencode.json` but **disabled by default**:
 
 Toggle `enabled: true` in `opencode.json` to activate. Playwright and Google Cloud's `npx` commands require Node.js/npm on `PATH` — not installed by the bootstrap system. GitHub requires a Personal Access Token in headers.
 
+### Model Curator Plugin
+
+`home/.config/opencode/plugins/model-curator/index.js` curates the model picker from a single `ctx.model.transform`: drops models not in `options.allowlists[providerID]` (providers without an entry keep everything), strips a trailing region marker such as `(Global)` when `options.stripRegion` is `true`, appends ` [options.labels[providerID]]` to display names, and orders by name via synthetic `time.released` values unless `options.alphabetize` is `false`.
+
+- OpenCode's built-in config plugin re-applies a config model's `name` in a model transform that runs after user plugins, so a configured `name` always overrides the label. Config-defined models that should be labeled omit `name` (display falls back to the model ID) or include the label in the name themselves
+- Verify against a fresh server: `opencode api get /api/model --standalone | jq -r '.data[] | "\(.providerID)/\(.id) => \(.name)"'`
+
 ### Opencode Wrapper
 
-`home/.local/lib/opencode.sh` wraps the `opencode` CLI to add session persistence and cache reset behavior. It is aliased via `home/.opencoderc`, which is sourced from `~/.bashrc` and `~/.zshrc` by the bootstrap system.
+`home/.local/lib/opencode.sh` wraps the OpenCode 2.x `opencode` CLI. It is aliased via `home/.opencoderc`, which is sourced from `~/.bashrc` and `~/.zshrc` by the bootstrap system.
 
-- Persists the last session ID to `.last-opencode-session` in the git repo root
-- Resumes via `--continue` / `-s` / `--session` using the persisted ID
-- Resets model history and clears model cache on fresh sessions (configurable via `RESET_OPENCODE_HISTORY`, `RESET_OPENCODE_MODELS_CACHE`)
-- Reads default `--model`/`--agent` values from `.opencode-config` (JSON) in the git repo root (falling back to `~/.opencode-config` in the home directory), applied only when not already passed as a CLI flag; invalid JSON logs a warning to stderr and is otherwise ignored. Unlike `.last-opencode-session` (per-user, gitignored), `.opencode-config` is meant to be committed
-- Required binaries (all installed via bootstrap): `cat`, `git`, `jq`, `opencode`, `sqlite3`
+- Always adds `--standalone` (private server) for the TUI, `run`, and `mini`, unless `--standalone`/`--server` is passed; other subcommands pass through untouched
+- Clears `recent`, `favorite`, and `variant` in OpenCode's `model.json` on each invocation (configurable via `RESET_OPENCODE_HISTORY`)
+- Layers `.opencode-config` (JSON: `model`, `agent`) from `~` → repo root → current directory (closest wins) and exports the result as `OPENCODE_CONFIG_CONTENT` (`agent` → `default_agent`). A pre-existing `OPENCODE_CONFIG_CONTENT` and TUI `--model`/`-m`/`--agent` flags override the files; invalid JSON logs a warning to stderr and is otherwise ignored. Unlike `.last-opencode-session` (per-user, gitignored), `.opencode-config` is meant to be committed
+- `--standalone` is required for config content to apply: a private server inherits the wrapper's environment, the shared background service does not
+- Persists the last top-level session ID (via `opencode session list --format json`) to `.last-opencode-session` in the git repo root; `--continue`/`-c` resumes it via `--session <id>`
+- Required binaries (all installed via bootstrap): `jq`, `opencode`; `git` optional
 
 ---
 
@@ -253,7 +264,7 @@ Bootstrap scripts are defined as an explicit ordered array in `bin/bootstrap` an
 | `bin/install-dependencies` | Installs Homebrew (if missing) and base packages (`ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `openssl`, `readline`, `sqlite`, `wget`, `zsh`) |
 | `bin/configure-git` | Configures global git settings — sets `core.excludesfile` to `~/.gitignore` if not already set |
 | `bin/configure-python` | Sets up `pyenv` at `~/.pyenv`, installs Python version from `.default-python-version` (`3.14.3`), and installs pip packages from `requirements.txt` (`openai-whisper`, `torch`); appends `.pyenvrc` sourcing to `~/.bashrc` and `~/.zshrc` |
-| `bin/configure-opencode` | Adds the `anomalyco/tap` Homebrew tap (if not already tapped) and installs/upgrades `anomalyco/tap/opencode`; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+| `bin/configure-opencode` | Adds the `anomalyco/tap` Homebrew tap (if not already tapped) and trusts and installs/upgrades `anomalyco/tap/opencode-v2`; disables the shared background service (`opencode service set disabled true`) so CLI sessions run with private servers; pre-dismisses the TUI's "Getting started" sidebar card; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
 
 To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
 ```bash

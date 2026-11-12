@@ -15,99 +15,113 @@
     "openai"
   ],
   "provider": {
-    "jzaleski": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "jzaleski",
-      "options": {
-        "baseURL": "http://server-hostname-or-ip:8080/v1"
+    "local-multi": {
+      "package": "@opencode/ai/providers/openai-compatible",
+      "name": "local-multi",
+      "settings": {
+        "baseURL": "http://server-hostname-or-ip:8081/v1"
+      },
+      "models": {
+        "jzaleski/multi": {
+          "limit": {
+            "context": 65536,
+            "input": 57344,
+            "output": 8192
+          },
+          "capabilities": {
+            "input": ["text", "image"],
+            "output": ["text"],
+            "tools": true
+          }
+        }
+      }
+    },
+    "local-text": {
+      "package": "@opencode/ai/providers/openai-compatible",
+      "name": "local-text",
+      "settings": {
+        "baseURL": "http://server-hostname-or-ip:8082/v1"
       },
       "models": {
         "jzaleski/text": {
-          "name": "Text (Mistral 24B)",
           "limit": {
             "context": 65536,
             "input": 57344,
             "output": 8192
           },
-          "modalities": {
-            "input": [
-              "text"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        },
-        "jzaleski/multi": {
-          "name": "jzaleski/multi",
-          "limit": {
-            "context": 65536,
-            "input": 57344,
-            "output": 8192
-          },
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
+          "capabilities": {
+            "input": ["text"],
+            "output": ["text"],
+            "tools": true
           }
         }
       }
     }
   },
-  "plugin": [],
-  "mcp": {
-    "aws": {
-      "type": "local",
-      "command": [
-        "uvx",
-        "mcp-proxy-for-aws@latest",
-        "https://aws-mcp.YOUR_AWS_REGION.api.aws/mcp",
-        "--metadata", "AWS_REGION=YOUR_AWS_REGION",
-        "--profile", "YOUR_AWS_PROFILE"
-      ],
-      "enabled": false
-    },
-    "gcloud": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@google-cloud/gcloud-mcp"
-      ],
-      "enabled": false
-    },
-    "github": {
-      "type": "remote",
-      "url": "https://api.githubcopilot.com/mcp/",
-      "enabled": false,
-      "oauth": {},
-      "headers": {
-        "Authorization": "Bearer YOUR_GITHUB_PERSONAL_ACCESS_TOKEN"
+  "plugins": [
+    {
+      "package": "./plugins/model-curator",
+      "options": {
+        "allowlists": {
+          "amazon-bedrock": [],
+          "google-vertex": []
+        },
+        "alphabetize": true,
+        "labels": {
+          "amazon-bedrock": "Bedrock",
+          "google-vertex": "Vertex AI",
+          "local-multi": "Local",
+          "local-text": "Local"
+        },
+        "stripRegion": true
       }
-    },
-    "jira": {
-      "type": "remote",
-      "url": "https://mcp.atlassian.com/v1/mcp",
-      "enabled": false,
-      "oauth": {}
-    },
-    "playwright": {
-      "type": "local",
-      "command": [
-        "npx",
-        "@playwright/mcp@latest"
-      ],
-      "enabled": false
-    },
-    "vercel": {
-      "type": "remote",
-      "url": "https://mcp.vercel.com/v1/mcp",
-      "enabled": false,
-      "oauth": {}
+    }
+  ],
+  "mcp": {
+    "servers": {
+      "aws": {
+        "type": "local",
+        "command": [
+          "uvx",
+          "mcp-proxy-for-aws@latest",
+          "https://aws-mcp.YOUR_AWS_REGION.api.aws/mcp",
+          "--metadata", "AWS_REGION=YOUR_AWS_REGION",
+          "--profile", "YOUR_AWS_PROFILE"
+        ],
+        "disabled": true
+      },
+      "gcloud": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@google-cloud/gcloud-mcp"
+        ],
+        "disabled": true
+      },
+      "github": {
+        "type": "remote",
+        "url": "https://api.githubcopilot.com/mcp/",
+        "headers": {
+          "Authorization": "Bearer {env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+        },
+        "disabled": true
+      },
+      "jira": {
+        "type": "remote",
+        "url": "https://mcp.atlassian.com/v1/mcp",
+        "disabled": true
+      },
+      "playwright": {
+        "type": "local",
+        "command": ["npx", "@playwright/mcp@latest"],
+        "disabled": true
+      },
+      "vercel": {
+        "type": "remote",
+        "url": "https://mcp.vercel.com/v1/mcp",
+        "disabled": true
+      }
     }
   }
 }

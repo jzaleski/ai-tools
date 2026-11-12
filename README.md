@@ -24,12 +24,13 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   ├── install-dependencies        # Installs/upgrades Homebrew base packages
 │   ├── configure-git               # Configures global git settings (core.excludesfile)
 │   ├── configure-python            # Sets up pyenv, installs Python 3.14.3 and requirements.txt
-│   ├── configure-opencode          # Installs opencode via the anomalyco/tap Homebrew tap, configures shell init
+│   ├── configure-opencode          # Installs opencode-v2 via the anomalyco/tap Homebrew tap, configures shell init
 │   ├── download-model              # Downloads a single GGUF file from Hugging Face via curl
 │   └── run-model                   # Unified model launcher (text, multi, transcription)
 ├── lib/                            # Supporting server libraries
 │   └── whisper_server.py           # Persistent OpenAI-compatible Whisper HTTP server
 ├── tests/                          # Test suites
+│   ├── test_opencode_wrapper.sh    # Stub-based test harness for the opencode wrapper
 │   ├── test_run_model.sh           # CLI test harness for bin/run-model
 │   └── test_whisper_server.py      # Unit tests for persistent Whisper server
 ├── home/                           # Dotfiles and config files to symlink
@@ -54,9 +55,11 @@ Models are loaded from HuggingFace and quantized for efficient local inference.
 │   │   │   ├── test-driven-development/ # Red-Green-Refactor & good test guidelines
 │   │   │   ├── triage/             # Classify & route an inbound request (product front door)
 │   │   │   └── verification-before-completion/ # Evidence-before-claims gate function
+│   │   ├── plugins/
+│   │   │   └── model-curator/      # Local plugin: model allowlists, provider labels, alphabetical picker
 │   │   └── opencode.json           # Opencode provider and agent configuration
 │   ├── .local/lib/
-│   │   └── opencode.sh             # Opencode wrapper script (session persistence, cache reset)
+│   │   └── opencode.sh             # Opencode wrapper script (clean sessions, config defaults, session persistence)
 │   ├── .opencoderc                 # Shell alias: opencode → ~/.local/lib/opencode.sh
 │   └── .pyenvrc                    # Shell environment for pyenv (bin, shims, rehash)
 ├── .default-python-version         # Default Python version for pyenv (3.14.3)
@@ -89,7 +92,7 @@ Scripts run in the order defined in the `bin_scripts` array in `bin/bootstrap`:
 | `bin/install-dependencies` | Installs Homebrew (if missing) and installs/upgrades: `ag`, `btop`, `curl`, `git`, `jq`, `htop`, `llama.cpp`, `nvtop`, `openssl`, `readline`, `sqlite`, `wget`, `zsh` |
 | `bin/configure-git` | Configures global git settings — sets `core.excludesfile` to `~/.gitignore` if not already set |
 | `bin/configure-python` | Sets up `pyenv` at `~/.pyenv`, installs Python version from `.default-python-version` (`3.14.3`), and installs pip packages from `requirements.txt` (`openai-whisper`, `torch`); appends `.pyenvrc` sourcing to `~/.bashrc` and `~/.zshrc` |
-| `bin/configure-opencode` | Adds the `anomalyco/tap` Homebrew tap (if not already tapped) and installs/upgrades `anomalyco/tap/opencode`; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
+| `bin/configure-opencode` | Adds the `anomalyco/tap` Homebrew tap (if not already tapped) and trusts and installs/upgrades `anomalyco/tap/opencode-v2`; disables the shared background service (`opencode service set disabled true`) so CLI sessions run with private servers; pre-dismisses the TUI's "Getting started" sidebar card; appends `.opencoderc` sourcing to `~/.bashrc` and `~/.zshrc` |
 
 To run only a subset of scripts, use `BOOTSTRAP_SCRIPTS`:
 ```bash
@@ -437,37 +440,49 @@ The following MCP integrations are configured but **disabled by default**:
 
 ```bash
 # Run opencode with default agent (engineer)
-opencode "your question or task"
+opencode --prompt "your question or task"
 
 # Specify a different agent
-opencode --agent engineer "implement this feature"
-opencode --agent data "analyze this data file"
-opencode --agent product "scope this feature request"
+opencode --agent engineer --prompt "implement this feature"
+opencode --agent data --prompt "analyze this data file"
+opencode --agent product --prompt "scope this feature request"
+
+# Non-interactive
+opencode run --agent engineer "explain this repository"
 ```
 
 ### Opencode Wrapper Script
 
-The project includes `home/.local/lib/opencode.sh`, a wrapper script for the opencode CLI that manages model history, cache state, and session persistence. It is aliased to the `opencode` command via `home/.opencoderc`, which is sourced from `~/.bashrc` and `~/.zshrc` by the bootstrap system.
+The project includes `home/.local/lib/opencode.sh`, a wrapper script for the OpenCode 2.x CLI that starts every session clean, applies per-repo model/agent defaults, runs each session with a private server, and persists sessions so they can be resumed. It is aliased to the `opencode` command via `home/.opencoderc`, which is sourced from `~/.bashrc` and `~/.zshrc` by the bootstrap system.
 
 ```bash
 # Via alias after bootstrap
-opencode [options] [query]
+opencode [options] [directory]
 
 # Direct invocation
-~/.local/lib/opencode.sh [options] [query]
+~/.local/lib/opencode.sh [options] [directory]
 ```
 
 **Features:**
-- Persists the last session ID to `.last-opencode-session` in the git repo root after each run
-- Resumes sessions via `--continue` by reading the persisted session ID (works even after moving the repo)
-- Automatically resets opencode model history on session start (configurable)
-- Clears model cache to ensure fresh model selection
-- Supports `--continue`, `-s`, or `--session` flags to preserve history/cache across invocations
-- Reads default `--model`/`--agent` values from `.opencode-config` (JSON) in the git repo root (falling back to `~/.opencode-config` in the home directory), applied only when the corresponding flag isn't already passed on the command line
+- Always runs with a private server (`--standalone`) so concurrent sessions across projects stay isolated; skipped when `--standalone` or `--server` is passed explicitly
+- Starts every session clean: clears recent models, favorite models, and saved variant selections in OpenCode's `model.json` (other keys preserved)
+- Reads default model/agent values from layered `.opencode-config` files and passes them to OpenCode via `OPENCODE_CONFIG_CONTENT` (the 2.x TUI has no `--model`/`--agent` flags)
+- Still accepts `--model`/`-m` and `--agent` on the TUI, translating them into config content
+- Persists the last top-level session ID to `.last-opencode-session` in the git repo root after each TUI run (looked up via `opencode session list`)
+- Resumes via `--continue`/`-c` by reading the persisted session ID (works even after moving the repo); falls back to OpenCode's native `--continue` when no ID is persisted
+- Propagates OpenCode's exit code
+
+**Subcommand handling:**
+
+| Invocation | Behavior |
+|------------|----------|
+| `opencode [options] [directory]` (TUI) | All features above |
+| `opencode run ...` / `opencode mini ...` | Private server, clean model state, `.opencode-config` defaults; their native `--model`/`--agent` flags still take precedence |
+| Any other subcommand (`service`, `auth`, `upgrade`, ...) | Passed through to `opencode` untouched |
 
 **Default Model/Agent Configuration**
 
-Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults, or place one at `~/.opencode-config` in your home directory to set global user defaults when a repo does not provide one:
+Commit a `.opencode-config` JSON file to a repo root (or a subdirectory) to set per-repo defaults, or place one at `~/.opencode-config` in your home directory to set global user defaults:
 
 ```json
 {
@@ -476,16 +491,16 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults, o
 }
 ```
 
-- Both keys are optional — set either, both, or neither.
-- Precedence (highest to lowest): explicit CLI flag (`--model`/`-m`, `--agent`) → repo-root `.opencode-config` → `~/.opencode-config` → `opencode.json`'s `default_agent`/defaults.
-- Invalid JSON prints a warning to stderr and is otherwise ignored — the underlying `opencode` command still runs.
+- Both keys are optional — set either, both, or neither. `model` maps to OpenCode's `model` and `agent` to `default_agent`.
+- Files are layered, closest wins: `~/.opencode-config` → repo-root `.opencode-config` → current-directory (or `[directory]` argument) `.opencode-config`.
+- Precedence (lowest to highest): `opencode.json` → `.opencode-config` files → a pre-existing `OPENCODE_CONFIG_CONTENT` → CLI `--model`/`-m`/`--agent`.
+- Invalid JSON prints a warning to stderr and that file is ignored — the underlying `opencode` command still runs.
 - Unlike `.last-opencode-session`, repo-root `.opencode-config` is meant to be committed to the repo.
 
-**Required binaries** (all installed via bootstrap): `cat`, `git`, `jq`, `opencode`, `sqlite3`
+**Required binaries** (all installed via bootstrap): `jq`, `opencode`; `git` is optional (used to locate the repo root)
 
 **Environment Variables:**
-- `RESET_OPENCODE_HISTORY` — Reset model history on each invocation (default: `true`)
-- `RESET_OPENCODE_MODELS_CACHE` — Clear model cache on each invocation (default: `true`)
+- `RESET_OPENCODE_HISTORY` — Clear recent models, favorites, and variant selections on each invocation (default: `true`)
 
 ### Configuration Notes
 
@@ -493,6 +508,28 @@ Commit a `.opencode-config` JSON file to a repo root to set per-repo defaults, o
 - `default_agent`: `engineer` (full tool access for general work)
 - Both models are served under the unified `jzaleski` provider with a `server-hostname-or-ip` placeholder in the `baseURL` — replace with `localhost` or the actual hostname/IP
 - Universal context window set to 65,536 tokens (57,344 input, 8,192 output)
+
+### Model Curator Plugin
+
+`home/.config/opencode/plugins/model-curator/` is a local OpenCode plugin that curates the model picker. It is enabled in `opencode.json` under `plugins`:
+
+```json
+{
+  "package": "./plugins/model-curator",
+  "options": {
+    "allowlists": { "google-vertex": ["gemini-3.8-flash", "gemini-4-carbon"] },
+    "labels": { "google-vertex": "Vertex AI", "jzaleski": "Local" },
+    "alphabetize": true,
+    "stripRegion": true
+  }
+}
+```
+
+- `allowlists` — per-provider model IDs to keep; providers without an entry keep all models
+- `labels` — per-provider suffix added to display names, e.g. `Gemini 4 Carbon [Vertex AI]`, `jzaleski/multi [Local]`
+- `alphabetize` — order the picker by display name instead of newest-first (default: `true`)
+- `stripRegion` — remove a trailing region marker such as `(Global)` or `(US)` from display names, e.g. for Bedrock cross-region inference profiles (default: `false`). Allowlisting two regions of the same model then yields identical names
+- Models defined in `opencode.json` must **not** set `name` if they should be labeled: OpenCode re-applies a configured `name` after plugin transforms, so it always wins. Omit `name` (the model ID is shown) or write the label into the name yourself, as `jzaleski/text` does
 
 ## Performance Tips
 
