@@ -109,7 +109,7 @@
       },
       "jira": {
         "type": "remote",
-        "url": "https://mcp.atlassian.com/v1/mcp",
+        "url": "https://mcp.atlassian.com/v2/mcp",
         "disabled": true
       },
       "playwright": {

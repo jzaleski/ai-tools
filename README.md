@@ -432,7 +432,7 @@ The following MCP integrations are configured but **disabled by default**:
 | AWS API | local | `uvx mcp-proxy-for-aws@latest https://aws-mcp.YOUR_AWS_REGION.api.aws/mcp --metadata AWS_REGION=YOUR_AWS_REGION --profile YOUR_AWS_PROFILE` | Enable in `opencode.json` to use; requires `uvx` (uv) |
 | Google Cloud | local | `npx -y @google-cloud/gcloud-mcp` | Enable in `opencode.json` to use; requires Node.js/npm on `PATH` (not installed by the bootstrap system) |
 | GitHub | remote | `https://api.githubcopilot.com/mcp/` | Enable in `opencode.json` to use; requires a Personal Access Token in headers |
-| Jira | remote | `https://mcp.atlassian.com/v1/mcp` | Enable in `opencode.json` to use |
+| Jira | remote | `https://mcp.atlassian.com/v2/mcp` | Enable in `opencode.json` to use |
 | Playwright | local | `npx @playwright/mcp@latest` | Enable in `opencode.json` to use; requires Node.js/npm on `PATH` (not installed by the bootstrap system) |
 | Vercel | remote | `https://mcp.vercel.com/v1/mcp` | Enable in `opencode.json` to use |
 
