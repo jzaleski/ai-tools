@@ -81,7 +81,7 @@ HOST=0.0.0.0 ./bin/run-model text            # expose on LAN
 Test with:
 ```bash
 bash tests/test_run_model.sh                  # run-model CLI test harness (59 assertions)
-bash tests/test_opencode_wrapper.sh           # opencode wrapper test harness (stubbed opencode, 26 assertions)
+bash tests/test_opencode_wrapper.sh           # opencode wrapper test harness (stubbed opencode, 29 assertions)
 python3 -m unittest discover -s tests         # Whisper server unit test suite
 ```
 
@@ -244,6 +244,7 @@ Toggle `enabled: true` in `opencode.json` to activate. Playwright and Google Clo
 - Layers `.opencode-config` (JSON: `model`, `agent`) from `~` → repo root → current directory (closest wins) and exports the result as `OPENCODE_CONFIG_CONTENT` (`agent` → `default_agent`). A pre-existing `OPENCODE_CONFIG_CONTENT` and TUI `--model`/`-m`/`--agent` flags override the files; invalid JSON logs a warning to stderr and is otherwise ignored. Unlike `.last-opencode-session` (per-user, gitignored), `.opencode-config` is meant to be committed
 - `--standalone` is required for config content to apply: a private server inherits the wrapper's environment, the shared background service does not
 - Persists the last top-level session ID (via `opencode session list --format json`) to `.last-opencode-session` in the git repo root; `--continue`/`-c` resumes it via `--session <id>`
+- Sets default CLI config via `OPENCODE_CLI_CONFIG_CONTENT` (tabs disabled by default, `{"tabs":{"mode":"off"}}`) to preserve legacy single-session behavior, while merging any pre-existing `OPENCODE_CLI_CONFIG_CONTENT` overrides
 - Required binaries (all installed via bootstrap): `jq`, `opencode`; `git` optional
 
 ---

@@ -15,6 +15,9 @@
 #   4. Persists the last session ID to .last-opencode-session in the repo root
 #      and resumes it via --continue, which keeps working even after the repo
 #      is moved to a different location on the filesystem
+#   5. Sets default CLI configuration via OPENCODE_CLI_CONFIG_CONTENT (disabling
+#      tabs by default to preserve legacy single-session behavior), merging
+#      any pre-existing OPENCODE_CLI_CONFIG_CONTENT over the default
 #
 # Why OPENCODE_CONFIG_CONTENT: the OpenCode 2.x TUI no longer accepts --model or
 # --agent. Config content is read by the server, which is why --standalone
@@ -227,6 +230,28 @@ fi
 
 if [ "$config_content" != '{}' ]; then
   export OPENCODE_CONFIG_CONTENT="$config_content";
+fi
+
+# =============================================================================
+# CLI CONFIG CONTENT (DEFAULTS)
+# =============================================================================
+# Set default CLI settings (disable tabs to preserve legacy single-session
+# behavior). Merges any pre-existing OPENCODE_CLI_CONFIG_CONTENT over this
+# default so user overrides still apply.
+
+default_cli_config='{"tabs":{"mode":"off"}}';
+if [ -n "${OPENCODE_CLI_CONFIG_CONTENT:-}" ]; then
+  if "$jq_cmd" -e 'type == "object"' <<< "$OPENCODE_CLI_CONFIG_CONTENT" > /dev/null 2>&1; then
+    export OPENCODE_CLI_CONFIG_CONTENT=$("$jq_cmd" -cn \
+      --argjson a "$default_cli_config" \
+      --argjson b "$OPENCODE_CLI_CONFIG_CONTENT" \
+      '$a * $b');
+  else
+    echo "Warning: OPENCODE_CLI_CONFIG_CONTENT is not a JSON object, ignoring" >&2;
+    export OPENCODE_CLI_CONFIG_CONTENT="$default_cli_config";
+  fi
+else
+  export OPENCODE_CLI_CONFIG_CONTENT="$default_cli_config";
 fi
 
 # =============================================================================

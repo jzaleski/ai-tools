@@ -470,6 +470,7 @@ opencode [options] [directory]
 - Still accepts `--model`/`-m` and `--agent` on the TUI, translating them into config content
 - Persists the last top-level session ID to `.last-opencode-session` in the git repo root after each TUI run (looked up via `opencode session list`)
 - Resumes via `--continue`/`-c` by reading the persisted session ID (works even after moving the repo); falls back to OpenCode's native `--continue` when no ID is persisted
+- Sets default CLI settings via `OPENCODE_CLI_CONFIG_CONTENT` (disables tabs by default: `{"tabs":{"mode":"off"}}`) to preserve legacy single-session behavior, while merging any pre-existing `OPENCODE_CLI_CONFIG_CONTENT` overrides
 - Propagates OpenCode's exit code
 
 **Subcommand handling:**

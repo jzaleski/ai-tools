@@ -3,7 +3,7 @@
 # Usage: bash tests/test_opencode_wrapper.sh  (WRAPPER=<path> to test another copy)
 set -u
 # Isolate from any wrapper-exported config in the calling shell.
-unset OPENCODE_CONFIG_CONTENT
+unset OPENCODE_CONFIG_CONTENT OPENCODE_CLI_CONFIG_CONTENT
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 script="${WRAPPER:-$repo_root/home/.local/lib/opencode.sh}"
@@ -21,6 +21,7 @@ if [[ "$1" == "session" && "$2" == "list" ]]; then
 fi
 printf '%s\n' "$@" > "$STUB_LOG.args";
 printf '%s' "${OPENCODE_CONFIG_CONTENT-<unset>}" > "$STUB_LOG.env";
+printf '%s' "${OPENCODE_CLI_CONFIG_CONTENT-<unset>}" > "$STUB_LOG.cli_env";
 exit "${STUB_EXIT:-0}";
 EOF
 chmod +x "$work/bin/opencode"
@@ -32,16 +33,18 @@ check() { # name expected actual
 }
 run() { # dir, args...
   local dir=$1; shift
-  rm -f "$work/log.args" "$work/log.env"
+  rm -f "$work/log.args" "$work/log.env" "$work/log.cli_env"
   (cd "$dir" && HOME="$work/home" XDG_STATE_HOME= PATH="$work/bin:$PATH" STUB_LOG="$work/log" bash "$script" "$@")
 }
 args() { tr '\n' ' ' < "$work/log.args" | sed 's/ $//'; }
 env_json() { jq -cS . < "$work/log.env" 2>/dev/null || cat "$work/log.env"; }
+cli_env_json() { jq -cS . < "$work/log.cli_env" 2>/dev/null || cat "$work/log.cli_env"; }
 
 # 1. Home config only -> model/default_agent via env, --standalone injected
 echo '{"model":"p/home-model","agent":"home-agent"}' > "$work/home/.opencode-config"
 run "$work/plain"
 check "home config -> env" '{"default_agent":"home-agent","model":"p/home-model"}' "$(env_json)"
+check "default cli config -> tabs off" '{"tabs":{"mode":"off"}}' "$(cli_env_json)"
 check "standalone injected (tui)" "--standalone" "$(args)"
 
 # 2. Repo root overrides home (layered), cwd overrides repo root
@@ -61,6 +64,8 @@ check "cli flags stripped" "--standalone" "$(args)"
 # 4. Pre-existing OPENCODE_CONFIG_CONTENT merged (file < env < cli)
 OPENCODE_CONFIG_CONTENT='{"model":"p/env","snapshots":false}' run "$work/repo" --agent a1
 check "env merged" '{"default_agent":"a1","model":"p/env","snapshots":false}' "$(env_json)"
+OPENCODE_CLI_CONFIG_CONTENT='{"theme":{"mode":"dark"}}' run "$work/repo"
+check "cli env merged over default" '{"tabs":{"mode":"off"},"theme":{"mode":"dark"}}' "$(cli_env_json)"
 
 # 5. --server suppresses --standalone; explicit --standalone not duplicated
 run "$work/repo" --server http://x
@@ -93,6 +98,7 @@ check "run env from files" '{"default_agent":"home-agent","model":"p/repo-model"
 run "$work/repo" service status
 check "service passthrough" "service status" "$(args)"
 check "service no env" "<unset>" "$(cat "$work/log.env")"
+check "service no cli env" "<unset>" "$(cat "$work/log.cli_env")"
 
 # 10. Directory positional drives config lookup
 run "$work/plain" "$work/repo"
