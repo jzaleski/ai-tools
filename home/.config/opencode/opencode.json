@@ -12,7 +12,8 @@
   "default_agent": "engineer",
   "disabled_providers": [
     "opencode",
-    "openai"
+    "openai",
+    "vllm"
   ],
   "provider": {
     "local-multi": {
